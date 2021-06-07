@@ -1,0 +1,37 @@
+{
+  "name": "DISSEC-COZY",
+  "slug": "dissec_cozy",
+  "icon": "icon.svg",
+  "categories": [],
+  "version": "0.1.0",
+  "licence": "AGPL-3.0",
+  "editor": "",
+  "source": "https://github.com/JulienMirval/dissec_cozy.git@build",
+  "developer": {
+    "name": "JulienMirval",
+    "url": ""
+  },
+  "routes": {
+    "/": {
+      "folder": "/",
+      "index": "index.html",
+      "public": false
+    }
+  },
+  "permissions": {
+    "apps": {
+      "description": "Required by the cozy-bar to display the icons of the apps",
+      "type": "io.cozy.apps",
+      "verbs": ["GET"]
+    },
+    "settings": {
+      "description": "Required by the cozy-bar to display Claudy and know which applications are coming soon",
+      "type": "io.cozy.settings",
+      "verbs": ["GET"]
+    },
+    "mocks todos": {
+      "description": "TO REMOVE: only used as demonstration about Cozy App data interactions",
+      "type": "io.mocks.todos"
+    }
+  }
+}
