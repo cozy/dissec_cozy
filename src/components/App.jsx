@@ -9,8 +9,7 @@ import Sidebar from './Sidebar'
 import Execution from './Execution'
 import Analyze from './Analyze'
 
-const App = (props) => {
-  console.log('app', props)
+const App = () => {
   const client = CozyClient.fromDOM()
 
   return (

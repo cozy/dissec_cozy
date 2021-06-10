@@ -61,9 +61,23 @@
       "type": "io.cozy.triggers",
       "verbs": ["ALL"]
     },
-    "DISSEC shares": {
+    "dissec.shares": {
       "description": "Intermediate results used for privately aggregating data",
       "type": "io.cozy.dissec.shares"
+    },
+    "dissec.contribution": {
+      "description": "Required compute secret shares and send them",
+      "type": "io.cozy.triggers",
+      "verbs": ["POST"],
+      "selector": "worker",
+      "values": ["service"]
+    },
+    "dissec.aggregation": {
+      "description": "Required aggregate secret shares and send them",
+      "type": "io.cozy.triggers",
+      "verbs": ["POST"],
+      "selector": "worker",
+      "values": ["service"]
     },
     "mocks todos": {
       "description": "TO REMOVE: only used as demonstration about Cozy App data interactions",

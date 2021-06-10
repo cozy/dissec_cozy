@@ -1,4 +1,4 @@
-import React, { Component, useCallback, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 
 import { useClient } from 'cozy-client'
 import Input from 'cozy-ui/react/Input'
@@ -16,23 +16,25 @@ export const TodoAdd = () => {
   // handle input value change
   const handleChange = useCallback(
     event => {
-      console.log('change', event.target.value)
       setTodoToAdd(event.target.value)
     },
     [setTodoToAdd]
   )
 
   // create the new todo
-  const handleSubmit = useCallback(async () => {
-    // reset the input and display a spinner during the process
-    setIsWorking(true)
+  const handleSubmit = useCallback(
+    async () => {
+      // reset the input and display a spinner during the process
+      setIsWorking(true)
 
-    await client.create(TODOS_DOCTYPE, { name: todoToAdd })
+      await client.create(TODOS_DOCTYPE, { name: todoToAdd })
 
-    // remove the spinner
-    setIsWorking(false)
-    setTodoToAdd('')
-  }, [todoToAdd, client, setTodoToAdd, setIsWorking])
+      // remove the spinner
+      setIsWorking(false)
+      setTodoToAdd('')
+    },
+    [todoToAdd, client, setTodoToAdd, setIsWorking]
+  )
 
   return (
     <div>

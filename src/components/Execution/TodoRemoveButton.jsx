@@ -1,4 +1,4 @@
-import React, { Component, useCallback, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 
 import Button from 'cozy-ui/react/Button'
 import { useClient } from 'cozy-client'
@@ -9,16 +9,19 @@ export const TodoRemoveButton = ({ todo }) => {
   const [isWorking, setIsWorking] = useState(false)
 
   // delete the related todo
-  const removeTodo = useCallback(async () => {
-    // display a spinner during the process
-    setIsWorking(true)
-    // delete the todo in the Cozy : asynchronous
-    await client.destroy(todo)
-    // remove the spinner
-    setIsWorking(false)
-    // We can omit that since this component will be
-    // unmount after the document is deleted by the client
-  }, [todo, client, setIsWorking])
+  const removeTodo = useCallback(
+    async () => {
+      // display a spinner during the process
+      setIsWorking(true)
+      // delete the todo in the Cozy : asynchronous
+      await client.destroy(todo)
+      // remove the spinner
+      setIsWorking(false)
+      // We can omit that since this component will be
+      // unmount after the document is deleted by the client
+    },
+    [todo, client, setIsWorking]
+  )
 
   return (
     <Button
