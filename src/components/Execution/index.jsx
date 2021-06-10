@@ -7,35 +7,21 @@ import { todosQuery } from 'doctypes'
 import TodoAdd from './TodoAdd'
 import TodosList from './TodosList'
 
-export class Todos extends Component {
-  constructor(props) {
-    super(props)
+export const Todos = ({ todos }) => {
+  const { isLoading, data } = todos
 
-    this.state = {
-      isLoading: false,
-      data: props.todos.data
-    }
-    console.log("todos", props)
-  }
-
-  componentDidUpdate() {
-    console.log("todos update", this.props)
-  }
-
-  render() {
-    return (
+  return (
     <div className="todos">
-      {this.isLoading ? (
+      {isLoading ? (
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
-          <TodosList todos={this.data} />
+          <TodosList todos={data} />
           <TodoAdd />
         </div>
       )}
     </div>
-    )
-  }
+  )
 }
 
 // get data from the client state: data, fetchStatus

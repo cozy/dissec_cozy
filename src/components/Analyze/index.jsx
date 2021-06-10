@@ -5,8 +5,8 @@ import { queryConnect } from 'cozy-client'
 import { todosQuery, sharesQuery } from 'doctypes'
 import { FindWebhooks } from './FindWebhooks'
 
-export function Analyze(props) {
-  const { data, fetchStatus } = props.todos
+export const Analyze = ({ todos }) => {
+  const { data, fetchStatus } = todos
   // cozy-client statuses
   const isLoading = fetchStatus === 'loading' || fetchStatus === 'pending'
   return (
