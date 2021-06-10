@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 
-import { withMutations } from 'cozy-client'
+import { withClient } from 'cozy-client'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import Button from 'cozy-ui/react/Button'
@@ -8,8 +8,8 @@ import Button from 'cozy-ui/react/Button'
 import { TODOS_DOCTYPE } from 'doctypes'
 
 export class TodoAdd extends Component {
-  constructor(props, context) {
-    super(props, context)
+  constructor(props) {
+    super(props)
     // initial component state
     this.state = {
       todoToAdd: '',
@@ -60,4 +60,4 @@ export class TodoAdd extends Component {
 }
 
 // get mutations from the client to use createDocument
-export default withMutations()(TodoAdd)
+export default withClient(TodoAdd)

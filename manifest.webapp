@@ -1,6 +1,6 @@
 {
   "name": "DISSEC-COZY",
-  "slug": "dissec_cozy",
+  "slug": "dissecozy",
   "icon": "icon.svg",
   "categories": [],
   "version": "0.1.0",
@@ -18,6 +18,18 @@
       "public": false
     }
   },
+  "services": {
+    "contribution": {
+      "type": "node",
+      "file": "services/contribution/dissecozy.js",
+      "trigger": "@webhook"
+    },
+    "aggregation": {
+      "type": "node",
+      "file": "services/aggregation/dissecozy.js",
+      "trigger": "@webhook"
+    }
+  },
   "permissions": {
     "apps": {
       "description": "Required by the cozy-bar to display the icons of the apps",
@@ -28,6 +40,30 @@
       "description": "Required by the cozy-bar to display Claudy and know which applications are coming soon",
       "type": "io.cozy.settings",
       "verbs": ["GET"]
+    },
+    "bank.operations": {
+      "description": "Used to manage your bank operations",
+      "type": "io.cozy.bank.operations",
+      "verbs": ["GET", "POST", "PUT", "DELETE"]
+    },
+    "files": {
+      "description": "Required to access folders",
+      "type": "io.cozy.files",
+      "verbs": ["GET", "PATCH", "POST"]
+    },
+    "jobs": {
+      "description": "Required to run the konnectors",
+      "type": "io.cozy.jobs",
+      "verbs": ["ALL"]
+    },
+    "triggers": {
+      "description": "Required to run the konnectors",
+      "type": "io.cozy.triggers",
+      "verbs": ["ALL"]
+    },
+    "DISSEC shares": {
+      "description": "Intermediate results used for privately aggregating data",
+      "type": "io.cozy.dissec.shares"
     },
     "mocks todos": {
       "description": "TO REMOVE: only used as demonstration about Cozy App data interactions",

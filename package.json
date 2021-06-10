@@ -17,7 +17,8 @@
     "test": "cs test --verbose --coverage",
     "cozyPublish": "git fetch origin ${DEPLOY_BRANCH:-build}:${DEPLOY_BRANCH:-build} && cs publish --token $REGISTRY_TOKEN --build-commit $(git rev-parse ${DEPLOY_BRANCH:-build})",
     "stack:docker:dev": "cs stackDocker",
-    "stack:docker:prod": "cs stackDocker --prod"
+    "stack:docker:prod": "cs stackDocker --prod",
+    "dissecozy:contribution": "yarn run cozy-konnector-dev -m manifest.webapp build/services/contribution/dissecozy.js"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
   "homepage": "https://github.com/JulienMirval/dissec_cozy#readme",
   "devDependencies": {
     "babel-preset-cozy-app": "1.2.5",
+    "cozy-jobs-cli": "1.10.4",
     "cozy-scripts": "^5",
     "enzyme": "3.8.0",
     "enzyme-adapter-react-16": "1.9.1",
@@ -43,12 +45,20 @@
     "stylint": "1.5.9"
   },
   "dependencies": {
+    "@tensorflow-models/toxicity": "^1.2.2",
+    "@tensorflow/tfjs": "^3.7.0",
+    "btoa": "^1.2.1",
     "cozy-bar": "7.12.3",
-    "cozy-client": "15.3.0",
+    "cozy-client": "23.1.1",
+    "cozy-doctypes": "^1.82.2",
+    "cozy-flags": "^2.7.2",
+    "cozy-konnector-libs": "^4.42.1",
+    "cozy-logger": "^1.7.0",
+    "cozy-scripts": "5.7.0",
     "cozy-ui": "37.8.0",
+    "node-fetch": "^2.6.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",
-    "react-router-dom": "4.3.1",
-    "cozy-scripts": "5.7.0"
+    "react-router-dom": "4.3.1"
   }
 }

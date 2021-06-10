@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 
 import Button from 'cozy-ui/react/Button'
-import { withMutations } from 'cozy-client'
+import { withClient } from 'cozy-client'
 
 export class TodoRemoveButton extends Component {
   constructor(props) {
@@ -42,4 +42,4 @@ export class TodoRemoveButton extends Component {
 }
 
 // get mutations from the client to use deleteDocument
-export default withMutations()(TodoRemoveButton)
+export default withClient(TodoRemoveButton)
