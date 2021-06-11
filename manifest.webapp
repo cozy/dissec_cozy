@@ -63,7 +63,8 @@
     },
     "dissec.shares": {
       "description": "Intermediate results used for privately aggregating data",
-      "type": "io.cozy.dissec.shares"
+      "type": "io.cozy.dissec.shares",
+      "verbs": ["ALL"]
     },
     "dissec.contribution": {
       "description": "Required compute secret shares and send them",
