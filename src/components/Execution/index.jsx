@@ -2,13 +2,15 @@ import React from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
 import { queryConnect } from 'cozy-client'
-import { todosQuery } from 'doctypes'
+import { bankQuery } from 'doctypes'
 
-import TodoAdd from './TodoAdd'
-import TodosList from './TodosList'
+import OperationAdd from './OperationAdd'
+import OperationsList from './OperationsList'
 
-export const Todos = ({ todos }) => {
-  const { isLoading, data } = todos
+export const Operations = ({ bank }) => {
+  const { isLoading, data } = bank
+
+  console.log(data, isLoading)
 
   return (
     <div className="todos">
@@ -16,8 +18,8 @@ export const Todos = ({ todos }) => {
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
-          <TodosList todos={data} />
-          <TodoAdd />
+          <OperationsList operations={data} />
+          <OperationAdd />
         </div>
       )}
     </div>
@@ -26,8 +28,8 @@ export const Todos = ({ todos }) => {
 
 // get data from the client state: data, fetchStatus
 export default queryConnect({
-  todos: {
-    query: todosQuery,
-    as: 'todos'
+  bank: {
+    query: bankQuery,
+    as: 'bank'
   }
-})(Todos)
+})(Operations)

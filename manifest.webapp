@@ -46,18 +46,13 @@
       "type": "io.cozy.bank.operations",
       "verbs": ["GET", "POST", "PUT", "DELETE"]
     },
-    "files": {
-      "description": "Required to access folders",
-      "type": "io.cozy.files",
-      "verbs": ["GET", "PATCH", "POST"]
-    },
     "jobs": {
-      "description": "Required to run the konnectors",
+      "description": "Required to run the services",
       "type": "io.cozy.jobs",
       "verbs": ["ALL"]
     },
     "triggers": {
-      "description": "Required to run the konnectors",
+      "description": "Required to run the services",
       "type": "io.cozy.triggers",
       "verbs": ["ALL"]
     },
@@ -66,23 +61,17 @@
       "type": "io.cozy.dissec.shares",
       "verbs": ["ALL"]
     },
-    "dissec.contribution": {
-      "description": "Required compute secret shares and send them",
+    "dissec.models": {
+      "description": "Usable classification models",
+      "type": "io.cozy.dissec.models",
+      "verbs": ["ALL"]
+    },
+    "dissecozy": {
+      "description": "Required to enable asynchronous computations",
       "type": "io.cozy.triggers",
       "verbs": ["POST"],
       "selector": "worker",
       "values": ["service"]
-    },
-    "dissec.aggregation": {
-      "description": "Required aggregate secret shares and send them",
-      "type": "io.cozy.triggers",
-      "verbs": ["POST"],
-      "selector": "worker",
-      "values": ["service"]
-    },
-    "mocks todos": {
-      "description": "TO REMOVE: only used as demonstration about Cozy App data interactions",
-      "type": "io.mocks.todos"
     }
   }
 }

@@ -1,10 +1,10 @@
-import { TODOS_DOCTYPE } from './todos'
+import { BANK_DOCTYPE } from './bank'
 import { DISSEC_DOCTYPE } from './dissec'
 
 // the documents schema, necessary for CozyClient
 export default {
-  todos: {
-    doctype: TODOS_DOCTYPE,
+  bank: {
+    doctype: BANK_DOCTYPE,
     attributes: {},
     relationships: {}
   },
@@ -16,5 +16,5 @@ export default {
 }
 
 // export all doctypes for the application
-export * from './todos'
+export * from './bank'
 export * from './dissec'

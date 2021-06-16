@@ -5,6 +5,9 @@ import { Layout, Main, Content } from 'cozy-ui/react/Layout'
 import { Sprite as IconSprite } from 'cozy-ui/react/Icon'
 import CozyClient, { CozyProvider } from 'cozy-client'
 
+import 'cozy-ui/transpiled/react/stylesheet.css'
+import 'cozy-ui/dist/cozy-ui.utils.min.css'
+
 import Sidebar from './Sidebar'
 import Execution from './Execution'
 import Analyze from './Analyze'

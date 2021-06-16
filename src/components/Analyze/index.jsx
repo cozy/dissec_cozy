@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
 import Button from 'cozy-ui/react/Button'
-import { queryConnect, useClient, TriggerCollection } from 'cozy-client'
-import { sharesQuery, DISSEC_DOCTYPE } from 'doctypes'
+import { queryConnect, useClient } from 'cozy-client'
+import { sharesQuery } from 'doctypes'
 import Webhook from './Webhook'
+import Share from './Share'
 
 export const Analyze = ({ shares }) => {
   const client = useClient()
@@ -19,13 +20,6 @@ export const Analyze = ({ shares }) => {
       const webhooks = await client.stackClient.fetchJSON(
         'GET',
         '/jobs/triggers'
-      )
-
-      console.log(
-        'effect',
-        webhooks,
-        webhooks.data.map(hook => hook.attributes.type),
-        webhooks.data.filter(hook => hook.attributes.type === '@webhook')
       )
 
       setWebhooks(
@@ -67,8 +61,10 @@ export const Analyze = ({ shares }) => {
         '/jobs/triggers',
         createBody('dissec.aggregation')
       )
+
+      await fetchWebhooks()
     },
-    [webhooks, client]
+    [webhooks, client, fetchWebhooks]
   )
 
   useEffect(
@@ -86,61 +82,48 @@ export const Analyze = ({ shares }) => {
       // display a spinner during the process
       setIsWorking(true)
 
-      await client.create(DISSEC_DOCTYPE, { test: data.length })
-
       setIsWorking(false)
     },
     [data, client]
   )
 
-  const callWebhook = useCallback(
-    async (hook, data) => {
-      await client.stackClient.fetchJSON(
-        'POST',
-        `/jobs/webhooks/${hook.id}`,
-        data
-      )
-    },
-    [data, client, setIsWorking, fetchWebhooks]
-  )
-
   return (
     <div className="todos">
       {data.map((e, i) => (
-        <div key={i}><span>{JSON.stringify(e)}</span></div>
+        <Share key={i} share={e} />
       ))}
-      {webhooks && webhooks.map(hook => (
-        <Webhook key={hook.id} hook={hook} callWebhook={callWebhook} />
-      ))}
+      {webhooks && webhooks.map(hook => <Webhook key={hook.id} hook={hook} />)}
       {isWorking ? (
         <Spinner size="xxlarge" middle />
       ) : (
-        <Button
-          className="todo-remove-button"
-          theme="danger"
-          //icon="delete"
-          iconOnly
-          label="Delete"
-          busy={isWorking}
-          disabled={isWorking}
-          onClick={addDocument}
-          extension="narrow"
-        >
-          Ajouter un doc
-        </Button>
+        <div className="action-group">
+          <Button
+            className="todo-remove-button"
+            theme="danger"
+            //icon="delete"
+            iconOnly
+            label="Delete"
+            busy={isWorking}
+            disabled={isWorking}
+            onClick={addDocument}
+            extension="narrow"
+          >
+            Ajouter un doc
+          </Button>
+          <Button
+            className="todo-remove-button"
+            //theme="danger"
+            iconOnly
+            label="Create webhook"
+            busy={isWorking}
+            disabled={isWorking}
+            onClick={createWebhooks}
+            extension="narrow"
+          >
+            Créer un webhook
+          </Button>
+        </div>
       )}
-      <Button
-        className="todo-remove-button"
-        //theme="danger"
-        iconOnly
-        label="Create webhook"
-        busy={isWorking}
-        disabled={isWorking}
-        onClick={createWebhooks}
-        extension="narrow"
-      >
-        Créer un webhook
-      </Button>
     </div>
   )
 }
