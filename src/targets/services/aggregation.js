@@ -1,36 +1,42 @@
-global.fetch = require('node-fetch')
+global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
-require('@tensorflow/tfjs')
-const toxicity = require('@tensorflow-models/toxicity')
+import CozyClient, { Q } from 'cozy-client'
+import { MODELS_DOCTYPE } from '../../doctypes'
+import { Model } from './helpers'
 
-export const test = async () => {
-  // The minimum prediction confidence.
-  const threshold = 0.9
+export const aggregation = async () => {
+  // Worker's arguments
+  const { link, security, finalize } = process.env['COZY_PAYLOAD'] || []
 
-  // Load the model. Users optionally pass in a threshold and an array of
-  // labels to include.
-  toxicity.load(threshold).then(model => {
-    const sentences = [
-      'you suck',
-      'julien is the greatest ever',
-      'you are the worst ever, bitch',
-      'i will cut your throat sexually'
-    ]
+  // eslint-disable-next-line no-console
+  console.log('aggregation received', link)
 
-    model.classify(sentences).then(predictions => {
-      // `predictions` is an array of objects, one for each prediction head,
-      // that contains the raw probabilities for each input along with the
-      // final prediction in `match` (either `true` or `false`).
-      // If neither prediction exceeds the threshold, `match` is `null`.
+  const client = CozyClient.fromEnv(process.env, {})
 
-      // eslint-disable-next-line no-console
-      predictions.forEach(prediction => console.log(prediction))
+  // 1. Download share using provided link
+  const result = await client.stackClient.fetchJSON('GET', link)
+  const data = result.relationship.shared_docs.data
+
+  // 2. If some shares are missing, end now
+  if (data.length != security) return
+
+  // 3. Fetch all stored shares
+  let shares = await Promise.all(
+    data.map(async e => {
+      const res = await client.query(Q(e.type)).where({ _id: e.id })
+      return res
     })
-  })
+  )
+
+  // 4. Compute sum or average if this node is the final aggregator
+  let model = Model.fromShares(shares, finalize)
+
+  // 5. Upload share to an external storage
+  await client.create(MODELS_DOCTYPE, model.getBackup())
 }
 
-test().catch(e => {
+aggregation().catch(e => {
   // eslint-disable-next-line no-console
   console.log('critical', e)
   process.exit(1)

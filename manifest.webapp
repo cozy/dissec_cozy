@@ -16,6 +16,10 @@
       "folder": "/",
       "index": "index.html",
       "public": false
+    }, 
+    "/shares": {
+      "folder": "/shares",
+      "public": true
     }
   },
   "services": {

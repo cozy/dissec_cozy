@@ -1,34 +1,72 @@
-//global.fetch = require('node-fetch')
+global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
-const { addData } = require('cozy-konnector-libs')
+import CozyClient, { Q } from 'cozy-client'
+import { BANK_DOCTYPE, DISSEC_DOCTYPE } from '../../doctypes'
 
-require('@tensorflow/tfjs')
-const toxicity = require('@tensorflow-models/toxicity')
+import { Model } from './helpers'
 
-export const test = async () => {
-  // Worker's arguments
-  const sentences = process.env['COZY_PAYLOAD'] || []
-
-  // The minimum prediction confidence.
-  const threshold = 0.9
-
-  // Load the model. Users optionally pass in a threshold and an array of
-  // labels to include.
-  const model = await toxicity.load(threshold)
-  const predictions = await model.classify(sentences)
-  // `predictions` is an array of objects, one for each prediction head,
-  // that contains the raw probabilities for each input along with the
-  // final prediction in `match` (either `true` or `false`).
-  // If neither prediction exceeds the threshold, `match` is `null`.
+export const contribution = async () => {
+  const { sentences, parentsWebhook, security } =
+    process.env['COZY_PAYLOAD'] || []
 
   // eslint-disable-next-line no-console
-  predictions.forEach(prediction => console.log(prediction))
+  console.log('contribution received', sentences, parentsWebhook, security)
 
-  await addData(predictions, 'io.cozy.dissec.shares')
+  const client = CozyClient.fromEnv(process.env, {})
+
+  // 1. Fetch training data
+  const { data: operations } = await client.query(Q(BANK_DOCTYPE))
+
+  // 2. Fetch model
+  // We are using an empty intial model for now
+
+  // 3. Update model parameters
+  let model = Model.fromDocs(operations)
+
+  // 4. Split model in shares
+  let shares = model.getShares(security)
+
+  // 5. Save shares in instance and create share links
+  let links = []
+  for (let i = 0; i < security; i++) {
+    const document = await client.create(DISSEC_DOCTYPE, {
+      ...shares[i],
+      shareIndex: i
+    })
+    const body = {
+      data: {
+        type: 'io.cozy.sharings',
+        attributes: {
+          description: 'secret shares sharing',
+          preview_path: '/preview-sharing',
+          rules: [
+            {
+              title: 'Standard sharing',
+              doctype: 'io.cozy.dissec.shares',
+              values: [document._id],
+              add: 'push',
+              update: 'none',
+              remove: 'revoke'
+            }
+          ]
+        }
+      }
+    }
+    const result = await client.stackClient.fetchJSON('POST', '/sharings', body)
+    links.push(result.data.links.self)
+  }
+
+  // 6. Call webhooks of parents with the links
+  links.forEach((link, i) =>
+    fetch(parentsWebhook[i], {
+      method: 'POST',
+      body: { link: link, security: security }
+    })
+  )
 }
 
-test().catch(e => {
+contribution().catch(e => {
   // eslint-disable-next-line no-console
   console.log('critical', e)
   process.exit(1)
