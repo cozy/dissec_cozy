@@ -1,13 +1,14 @@
 global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
+import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
-import { MODELS_DOCTYPE } from '../../doctypes'
+import { SHARES_DOCTYPE } from '../../doctypes'
 import { Model } from './helpers'
 
 export const aggregation = async () => {
   // Worker's arguments
-  const { link, security, finalize } = process.env['COZY_PAYLOAD'] || []
+  const { link, security, parentWebhook, finalize } = process.env['COZY_PAYLOAD'] || []
 
   // eslint-disable-next-line no-console
   console.log('aggregation received', link)
@@ -32,8 +33,11 @@ export const aggregation = async () => {
   // 4. Compute sum or average if this node is the final aggregator
   let model = Model.fromShares(shares, finalize)
 
-  // 5. Upload share to an external storage
-  await client.create(MODELS_DOCTYPE, model.getBackup())
+  // 5. Write a file that will be used as a remote asset by the stack
+  fs.writeFileSync(
+    '/mnt/c/Users/Projets/Cozy/categorization-model/model.json',
+    JSON.stringify(model.getBackup())
+  )
 }
 
 aggregation().catch(e => {

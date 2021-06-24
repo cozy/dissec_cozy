@@ -12,20 +12,27 @@ const add2DArray = (a, b) => {
 }
 
 export class Model {
+  constructor() {
+    this.uniqueY = Object.keys(classes)
+    this.priors = Array(classes.length).fill(1)
+    this.occurences = Array(vocabulary.length).fill(Array(this.uniqueY.length).fill(1))
+    this.logProbabilities = Array(vocabulary.length).fill(Array(this.uniqueY.length).fill(0))
+  }
+
   static fromBackup(doc) {
     let model = new Model()
     model.uniqueY = doc.uniqueY
     model.occurences = doc.occurences
     model.contributions = doc.contributions
+    model.initialize()
     return model
   }
 
   static fromShares(shares, finalize) {
     let model = new Model()
-    model.uniqueY = Object.keys(classes)
 
-    model.occurences = shares.occurences[0]
-    model.contributions = shares.contributions[0]
+    model.occurences = shares[0].occurences
+    model.contributions = shares[0].contributions
     for (let i = 1; i < shares.length; i++) {
       model.occurences = add2DArray(model.occurences, shares[i].occurences)
       model.contributions += shares[i].contributions
@@ -33,38 +40,31 @@ export class Model {
 
     if (finalize) {
       for (let j = 0; j < vocabulary.length; j++) {
-        for (let i = 0; i < classes.length; i++) {
+        for (let i = 0; i < this.uniqueY.length; i++) {
           model.occurences[j][i] /= model.contributions
         }
       }
 
-      model.probabilities = new Array(vocabulary.length).map((_, i) =>
-        model.occurences[i].map(
-          val =>
-            val /
-            model.occurences[i].reduce((previous, current) => {
-              previous + current
-            })
-        )
-      )
+      model.initialize()
     }
+
+    return model
   }
 
   static fromDocs(docs) {
     let model = new Model()
 
-    model.uniqueY = Object.keys(classes)
-    model.priors = new Array(classes.length).map(() => 0)
-
-    for (let i = 0; i < docs.length; i++) {
-      if (docs.cozyCategoryId) {
-        const classId = model.uniqueY.indexOf(docs.cozyCategoryId)
-        const tokens = docs.label.split(' ')
+    for (let doc of docs) {
+      // Only learn from categorized docs
+      if (doc.cozyCategoryId) {
+        const classId = model.uniqueY.indexOf(doc.cozyCategoryId)
+        const tokens = doc.label.split(' ')
 
         for (const token of tokens) {
           const index = vocabulary.indexOf(token)
           if (index >= 0) {
-            model.occurences[token][classId] += 1
+            console.log('incrementing', token, index, classId)
+            model.occurences[index][classId] += 1
             model.priors[classId] += 1
           }
         }
@@ -72,35 +72,49 @@ export class Model {
     }
 
     const tokenSum = model.priors.reduce(
-      (previous, current) => previous + current
+      (a, b) => a + b
     )
     model.priors = model.priors.map(prior => prior / tokenSum)
 
-    model.probabilities = new Array(vocabulary.length).map((_, i) =>
-      model.occurences[i].map(
-        val =>
-          (model.priors[i] * val) /
-          model.occurences[i].reduce((previous, current) => {
-            previous + current
-          })
-      )
-    )
+    model.initialize()
+
+    return model
+  }
+
+  initialize() {
+    this.logProbabilities = JSON.parse(JSON.stringify(this.occurences))
+
+    for(const j in vocabulary) {
+      const total = this.logProbabilities[j].reduce((a, b) => a + b)
+      for(const i in this.uniqueY) {
+        this.logProbabilities[j][i] = Math.log(this.logProbabilities[j][i] / total)
+      }
+    }
   }
 
   predict(text) {
-    let probability = new Array(classes.length).map(() => 1)
-    const tokens = text.split(' ')
+    try {
+      console.log('predict', text)
+      let probability = Array(this.uniqueY.length).fill(0)
+      const tokens = text.split(' ')
 
-    for (const token of tokens) {
-      const index = vocabulary.indexOf(token)
-      if (index >= 0) {
-        for (let i in this.uniqueY) {
-          probability[i] *= this.probabilities[token][i]
+      for (const token of tokens) {
+        const index = vocabulary.indexOf(token)
+        console.log('for token', index, token, JSON.stringify(this.logProbabilities[index]))
+        if (index >= 0) {
+          for (const i in this.uniqueY) {
+            probability[i] += this.logProbabilities[index][i]
+          }
         }
       }
-    }
 
-    return Math.max([...probability.map((proba, i) => proba * this.priors[i])])
+      const best = Math.max(...probability)
+      const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
+      console.log('result', best, result, classes[this.uniqueY[result]])
+      return this.uniqueY[result]
+    } catch (err) {
+      console.log('Predict failed', err)
+    }
   }
 
   getShares(security) {
@@ -113,7 +127,7 @@ export class Model {
     })
 
     for (let j = 0; j < vocabulary.length; j++) {
-      for (let i = 0; i < classes.length; i++) {
+      for (let i = 0; i < this.uniqueY.length; i++) {
         // Generate noises
         let finalNoise = 0
         for (let k = 0; k < security - 1; k++) {
