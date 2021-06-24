@@ -18,6 +18,8 @@
     "cozyPublish": "git fetch origin ${DEPLOY_BRANCH:-build}:${DEPLOY_BRANCH:-build} && cs publish --token $REGISTRY_TOKEN --build-commit $(git rev-parse ${DEPLOY_BRANCH:-build})",
     "stack:docker:dev": "cs stackDocker",
     "stack:docker:prod": "cs stackDocker --prod",
+    "dissecozy:aggregation": "yarn run cozy-konnector-dev -m manifest.webapp build/services/aggregation/dissecozy.js",
+    "dissecozy:categorize": "yarn run cozy-konnector-dev -m manifest.webapp build/services/categorize/dissecozy.js",
     "dissecozy:contribution": "yarn run cozy-konnector-dev -m manifest.webapp build/services/contribution/dissecozy.js"
   },
   "repository": {

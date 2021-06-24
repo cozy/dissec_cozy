@@ -54,7 +54,7 @@ export const OperationAdd = () => {
   return (
     <div>
       <h2>Add a new Operation:</h2>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Label htmlFor="todo-add-input"> Operation label: </Label>
         <Input
           value={operationToAdd}
@@ -69,8 +69,7 @@ export const OperationAdd = () => {
           type="number"
         />
         <Button
-          //onClick={submit}
-          type="submit"
+          onClick={handleSubmit}
           busy={isWorking}
           label="add"
           size="large"

@@ -1,5 +1,5 @@
 import { BANK_DOCTYPE } from './bank'
-import { DISSEC_DOCTYPE } from './dissec'
+import { SHARES_DOCTYPE } from './shares'
 import { MODELS_DOCTYPE } from './models'
 
 // the documents schema, necessary for CozyClient
@@ -9,8 +9,8 @@ export default {
     attributes: {},
     relationships: {}
   },
-  dissec: {
-    doctype: DISSEC_DOCTYPE,
+  shares: {
+    doctype: SHARES_DOCTYPE,
     attributes: {},
     relationships: {}
   },
@@ -23,5 +23,5 @@ export default {
 
 // export all doctypes for the application
 export * from './bank'
-export * from './dissec'
+export * from './shares'
 export * from './models'

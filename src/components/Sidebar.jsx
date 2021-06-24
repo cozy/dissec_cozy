@@ -11,6 +11,16 @@ export const Sidebar = ({ t }) => {
         <ul className="c-nav">
           <li className="c-nav-item">
             <NavLink
+              to="/operations"
+              className="c-nav-link"
+              activeClassName="is-active"
+            >
+              <Icon className="c-nav-icon" icon={NavIcon} />
+              {t('Nav.operations')}
+            </NavLink>
+          </li>
+          <li className="c-nav-item">
+            <NavLink
               to="/execution"
               className="c-nav-link"
               activeClassName="is-active"

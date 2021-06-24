@@ -1,25 +1,129 @@
-import React from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
-import { queryConnect } from 'cozy-client'
-import { bankQuery } from 'doctypes'
+import Button from 'cozy-ui/react/Button'
+import { queryConnect, useClient } from 'cozy-client'
+import { sharesQuery } from 'doctypes'
+import Webhook from './Webhook'
+import Share from './Share'
 
-import OperationAdd from './OperationAdd'
-import OperationsList from './OperationsList'
+export const Analyze = ({ shares }) => {
+  const client = useClient()
 
-export const Operations = ({ bank }) => {
-  const { isLoading, data } = bank
+  const [isWorking, setIsWorking] = useState(false)
+  const [webhooks, setWebhooks] = useState()
 
-  console.log(data, isLoading)
+  const { data } = shares
+
+  const fetchWebhooks = useCallback(
+    async () => {
+      const webhooks = await client.stackClient.fetchJSON(
+        'GET',
+        '/jobs/triggers'
+      )
+
+      setWebhooks(
+        webhooks.data
+          .filter(hook =>hook.attributes.type === '@webhook')
+          .sort((a, b) => a.attributes.message.name - b.attributes.message.name)
+      )
+    },
+    [client, setWebhooks]
+  )
+
+  useEffect(
+    () => {
+      fetchWebhooks()
+    },
+    [fetchWebhooks]
+  )
+
+  const createWebhooks = useCallback(
+    async () => {
+      const createBody = argument => ({
+        data: {
+          attributes: {
+            type: '@webhook',
+            worker: 'service',
+            arguments: argument
+          }
+        }
+      })
+
+      // Register contribution webhook
+      await client.stackClient.fetchJSON(
+        'POST',
+        '/jobs/triggers',
+        createBody('dissec.contribution')
+      )
+
+      // Register aggregation webhook
+      await client.stackClient.fetchJSON(
+        'POST',
+        '/jobs/triggers',
+        createBody('dissec.aggregation')
+      )
+
+      await fetchWebhooks()
+    },
+    [client, fetchWebhooks]
+  )
+
+  useEffect(
+    () => {
+      if (webhooks && webhooks.length === 0) {
+        createWebhooks()
+      }
+    },
+    [webhooks, createWebhooks]
+  )
+
+  // delete the related todo
+  const addDocument = useCallback(
+    async () => {
+      // display a spinner during the process
+      setIsWorking(true)
+
+      setIsWorking(false)
+    },
+    [setIsWorking]
+  )
 
   return (
     <div className="todos">
-      {isLoading ? (
+      {data.map((e, i) => (
+        <Share key={i} share={e} />
+      ))}
+      {webhooks && webhooks.map(hook => <Webhook key={hook.id} hook={hook} />)}
+      {isWorking ? (
         <Spinner size="xxlarge" middle />
       ) : (
-        <div>
-          <OperationsList operations={data} />
-          <OperationAdd />
+        <div className="action-group">
+          <Button
+            className="todo-remove-button"
+            theme="danger"
+            //icon="delete"
+            iconOnly
+            label="Delete"
+            busy={isWorking}
+            disabled={isWorking}
+            onClick={addDocument}
+            extension="narrow"
+          >
+            Ajouter un doc
+          </Button>
+          <Button
+            className="todo-remove-button"
+            //theme="danger"
+            iconOnly
+            label="Create webhook"
+            busy={isWorking}
+            disabled={isWorking}
+            onClick={createWebhooks}
+            extension="narrow"
+          >
+            Créer un webhook
+          </Button>
         </div>
       )}
     </div>
@@ -28,8 +132,8 @@ export const Operations = ({ bank }) => {
 
 // get data from the client state: data, fetchStatus
 export default queryConnect({
-  bank: {
-    query: bankQuery,
-    as: 'bank'
+  shares: {
+    query: sharesQuery,
+    as: 'shares'
   }
-})(Operations)
+})(Analyze)

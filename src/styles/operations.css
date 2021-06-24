@@ -37,9 +37,19 @@
   color: green;
 }
 
+.operation-summary {
+  justify-content: space-between;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-right: 10px;
+}
+
 .operation-text {
   justify-content: space-between;
   display: flex;
+  flex-direction: row;
   width: 100%;
   margin-right: 10px;
+  margin-bottom: 15px;
 }

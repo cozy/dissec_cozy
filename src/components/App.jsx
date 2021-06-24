@@ -9,6 +9,7 @@ import 'cozy-ui/transpiled/react/stylesheet.css'
 import 'cozy-ui/dist/cozy-ui.utils.min.css'
 
 import Sidebar from './Sidebar'
+import Operations from './Operations'
 import Execution from './Execution'
 import Analyze from './Analyze'
 
@@ -23,10 +24,11 @@ const App = () => {
           <Main>
             <Content className="app-content">
               <Switch>
+                <Route path="/operations" component={Operations} />
                 <Route path="/execution" component={Execution} />
                 <Route path="/analyze" component={Analyze} />
-                <Redirect from="/" to="/execution" />
-                <Redirect from="*" to="/execution" />
+                <Redirect from="/" to="/operations" />
+                <Redirect from="*" to="/operations" />
               </Switch>
             </Content>
           </Main>

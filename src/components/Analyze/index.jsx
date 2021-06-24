@@ -23,7 +23,9 @@ export const Analyze = ({ shares }) => {
       )
 
       setWebhooks(
-        webhooks.data.filter(hook => hook.attributes.type === '@webhook')
+        webhooks.data
+          .filter(hook => hook.attributes.type === '@webhook')
+          .sort(hook => hook.attributes.message.name)
       )
     },
     [client, setWebhooks]

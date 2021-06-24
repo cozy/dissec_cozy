@@ -1,6 +1,6 @@
 .webhook {
   margin: auto;
-  padding: 5px;
+  padding: 10px;
   max-width: 80%;
   align-items: center;
   display: flex;
@@ -14,7 +14,7 @@
 }
 
 .info-category {
-  margin-right: 0;
+  margin: 5px;
 }
 
 .action-group {
