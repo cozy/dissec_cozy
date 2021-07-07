@@ -15,8 +15,20 @@ export class Model {
   constructor() {
     this.uniqueY = Object.keys(classes)
     this.priors = Array(classes.length).fill(1)
-    this.occurences = Array(vocabulary.length).fill(Array(this.uniqueY.length).fill(1))
-    this.logProbabilities = Array(vocabulary.length).fill(Array(this.uniqueY.length).fill(0))
+    this.occurences = Array(vocabulary.length)
+      .fill()
+      .map(() =>
+        Array(this.uniqueY.length)
+          .fill()
+          .map(() => 1)
+      )
+    this.logProbabilities = Array(vocabulary.length)
+      .fill()
+      .map(() =>
+        Array(this.uniqueY.length)
+          .fill()
+          .map(() => 0)
+      )
   }
 
   static fromBackup(doc) {
@@ -60,20 +72,21 @@ export class Model {
         const classId = model.uniqueY.indexOf(doc.cozyCategoryId)
         const tokens = doc.label.split(' ')
 
+        console.log(`Doc ${doc.id} has been manually classified with ${doc.cozyCategoryId}. Tokens = [${tokens}]`)
+
         for (const token of tokens) {
           const index = vocabulary.indexOf(token)
           if (index >= 0) {
             console.log('incrementing', token, index, classId)
             model.occurences[index][classId] += 1
             model.priors[classId] += 1
+            console.log(JSON.stringify(model.occurences[index]))
           }
         }
       }
     }
 
-    const tokenSum = model.priors.reduce(
-      (a, b) => a + b
-    )
+    const tokenSum = model.priors.reduce((a, b) => a + b)
     model.priors = model.priors.map(prior => prior / tokenSum)
 
     model.initialize()
@@ -82,48 +95,40 @@ export class Model {
   }
 
   initialize() {
-    this.logProbabilities = JSON.parse(JSON.stringify(this.occurences))
-
-    for(const j in vocabulary) {
-      const total = this.logProbabilities[j].reduce((a, b) => a + b)
-      for(const i in this.uniqueY) {
-        this.logProbabilities[j][i] = Math.log(this.logProbabilities[j][i] / total)
+    for (const j in vocabulary) {
+      const total = this.occurences[j].reduce((a, b) => a + b)
+      for (const i in this.uniqueY) {
+        this.logProbabilities[j][i] = Math.log(
+          this.occurences[j][i] / total
+        )
       }
     }
   }
 
   predict(text) {
-    try {
-      console.log('predict', text)
-      let probability = Array(this.uniqueY.length).fill(0)
-      const tokens = text.split(' ')
+    let probability = Array(this.uniqueY.length).fill(0)
+    const tokens = text.split(' ')
 
-      for (const token of tokens) {
-        const index = vocabulary.indexOf(token)
-        console.log('for token', index, token, JSON.stringify(this.logProbabilities[index]))
-        if (index >= 0) {
-          for (const i in this.uniqueY) {
-            probability[i] += this.logProbabilities[index][i]
-          }
+    for (const token of tokens) {
+      const index = vocabulary.indexOf(token)
+      if (index >= 0) {
+        for (const i in this.uniqueY) {
+          probability[i] += this.logProbabilities[index][i]
         }
       }
-
-      const best = Math.max(...probability)
-      const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
-      console.log('result', best, result, classes[this.uniqueY[result]])
-      return this.uniqueY[result]
-    } catch (err) {
-      console.log('Predict failed', err)
     }
+
+    const best = Math.max(...probability)
+    const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
+    console.log(`For "${text}", predicted ${result} (${probability})`)
+    return this.uniqueY[result]
   }
 
   getShares(security) {
     // Initialize shares array
-    let shares = new Array(security).map(() => {
-      return {
-        occurences: this.occurences,
-        contributions: this.contributions
-      }
+    let shares = Array(security).fill({
+      occurences: this.occurences,
+      contributions: this.contributions
     })
 
     for (let j = 0; j < vocabulary.length; j++) {
@@ -135,7 +140,7 @@ export class Model {
           shares[k].occurences[j][i] += noise
           finalNoise += noise
         }
-        shares[security - 1].occurences[j][i] += finalNoise
+        shares[security - 1].occurences[j][i] -= finalNoise
       }
     }
 

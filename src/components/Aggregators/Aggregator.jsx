@@ -1,11 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { useClient } from 'cozy-client'
 
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
-} from '@material-ui/core';
+import { Accordion, AccordionSummary, AccordionDetails } from 'cozy-ui/transpiled/react/Accordion';
 import {
   Divider,
   FormControl,
@@ -15,7 +11,7 @@ import {
   TextField
 } from '@material-ui/core'
 
-import OperationRemoveButton from './OperationRemoveButton'
+import AggregatorRemoveButton from './AggregatorRemoveButton'
 
 import categories from '../../targets/services/helpers/classes.json'
 
@@ -37,7 +33,7 @@ export const Operation = ({ operation }) => {
         cozyCategoryId: uncategorized ? undefined : e.target.value
       })
     },
-    [client.save, operation, setCategory]
+    [client, operation, setCategory]
   )
 
   return (
@@ -72,8 +68,8 @@ export const Operation = ({ operation }) => {
               className="category-item"
               disabled
               label="Automatic category"
-              value={capitalizeFirstLetter(
-                categories[operation.automaticCategoryId || '0']
+              value={
+                capitalizeFirstLetter(categories[operation.automaticCategoryId || '0']
               )}
             />
           </FormControl>
@@ -92,7 +88,7 @@ export const Operation = ({ operation }) => {
             </li>
           ))}
         </ul>
-        <OperationRemoveButton operation={operation} />
+        <AggregatorRemoveButton operation={operation} />
       </AccordionDetails>
     </Accordion>
   )

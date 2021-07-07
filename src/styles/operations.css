@@ -53,3 +53,14 @@
   margin-right: 10px;
   margin-bottom: 15px;
 }
+
+.category-info {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+}
+
+.category-item {
+  width: 35%;
+  margin: auto;
+}

@@ -19,10 +19,12 @@ export const aggregation = async () => {
   const result = await client.stackClient.fetchJSON('GET', link)
   const data = result.relationship.shared_docs.data
 
-  // 2. If some shares are missing, end now
+  // 2. Save the document
+
+  // 3. If some shares are missing, end now
   if (data.length != security) return
 
-  // 3. Fetch all stored shares
+  // 4. Fetch all stored shares
   let shares = await Promise.all(
     data.map(async e => {
       const res = await client.query(Q(e.type)).where({ _id: e.id })
@@ -30,14 +32,18 @@ export const aggregation = async () => {
     })
   )
 
-  // 4. Compute sum or average if this node is the final aggregator
+  // 5. Compute sum or average if this node is the final aggregator
   let model = Model.fromShares(shares, finalize)
 
-  // 5. Write a file that will be used as a remote asset by the stack
-  fs.writeFileSync(
-    '/mnt/c/Users/Projets/Cozy/categorization-model/model.json',
-    JSON.stringify(model.getBackup())
-  )
+  if (finalize) {
+    // 6. Write a file that will be used as a remote asset by the stack
+    fs.writeFileSync(
+      '/mnt/c/Users/Projets/Cozy/categorization-model/model.json',
+      JSON.stringify(model.getBackup())
+    )
+  } else {
+    // Call parent's aggregation webhook
+  }
 }
 
 aggregation().catch(e => {

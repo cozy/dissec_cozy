@@ -40,7 +40,6 @@ export const categorize = async () => {
   operations.forEach(
     async operation => {
       const prediction =  model.predict(operation.label)
-      console.log(prediction)
       await client.save({
         ...operation,
         automaticCategoryId: prediction

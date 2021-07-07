@@ -11,6 +11,7 @@ import 'cozy-ui/dist/cozy-ui.utils.min.css'
 import Sidebar from './Sidebar'
 import Operations from './Operations'
 import Execution from './Execution'
+import Aggregators from './Aggregators'
 import Analyze from './Analyze'
 
 const App = () => {
@@ -26,6 +27,7 @@ const App = () => {
               <Switch>
                 <Route path="/operations" component={Operations} />
                 <Route path="/execution" component={Execution} />
+                <Route path="/aggregators" component={Aggregators} />
                 <Route path="/analyze" component={Analyze} />
                 <Redirect from="/" to="/operations" />
                 <Redirect from="*" to="/operations" />

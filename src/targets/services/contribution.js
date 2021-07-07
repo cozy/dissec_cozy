@@ -61,7 +61,7 @@ export const contribution = async () => {
   links.forEach((link, i) =>
     fetch(parentsWebhook[i], {
       method: 'POST',
-      body: { link: link, security: security }
+      body: { link: link, security: security, parentWebhook, finalize }
     })
   )
 }

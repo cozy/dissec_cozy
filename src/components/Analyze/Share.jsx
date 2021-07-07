@@ -19,14 +19,15 @@ export const Share = ({ share }) => {
   return (
     <div className="webhook">
       <ul>
-        {share && Object.keys(share).map((key, i) => (
-          <li key={i}>
-            <span className="info-category">
-              <b>{key} </b>
-            </span>
-            <span className="info-value">{JSON.stringify(share[key])}</span>
-          </li>
-        ))}
+        {share &&
+          Object.keys(share).map((key, i) => (
+            <li key={i}>
+              <span className="info-category">
+                <b>{key} </b>
+              </span>
+              <span className="info-value">{JSON.stringify(share[key])}</span>
+            </li>
+          ))}
       </ul>
       <Button
         className="todo-remove-button"

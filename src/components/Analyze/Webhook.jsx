@@ -21,7 +21,7 @@ export const Webhook = ({ hook }) => {
       setInput('')
       setIsWorking(false)
     },
-    [hook, input, setInput, setIsWorking]
+    [hook, input, setInput, setIsWorking, client.stackClient]
   )
 
   const handleRemoveWebhook = useCallback(
@@ -30,11 +30,11 @@ export const Webhook = ({ hook }) => {
       await client.stackClient.fetchJSON('DELETE', `/jobs/triggers/${hook.id}`)
       setIsWorking(false)
     },
-    [hook]
+    [hook, client.stackClient]
   )
 
   const handleLabelChange = useCallback(
-    async (e) => {
+    async e => {
       setInput(e.target.value)
     },
     [setInput]
@@ -60,11 +60,7 @@ export const Webhook = ({ hook }) => {
       </ul>
       <form onSubmit={handleCallWebhook}>
         <Label htmlFor="todo-add-input"> Operation label: </Label>
-        <Input
-          value={input}
-          onChange={handleLabelChange}
-          id="todo-add-input"
-        />
+        <Input value={input} onChange={handleLabelChange} id="todo-add-input" />
         <div className="action-group">
           <Button
             className="todo-remove-button"

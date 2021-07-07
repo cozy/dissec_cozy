@@ -1,8 +1,6 @@
 import React, { useCallback, useState } from 'react'
 
 import { TextField, Switch, FormControlLabel } from '@material-ui/core'
-import Input from 'cozy-ui/react/Input'
-import Label from 'cozy-ui/react/Label'
 import Button from 'cozy-ui/react/Button'
 
 import { useClient } from 'cozy-client'
@@ -14,12 +12,16 @@ export const Webhook = ({ hook }) => {
   const [input, setInput] = useState('')
   const [pretrained, setPretrained] = useState(true)
 
+  const name = 
+    hook && hook.attributes ? hook.attributes.arguments.split(".")[1] : ""
+  console.log(hook, name)
+
   const handleCallWebhook = useCallback(
     async () => {
       setIsWorking(true)
 
       let body
-      if (hook.attributes.message.name === 'categorize') {
+      if (name === 'categorize') {
         body = {
           pretrained
         }
@@ -32,7 +34,7 @@ export const Webhook = ({ hook }) => {
       )
       setIsWorking(false)
     },
-    [hook, input, setInput, setIsWorking]
+    [hook, input, setInput, setIsWorking, client.stackClient]
   )
 
   const handleRemoveWebhook = useCallback(
@@ -61,9 +63,9 @@ export const Webhook = ({ hook }) => {
   return (
     <div className="webhook">
       <div className="info-category">
-        <b>{hook.attributes.message.name.toUpperCase()}</b>
+        <b>{name.toUpperCase()}</b>
       </div>
-      {hook.attributes.message.name === 'categorize' ? (
+      {name === 'categorize' ? (
         <>
           <FormControlLabel
             label="Use pretrained model?"
@@ -76,7 +78,7 @@ export const Webhook = ({ hook }) => {
             }
           />
         </>
-      ) : hook.attributes.message.name === 'aggregation' ? (
+      ) : name === 'aggregation' ? (
         <></>
       ) : (
         <>

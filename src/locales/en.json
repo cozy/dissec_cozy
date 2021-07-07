@@ -2,6 +2,7 @@
   "Nav": {
     "operations": "Operations",
     "execution": "Execution",
+    "aggregators": "Aggregators",
     "analyze": "Analyze"
   }
 }

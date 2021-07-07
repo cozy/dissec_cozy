@@ -24,8 +24,8 @@ export const Analyze = ({ shares }) => {
 
       setWebhooks(
         webhooks.data
-          .filter(hook =>hook.attributes.type === '@webhook')
-          .sort((a, b) => a.attributes.message.name - b.attributes.message.name)
+          .filter(hook => hook.attributes.type === '@webhook')
+          .sort((a, b) => a.id > b.id)
       )
     },
     [client, setWebhooks]
@@ -49,6 +49,13 @@ export const Analyze = ({ shares }) => {
           }
         }
       })
+
+      // Register categorization webhook
+      await client.stackClient.fetchJSON(
+        'POST',
+        '/jobs/triggers',
+        createBody('dissec.categorize')
+      )
 
       // Register contribution webhook
       await client.stackClient.fetchJSON(
