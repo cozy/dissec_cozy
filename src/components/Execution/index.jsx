@@ -2,21 +2,20 @@ import React, { useCallback, useEffect, useState } from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
 import Button from 'cozy-ui/react/Button'
-import { queryConnect, useClient } from 'cozy-client'
-import { aggregatorsQuery } from 'doctypes'
+import { useClient } from 'cozy-client'
 import Webhook from './Webhook'
 
-export const Execution = ({ aggregators }) => {
+export const Execution = () => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
   const [webhooks, setWebhooks] = useState([])
 
-  const { data } = aggregators
-
   const createWebhooks = useCallback(
     async () => {
       const query = async argument => {
+        setIsWorking(true)
+
         client.stackClient.fetchJSON('POST', '/jobs/triggers', {
           data: {
             attributes: {
@@ -40,7 +39,10 @@ export const Execution = ({ aggregators }) => {
       // Register aggregation webhook
       await query('aggregation')
 
-      setTimeout(async () => await fetchWebhooks(), 3000)
+      setTimeout(async () => {
+        await fetchWebhooks()
+        setIsWorking(false)
+      }, 3000)
     },
     [client, fetchWebhooks]
   )
@@ -94,9 +96,4 @@ export const Execution = ({ aggregators }) => {
 }
 
 // get data from the client state: data, fetchStatus
-export default queryConnect({
-  aggregators: {
-    query: aggregatorsQuery,
-    as: 'aggregators'
-  }
-})(Execution)
+export default Execution

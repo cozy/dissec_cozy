@@ -20,7 +20,6 @@ export const Webhook = ({ hook, onUpdate }) => {
       name = hook.attributes.message.name
     }
   }
-  console.log(name, hook)
 
   const handleCallWebhook = useCallback(
     async () => {
@@ -34,15 +33,12 @@ export const Webhook = ({ hook, onUpdate }) => {
       }
 
       try {
-        console.log('calling', )
         await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
-      } catch(e) {
-        console.log('Failed calling webhook:', e)
       } finally {
         setIsWorking(false)
       }
     },
-    [hook, input, setInput, setIsWorking, client.stackClient]
+    [hook, name, pretrained, setIsWorking, client.stackClient]
   )
 
   const handleRemoveWebhook = useCallback(
@@ -52,7 +48,7 @@ export const Webhook = ({ hook, onUpdate }) => {
       setIsWorking(false)
       onUpdate && onUpdate()
     },
-    [hook, client, setIsWorking]
+    [hook, client, onUpdate, setIsWorking]
   )
 
   const handlePretrained = useCallback(

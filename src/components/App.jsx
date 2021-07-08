@@ -28,7 +28,7 @@ const App = () => {
                 <Route path="/operations" component={Operations} />
                 <Route path="/execution" component={Execution} />
                 <Route path="/aggregators" component={Aggregators} />
-                {/* <Route path="/analyze" component={Analyze} /> */}
+                <Route path="/analyze" component={Analyze} />
                 <Redirect from="/" to="/operations" />
                 <Redirect from="*" to="/operations" />
               </Switch>

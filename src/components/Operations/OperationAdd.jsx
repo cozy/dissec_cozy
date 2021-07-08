@@ -34,10 +34,6 @@ export const OperationAdd = () => {
       // reset the input and display a spinner during the process
       setIsWorking(true)
 
-      console.log({
-        label: operationToAdd,
-        amount: Number(amountToAdd)
-      })
       await client.create(BANK_DOCTYPE, {
         label: operationToAdd,
         amount: Number(amountToAdd)
@@ -48,7 +44,14 @@ export const OperationAdd = () => {
       setOperationToAdd('')
       setAmountToAdd('')
     },
-    [operationToAdd, amountToAdd, client, setOperationToAdd, setAmountToAdd, setIsWorking]
+    [
+      operationToAdd,
+      amountToAdd,
+      client,
+      setOperationToAdd,
+      setAmountToAdd,
+      setIsWorking
+    ]
   )
 
   return (

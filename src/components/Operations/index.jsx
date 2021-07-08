@@ -10,8 +10,6 @@ import OperationsList from './OperationsList'
 export const Operations = ({ bank }) => {
   const { isLoading, data } = bank
 
-  console.log('operations', data, isLoading)
-
   return (
     <div className="todos">
       {isLoading ? (
