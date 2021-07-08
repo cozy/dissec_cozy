@@ -34,7 +34,8 @@ export const Webhook = ({ hook, onUpdate }) => {
       }
 
       try {
-        await client.stackClient.fetchJSON('POST', hook.links.self, body)
+        console.log('calling', )
+        await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
       } catch(e) {
         console.log('Failed calling webhook:', e)
       } finally {

@@ -22,7 +22,10 @@ export const Execution = ({ aggregators }) => {
             attributes: {
               type: '@webhook',
               worker: 'service',
-              arguments: argument
+              message: {
+                slug: 'dissecozy',
+                name: argument
+              }
             }
           }
         })
@@ -47,13 +50,6 @@ export const Execution = ({ aggregators }) => {
       let webhooks = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
 
       setWebhooks(
-        webhooks.data
-          .filter(hook => hook.attributes.type === '@webhook')
-          .sort((a, b) => a.id > b.id)
-      )
-
-      console.log(
-        'fetched webhhoks',
         webhooks.data
           .filter(hook => hook.attributes.type === '@webhook')
           .sort((a, b) => a.id > b.id)
@@ -83,7 +79,7 @@ export const Execution = ({ aggregators }) => {
             className="todo-remove-button"
             //theme="danger"
             iconOnly
-            label="Create webhook"
+            label="Create webhooks"
             busy={isWorking}
             disabled={isWorking}
             onClick={createWebhooks}
