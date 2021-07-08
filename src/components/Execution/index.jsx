@@ -3,26 +3,57 @@ import React, { useCallback, useEffect, useState } from 'react'
 import Spinner from 'cozy-ui/react/Spinner'
 import Button from 'cozy-ui/react/Button'
 import { queryConnect, useClient } from 'cozy-client'
-import { sharesQuery } from 'doctypes'
+import { aggregatorsQuery } from 'doctypes'
 import Webhook from './Webhook'
-import Share from './Share'
 
-export const Analyze = ({ shares }) => {
+export const Execution = ({ aggregators }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
-  const [webhooks, setWebhooks] = useState()
+  const [webhooks, setWebhooks] = useState([])
 
-  const { data } = shares
+  const { data } = aggregators
+
+  const createWebhooks = useCallback(
+    async () => {
+      const query = async argument => {
+        client.stackClient.fetchJSON('POST', '/jobs/triggers', {
+          data: {
+            attributes: {
+              type: '@webhook',
+              worker: 'service',
+              arguments: argument
+            }
+          }
+        })
+      }
+
+      // Register categorization webhook
+      await query('categorize')
+
+      // Register contribution webhook
+      await query('contribution')
+
+      // Register aggregation webhook
+      await query('aggregation')
+
+      setTimeout(async () => await fetchWebhooks(), 3000)
+    },
+    [client, fetchWebhooks]
+  )
 
   const fetchWebhooks = useCallback(
     async () => {
-      const webhooks = await client.stackClient.fetchJSON(
-        'GET',
-        '/jobs/triggers'
-      )
+      let webhooks = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
 
       setWebhooks(
+        webhooks.data
+          .filter(hook => hook.attributes.type === '@webhook')
+          .sort((a, b) => a.id > b.id)
+      )
+
+      console.log(
+        'fetched webhhoks',
         webhooks.data
           .filter(hook => hook.attributes.type === '@webhook')
           .sort((a, b) => a.id > b.id)
@@ -38,87 +69,16 @@ export const Analyze = ({ shares }) => {
     [fetchWebhooks]
   )
 
-  const createWebhooks = useCallback(
-    async () => {
-      const createBody = argument => ({
-        data: {
-          attributes: {
-            type: '@webhook',
-            worker: 'service',
-            arguments: argument
-          }
-        }
-      })
-
-      // Register categorization webhook
-      await client.stackClient.fetchJSON(
-        'POST',
-        '/jobs/triggers',
-        createBody('dissec.categorize')
-      )
-
-      // Register contribution webhook
-      await client.stackClient.fetchJSON(
-        'POST',
-        '/jobs/triggers',
-        createBody('dissec.contribution')
-      )
-
-      // Register aggregation webhook
-      await client.stackClient.fetchJSON(
-        'POST',
-        '/jobs/triggers',
-        createBody('dissec.aggregation')
-      )
-
-      await fetchWebhooks()
-    },
-    [client, fetchWebhooks]
-  )
-
-  useEffect(
-    () => {
-      if (webhooks && webhooks.length === 0) {
-        createWebhooks()
-      }
-    },
-    [webhooks, createWebhooks]
-  )
-
-  // delete the related todo
-  const addDocument = useCallback(
-    async () => {
-      // display a spinner during the process
-      setIsWorking(true)
-
-      setIsWorking(false)
-    },
-    [setIsWorking]
-  )
-
   return (
     <div className="todos">
-      {data.map((e, i) => (
-        <Share key={i} share={e} />
-      ))}
-      {webhooks && webhooks.map(hook => <Webhook key={hook.id} hook={hook} />)}
+      {webhooks &&
+        webhooks.map(hook => (
+          <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
+        ))}
       {isWorking ? (
         <Spinner size="xxlarge" middle />
       ) : (
         <div className="action-group">
-          <Button
-            className="todo-remove-button"
-            theme="danger"
-            //icon="delete"
-            iconOnly
-            label="Delete"
-            busy={isWorking}
-            disabled={isWorking}
-            onClick={addDocument}
-            extension="narrow"
-          >
-            Ajouter un doc
-          </Button>
           <Button
             className="todo-remove-button"
             //theme="danger"
@@ -139,8 +99,8 @@ export const Analyze = ({ shares }) => {
 
 // get data from the client state: data, fetchStatus
 export default queryConnect({
-  shares: {
-    query: sharesQuery,
-    as: 'shares'
+  aggregators: {
+    query: aggregatorsQuery,
+    as: 'aggregators'
   }
-})(Analyze)
+})(Execution)

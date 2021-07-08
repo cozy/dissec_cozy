@@ -5,16 +5,22 @@ import Button from 'cozy-ui/react/Button'
 
 import { useClient } from 'cozy-client'
 
-export const Webhook = ({ hook }) => {
+export const Webhook = ({ hook, onUpdate }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
   const [input, setInput] = useState('')
   const [pretrained, setPretrained] = useState(true)
 
-  const name = 
-    hook && hook.attributes ? hook.attributes.arguments.split(".")[1] : ""
-  console.log(hook, name)
+  let name = '?'
+  if (hook && hook.attributes) {
+    if (hook.attributes.arguments.length !== 0) {
+      name = hook.attributes.arguments
+    } else if (hook.attributes.message) {
+      name = hook.attributes.message.name
+    }
+  }
+  console.log(name, hook)
 
   const handleCallWebhook = useCallback(
     async () => {
@@ -27,12 +33,13 @@ export const Webhook = ({ hook }) => {
         }
       }
 
-      await client.stackClient.fetchJSON(
-        'POST',
-        `/jobs/webhooks/${hook.id}`,
-        body
-      )
-      setIsWorking(false)
+      try {
+        await client.stackClient.fetchJSON('POST', hook.links.self, body)
+      } catch(e) {
+        console.log('Failed calling webhook:', e)
+      } finally {
+        setIsWorking(false)
+      }
     },
     [hook, input, setInput, setIsWorking, client.stackClient]
   )
@@ -40,8 +47,9 @@ export const Webhook = ({ hook }) => {
   const handleRemoveWebhook = useCallback(
     async () => {
       setIsWorking(true)
-      await client.stackClient.fetchJSON('DELETE', `/jobs/triggers/${hook.id}`)
+      await client.stackClient.fetchJSON('DELETE', hook.links.self)
       setIsWorking(false)
+      onUpdate && onUpdate()
     },
     [hook, client, setIsWorking]
   )
