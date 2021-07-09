@@ -56,7 +56,7 @@ export const AggregatorAdd = () => {
 
   return (
     <div>
-      <h2>Add a new Operation:</h2>
+      <h2>Add a new Node:</h2>
       <form>
         <Label htmlFor="todo-add-input"> Operation label: </Label>
         <Input

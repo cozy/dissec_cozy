@@ -1,8 +1,8 @@
 import React from 'react'
 
-import Aggregator from './Aggregator'
+import Node from './Node'
 
-export const AggregatorsList = props => {
+export const NodesList = props => {
   const { operations } = props
 
   if (!operations || !operations.length) return null
@@ -10,10 +10,10 @@ export const AggregatorsList = props => {
     <div>
       <h2>Operations list:</h2>
       {operations.map(operation => (
-        <Aggregator key={operation._id} operation={operation} />
+        <Node key={operation._id} operation={operation} />
       ))}
     </div>
   )
 }
 
-export default AggregatorsList
+export default NodesList

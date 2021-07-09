@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react'
 import Button from 'cozy-ui/react/Button'
 import { useClient } from 'cozy-client'
 
-export const AggregatorRemoveButton = ({ operation }) => {
+export const NodeRemoveButton = ({ operation }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
@@ -38,4 +38,4 @@ export const AggregatorRemoveButton = ({ operation }) => {
 }
 
 // get mutations from the client to use deleteDocument
-export default AggregatorRemoveButton
+export default NodeRemoveButton

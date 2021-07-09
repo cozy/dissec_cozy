@@ -31,12 +31,12 @@ export const Sidebar = ({ t }) => {
           </li>
           <li className="c-nav-item">
             <NavLink
-              to="/aggregators"
+              to="/nodes"
               className="c-nav-link"
               activeClassName="is-active"
             >
               <Icon className="c-nav-icon" icon={NavIcon} />
-              {t('Nav.aggregators')}
+              {t('Nav.nodes')}
             </NavLink>
           </li>
           <li className="c-nav-item">

@@ -15,7 +15,7 @@ import {
   TextField
 } from '@material-ui/core'
 
-import AggregatorRemoveButton from './AggregatorRemoveButton'
+import NodeRemoveButton from './NodeRemoveButton'
 
 import categories from '../../targets/services/helpers/classes.json'
 
@@ -23,7 +23,7 @@ const capitalizeFirstLetter = str => {
   return str.charAt(0).toUpperCase() + str.substring(1, str.length)
 }
 
-export const Operation = ({ operation }) => {
+export const Node = ({ operation }) => {
   const client = useClient()
 
   const [category, setCategory] = useState(operation.cozyCategoryId || '')
@@ -92,10 +92,10 @@ export const Operation = ({ operation }) => {
             </li>
           ))}
         </ul>
-        <AggregatorRemoveButton operation={operation} />
+        <NodeRemoveButton operation={operation} />
       </AccordionDetails>
     </Accordion>
   )
 }
 
-export default Operation
+export default Node
