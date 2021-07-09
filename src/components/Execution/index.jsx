@@ -13,7 +13,7 @@ export const Execution = () => {
 
   const createWebhooks = useCallback(
     async () => {
-      const query = async argument => {
+      const query = async name => {
         setIsWorking(true)
 
         client.stackClient.fetchJSON('POST', '/jobs/triggers', {
@@ -23,7 +23,7 @@ export const Execution = () => {
               worker: 'service',
               message: {
                 slug: 'dissecozy',
-                name: argument
+                name: name
               }
             }
           }
