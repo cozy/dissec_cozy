@@ -16,7 +16,7 @@ export const Nodes = ({ nodes }) => {
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
-          <NodesList operations={data} />
+          <NodesList nodes={data} />
           <NodeAdd />
         </div>
       )}

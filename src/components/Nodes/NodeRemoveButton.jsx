@@ -3,24 +3,24 @@ import React, { useCallback, useState } from 'react'
 import Button from 'cozy-ui/react/Button'
 import { useClient } from 'cozy-client'
 
-export const NodeRemoveButton = ({ operation }) => {
+export const NodeRemoveButton = ({ node }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
 
   // delete the related todo
-  const removeOperation = useCallback(
+  const removeNode = useCallback(
     async () => {
       // display a spinner during the process
       setIsWorking(true)
       // delete the todo in the Cozy : asynchronous
-      await client.destroy(operation)
+      await client.destroy(node)
       // remove the spinner
       setIsWorking(false)
       // We can omit that since this component will be
       // unmount after the document is deleted by the client
     },
-    [operation, client, setIsWorking]
+    [node, client, setIsWorking]
   )
 
   return (
@@ -31,7 +31,7 @@ export const NodeRemoveButton = ({ operation }) => {
       size="large"
       busy={isWorking}
       disabled={isWorking}
-      onClick={removeOperation}
+      onClick={removeNode}
       extension="narrow"
     />
   )

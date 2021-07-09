@@ -5,27 +5,35 @@ import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import Button from 'cozy-ui/react/Button'
 
-import { BANK_DOCTYPE } from 'doctypes'
+import { NODES_DOCTYPE } from 'doctypes'
 
 export const AggregatorAdd = () => {
   const client = useClient()
 
-  const [operationToAdd, setOperationToAdd] = useState('')
-  const [amountToAdd, setAmountToAdd] = useState(0)
+  const [label, setLabel] = useState('')
+  const [contributionWebhook, setContributionWebhook] = useState('')
+  const [aggregationWebhook, setAggregationWebhook] = useState('')
   const [isWorking, setIsWorking] = useState(false)
 
   const handleLabelChange = useCallback(
     event => {
-      setOperationToAdd(event.target.value)
+      setLabel(event.target.value)
     },
-    [setOperationToAdd]
+    [setLabel]
   )
 
-  const handleAmountChange = useCallback(
+  const handleContributionWebhookChange = useCallback(
     event => {
-      setAmountToAdd(event.target.value)
+      setContributionWebhook(event.target.value)
     },
-    [setAmountToAdd]
+    [setContributionWebhook]
+  )
+
+  const handleAggregationWebhookChange = useCallback(
+    event => {
+      setAggregationWebhook(event.target.value)
+    },
+    [setAggregationWebhook]
   )
 
   // create the new todo
@@ -34,49 +42,62 @@ export const AggregatorAdd = () => {
       // reset the input and display a spinner during the process
       setIsWorking(true)
 
-      await client.create(BANK_DOCTYPE, {
-        label: operationToAdd,
-        amount: Number(amountToAdd)
+      await client.create(NODES_DOCTYPE, {
+        label,
+        contributionWebhook,
+        aggregationWebhook
       })
 
       // remove the spinner
       setIsWorking(false)
-      setOperationToAdd('')
-      setAmountToAdd('')
+
+      // Reset fields
+      setLabel('')
+      setContributionWebhook('')
+      setAggregationWebhook('')
     },
     [
-      operationToAdd,
-      amountToAdd,
+      label,
+      contributionWebhook,
+      aggregationWebhook,
       client,
-      setOperationToAdd,
-      setAmountToAdd,
-      setIsWorking
+      setIsWorking,
+      setLabel,
+      setContributionWebhook,
+      setAggregationWebhook
     ]
   )
 
   return (
     <div>
       <h2>Add a new Node:</h2>
-      <form>
-        <Label htmlFor="todo-add-input"> Operation label: </Label>
+      <form className="node-form" onSubmit={e => e.preventDefault()}>
+        <Label htmlFor="label-input">Node label (optionnal):</Label>
         <Input
-          value={operationToAdd}
+          value={label}
           onChange={handleLabelChange}
-          id="todo-add-input"
+          id="label-input"
         />
-        <Label htmlFor="todo-add-input"> Operation amount: </Label>
+        <Label htmlFor="contribution-input">Contribution webhook:</Label>
         <Input
-          value={amountToAdd}
-          onChange={handleAmountChange}
-          id="todo-add-input"
-          type="number"
+          value={contributionWebhook}
+          onChange={handleContributionWebhookChange}
+          id="contribution-input"
+          type="url"
+        />
+        <Label htmlFor="aggregation-input">Aggregation webhook:</Label>
+        <Input
+          value={aggregationWebhook}
+          onChange={handleAggregationWebhookChange}
+          id="aggregation-input"
+          type="url"
         />
         <Button
+          className="add-node-button"
           onClick={handleSubmit}
           busy={isWorking}
           label="add"
           size="large"
-          //extension="narrow"
         />
       </form>
     </div>

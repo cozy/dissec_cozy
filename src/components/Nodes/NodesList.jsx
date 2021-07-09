@@ -3,14 +3,14 @@ import React from 'react'
 import Node from './Node'
 
 export const NodesList = props => {
-  const { operations } = props
+  const { nodes } = props
 
-  if (!operations || !operations.length) return null
+  if (!nodes || !nodes.length) return null
   return (
     <div>
-      <h2>Operations list:</h2>
-      {operations.map(operation => (
-        <Node key={operation._id} operation={operation} />
+      <h2>Nodes list:</h2>
+      {nodes.map(node => (
+        <Node key={node._id} node={node} />
       ))}
     </div>
   )

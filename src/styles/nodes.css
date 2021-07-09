@@ -1,0 +1,31 @@
+.node {
+  max-width: 32em;
+  border: 1px solid gray;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.node-label {
+  font-size: 20px;
+  text-align: center;
+}
+
+.node-body {
+  max-width: 30em;
+  display: flex;
+  flex-direction: row;
+  margin: auto;
+  padding: 5px;
+}
+
+.node-form {
+  display: flex;
+  flex-direction: column;
+  max-width: 32em;
+}
+
+.add-node-button {
+  margin-top: 1em;
+}

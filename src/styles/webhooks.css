@@ -13,7 +13,15 @@
   padding-left: .5rem;
 }
 
-.info-category {
+.webhook-title {
+  margin: 5px;
+}
+
+.webhook-url {
+  margin: 5px;
+}
+
+.webhook-body {
   margin: 5px;
 }
 
