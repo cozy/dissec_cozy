@@ -105,6 +105,26 @@ export class Model {
     }
   }
 
+  train(docs) {
+    for (let doc of docs) {
+      // Only learn from categorized docs
+      if (doc.cozyCategoryId) {
+        const classId = model.uniqueY.indexOf(doc.cozyCategoryId)
+        const tokens = doc.label.split(' ')
+
+        for (const token of tokens) {
+          const index = vocabulary.indexOf(token)
+          if (index >= 0) {
+            model.occurences[index][classId] += 1
+            model.priors[classId] += 1
+          }
+        }
+      }
+    }
+
+    model.initialize()
+  }
+
   predict(text) {
     let probability = Array(this.uniqueY.length).fill(0)
     const tokens = text.split(' ')

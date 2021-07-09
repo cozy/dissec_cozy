@@ -8,21 +8,21 @@ import { Model } from './helpers'
 
 export const aggregation = async () => {
   // Worker's arguments
-  const { link, security, parentWebhook, finalize } = process.env['COZY_PAYLOAD'] || []
+  const { share, nbShares, parents, finalize } = process.env['COZY_PAYLOAD'] || []
 
   // eslint-disable-next-line no-console
-  console.log('aggregation received', link)
+  console.log('aggregation received', share)
 
   const client = CozyClient.fromEnv(process.env, {})
 
   // 1. Download share using provided link
-  const result = await client.stackClient.fetchJSON('GET', link)
+  const result = await client.stackClient.fetchJSON('GET', share)
   const data = result.relationship.shared_docs.data
 
   // 2. Save the document
 
   // 3. If some shares are missing, end now
-  if (data.length != security) return
+  if (data.length != nbShares) return
 
   // 4. Fetch all stored shares
   let shares = await Promise.all(

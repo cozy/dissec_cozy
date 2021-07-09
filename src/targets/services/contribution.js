@@ -1,17 +1,23 @@
 global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
+import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE, DISSEC_DOCTYPE } from '../../doctypes'
 
 import { Model } from './helpers'
 
 export const contribution = async () => {
-  const { sentences, parentsWebhook, security } =
+  const { parents, nbShares, pretrained } =
     process.env['COZY_PAYLOAD'] || []
 
   // eslint-disable-next-line no-console
-  console.log('contribution received', sentences, parentsWebhook, security)
+  console.log('contribution received', parents, nbShares, pretrained)
+
+  if (parents.length !== nbShares) {
+    console.log("invalid parents array or number of shares")
+    return
+  }
 
   const client = CozyClient.fromEnv(process.env, {})
 
@@ -19,17 +25,23 @@ export const contribution = async () => {
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
   // 2. Fetch model
-  // We are using an empty intial model for now
+  let model
+  if (pretrained) {
+    let backup = fs.readFileSync('/mnt/c/Users/Projets/Cozy/categorization-model/model.json')
+    model = Model.fromBackup(backup)
 
-  // 3. Update model parameters
-  let model = Model.fromDocs(operations)
+    // 3. Train locally
+    model.train(operations)
+  } else {
+    model = Model.fromDocs(operations)
+  }
 
   // 4. Split model in shares
-  let shares = model.getShares(security)
+  let shares = model.getShares(nbShares)
 
   // 5. Save shares in instance and create share links
   let links = []
-  for (let i = 0; i < security; i++) {
+  for (let i = 0; i < nbShares; i++) {
     const document = await client.create(DISSEC_DOCTYPE, {
       ...shares[i],
       shareIndex: i
@@ -59,9 +71,9 @@ export const contribution = async () => {
 
   // 6. Call webhooks of parents with the links
   links.forEach((link, i) =>
-    fetch(parentsWebhook[i], {
+    fetch(parents[i].webhook, {
       method: 'POST',
-      body: { link: link, security: security, parentWebhook, finalize }
+      body: { share: link, nbShares, parents: parents[i].parents, finalize: parents[i].finalize }
     })
   )
 }

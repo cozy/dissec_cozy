@@ -1,3 +1,19 @@
+.single-node {
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  min-width: 32em;
+}
+
+.single-node > * {
+  min-width: 32em;
+}
+
+.single-node-title {
+  font-size: 18px;
+}
+
 .webhook {
   margin: auto;
   padding: 10px;
