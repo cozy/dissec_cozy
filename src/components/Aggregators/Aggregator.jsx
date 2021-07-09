@@ -1,7 +1,11 @@
 import React, { useState, useCallback } from 'react'
 import { useClient } from 'cozy-client'
 
-import { Accordion, AccordionSummary, AccordionDetails } from 'cozy-ui/transpiled/react/Accordion';
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
+} from 'cozy-ui/transpiled/react/Accordion'
 import {
   Divider,
   FormControl,
@@ -68,8 +72,8 @@ export const Operation = ({ operation }) => {
               className="category-item"
               disabled
               label="Automatic category"
-              value={
-                capitalizeFirstLetter(categories[operation.automaticCategoryId || '0']
+              value={capitalizeFirstLetter(
+                categories[operation.automaticCategoryId || '0']
               )}
             />
           </FormControl>

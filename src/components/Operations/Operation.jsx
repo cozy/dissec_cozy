@@ -5,7 +5,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails
-} from '@material-ui/core';
+} from '@material-ui/core'
 import {
   Divider,
   FormControl,
@@ -37,7 +37,7 @@ export const Operation = ({ operation }) => {
         cozyCategoryId: uncategorized ? undefined : e.target.value
       })
     },
-    [client.save, operation, setCategory]
+    [client, operation, setCategory]
   )
 
   return (

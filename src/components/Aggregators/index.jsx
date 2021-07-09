@@ -10,8 +10,6 @@ import AggregatorsList from './AggregatorsList'
 export const Aggregators = ({ aggregators }) => {
   const { isLoading, data } = aggregators
 
-  console.log('aggregators', data, isLoading)
-
   return (
     <div className="todos">
       {isLoading ? (
