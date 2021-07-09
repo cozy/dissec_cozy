@@ -8,7 +8,7 @@ import { BANK_DOCTYPE } from '../../doctypes'
 import { Model } from './helpers'
 
 export const categorize = async () => {
-  const { pretrained } = JSON.parse(process.env['COZY_PAYLOAD'] || "{ \"pretrained\": false }")
+  const { pretrained } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
 
   // eslint-disable-next-line no-console
   console.log('Passed arguments:', pretrained)
