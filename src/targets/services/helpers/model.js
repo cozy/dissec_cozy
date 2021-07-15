@@ -66,30 +66,7 @@ export class Model {
   static fromDocs(docs) {
     let model = new Model()
 
-    for (let doc of docs) {
-      // Only learn from categorized docs
-      if (doc.cozyCategoryId) {
-        const classId = model.uniqueY.indexOf(doc.cozyCategoryId)
-        const tokens = doc.label.split(' ')
-
-        console.log(`Doc ${doc.id} has been manually classified with ${doc.cozyCategoryId}. Tokens = [${tokens}]`)
-
-        for (const token of tokens) {
-          const index = vocabulary.indexOf(token)
-          if (index >= 0) {
-            console.log('incrementing', token, index, classId)
-            model.occurences[index][classId] += 1
-            model.priors[classId] += 1
-            console.log(JSON.stringify(model.occurences[index]))
-          }
-        }
-      }
-    }
-
-    const tokenSum = model.priors.reduce((a, b) => a + b)
-    model.priors = model.priors.map(prior => prior / tokenSum)
-
-    model.initialize()
+    model.train(docs)
 
     return model
   }
@@ -109,20 +86,20 @@ export class Model {
     for (let doc of docs) {
       // Only learn from categorized docs
       if (doc.cozyCategoryId) {
-        const classId = model.uniqueY.indexOf(doc.cozyCategoryId)
+        const classId = this.uniqueY.indexOf(doc.cozyCategoryId)
         const tokens = doc.label.split(' ')
 
         for (const token of tokens) {
           const index = vocabulary.indexOf(token)
           if (index >= 0) {
-            model.occurences[index][classId] += 1
-            model.priors[classId] += 1
+            this.occurences[index][classId] += 1
+            this.priors[classId] += 1
           }
         }
       }
     }
 
-    model.initialize()
+    this.initialize()
   }
 
   predict(text) {
@@ -140,6 +117,7 @@ export class Model {
 
     const best = Math.max(...probability)
     const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
+    
     console.log(`For "${text}", predicted ${result} (${probability})`)
     return this.uniqueY[result]
   }
