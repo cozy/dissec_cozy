@@ -14,6 +14,8 @@ export const SingleNodeAggregation = ({ node }) => {
   const [nbShares, setNbShares] = useState(1)
   const [pretrained, setPretrained] = useState(true)
 
+  console.log('selected', node)
+
   const handleLaunchExecution = useCallback(
     async () => {
       setIsWorking(true)
@@ -23,7 +25,7 @@ export const SingleNodeAggregation = ({ node }) => {
         .map(() => ({
           webhook: node.aggregationWebhook,
           finalize: false,
-          parents: [{ webhook: aggregationWebhook, finalize: true }]
+          parents: [{ webhook: node.aggregationWebhook, finalize: true }]
         }))
       const contributionBody = {
         pretrained,
@@ -41,16 +43,18 @@ export const SingleNodeAggregation = ({ node }) => {
   )
 
   return (
-    <div className="webhook">
+    <div className="selected-single-node">
       <div className="single-node-title">
         {node && (node.label ? node.label : node.id)}
       </div>
-      <Label htmlFor="single-node-shares">Number of shares: </Label>
-      <Input
-        value={nbShares}
-        onChange={e => setNbShares(e.target.value)}
-        id="single-node-shares"
-      />
+      <div>
+        <Label htmlFor="single-node-shares">Number of shares: </Label>
+        <Input
+          value={nbShares}
+          onChange={e => setNbShares(e.target.value)}
+          id="single-node-shares"
+        />
+      </div>
       <FormControlLabel
         label="Use pretrained model?"
         control={

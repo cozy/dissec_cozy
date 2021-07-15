@@ -8,6 +8,7 @@ import Button from 'cozy-ui/react/Button'
 
 import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
+import Label from 'cozy-ui/react/Label'
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -83,12 +84,22 @@ export const Execution = ({ nodes }) => {
         <Spinner size="xxlarge" middle />
       ) : (
         <div className="single-node">
-          <SelectBox
-            options={options}
-            name="Select a node"
-            onChange={e => setSingleNode(e.value)}
-          />
-          <SingleNodeAggregation node={singleNode} />
+          <div className="card-title">
+            <b>Single node aggregation</b>
+          </div>
+          <div>
+            <Label htmlFor="single-node-selector">
+              Select the node performing the execution:{' '}
+            </Label>
+            <SelectBox
+              id="single-node-selector"
+              options={options}
+              name="Select a node"
+              onChange={e => setSingleNode(e.value)}
+            />
+          </div>
+          <div className="spacer-sm" />
+          {singleNode && <SingleNodeAggregation node={singleNode} />}
         </div>
       )}
       {webhooks &&
