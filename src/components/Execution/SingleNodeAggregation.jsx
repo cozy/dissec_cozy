@@ -45,9 +45,9 @@ export const SingleNodeAggregation = ({ node }) => {
       <div className="single-node-title">
         {node && (node.label ? node.label : node.id)}
       </div>
-      <Label htmlFor="tsingle-node-shares">Number of shares: </Label>
+      <Label htmlFor="single-node-shares">Number of shares: </Label>
       <Input
-        value={shares}
+        value={nbShares}
         onChange={e => setNbShares(e.target.value)}
         id="single-node-shares"
       />
