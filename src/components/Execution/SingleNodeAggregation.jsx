@@ -6,15 +6,14 @@ import { Switch, FormControlLabel } from '@material-ui/core'
 import Button from 'cozy-ui/react/Button'
 
 import { useClient } from 'cozy-client'
+import { v4 as uuid } from 'uuid'
 
 export const SingleNodeAggregation = ({ node }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
-  const [nbShares, setNbShares] = useState(1)
+  const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
-
-  console.log('selected', node)
 
   const handleLaunchExecution = useCallback(
     async () => {
@@ -23,11 +22,13 @@ export const SingleNodeAggregation = ({ node }) => {
       const parents = Array(nbShares)
         .fill()
         .map(() => ({
-          webhook: node.aggregationWebhook,
+          level: 0,
           finalize: false,
-          parents: [{ webhook: node.aggregationWebhook, finalize: true }]
+          webhook: node.aggregationWebhook,
+          parents: [{ level: 1, webhook: node.aggregationWebhook, finalize: true }]
         }))
       const contributionBody = {
+        executionId: uuid(),
         pretrained,
         nbShares,
         parents
@@ -39,7 +40,7 @@ export const SingleNodeAggregation = ({ node }) => {
       )
       setIsWorking(false)
     },
-    [node, client, setIsWorking]
+    [node, client, nbShares, setIsWorking]
   )
 
   return (
