@@ -57,3 +57,6 @@ mobile/Preview.html
 # Default
 # /!\ KEEP THIS SECTION THE LAST ONE
 !.gitkeep
+
+# Cozy konnecto
+.token.json
