@@ -1,15 +1,7 @@
 import vocabulary from './vocabulary.json'
 import classes from './classes.json'
 
-const add2DArray = (a, b) => {
-  let result = a
-  for (let j = 0; j < a.length; j++) {
-    for (let i = 0; i < a[i].length; i++) {
-      result[j][i] = a[j][i] + b[j][i]
-    }
-  }
-  return result
-}
+const NOISE_CEILING = 1000000000000
 
 export class Model {
   constructor() {
@@ -29,6 +21,7 @@ export class Model {
           .fill()
           .map(() => 0)
       )
+    this.contributions = 1
   }
 
   static fromBackup(doc) {
@@ -42,17 +35,22 @@ export class Model {
 
   static fromShares(shares, finalize) {
     let model = new Model()
+    model.contributions = 0
+    shares.forEach(share => (model.contributions += share.contributions))
 
-    model.occurences = shares[0].occurences
-    model.contributions = shares[0].contributions
-    for (let i = 1; i < shares.length; i++) {
-      model.occurences = add2DArray(model.occurences, shares[i].occurences)
-      model.contributions += shares[i].contributions
+    for (let j = 0; j < vocabulary.length; j++) {
+      for (let i = 0; i < model.uniqueY.length; i++) {
+        let acc = 0
+        for (let k = 0; k < shares.length; k++) {
+          acc += shares[k].occurences[j][i]
+        }
+        model.occurences[j][i] = acc
+      }
     }
 
     if (finalize) {
       for (let j = 0; j < vocabulary.length; j++) {
-        for (let i = 0; i < this.uniqueY.length; i++) {
+        for (let i = 0; i < model.uniqueY.length; i++) {
           model.occurences[j][i] /= model.contributions
         }
       }
@@ -75,9 +73,7 @@ export class Model {
     for (const j in vocabulary) {
       const total = this.occurences[j].reduce((a, b) => a + b)
       for (const i in this.uniqueY) {
-        this.logProbabilities[j][i] = Math.log(
-          this.occurences[j][i] / total
-        )
+        this.logProbabilities[j][i] = Math.log(this.occurences[j][i] / total)
       }
     }
   }
@@ -117,28 +113,28 @@ export class Model {
 
     const best = Math.max(...probability)
     const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
-    
-    console.log(`For "${text}", predicted ${result} (${probability})`)
+
     return this.uniqueY[result]
   }
 
-  getShares(security) {
+  getShares(nbShares) {
     // Initialize shares array
-    let shares = Array(security).fill({
-      occurences: this.occurences,
-      contributions: this.contributions
-    })
+    let shares = Array(nbShares)
+      .fill()
+      .map(() => ({
+        occurences: this.occurences.map(e => e.map(f => f)),
+        contributions: this.contributions
+      }))
 
     for (let j = 0; j < vocabulary.length; j++) {
       for (let i = 0; i < this.uniqueY.length; i++) {
         // Generate noises
         let finalNoise = 0
-        for (let k = 0; k < security - 1; k++) {
-          const noise = Math.random() * (Number.MAX_VALUE / security)
-          shares[k].occurences[j][i] += noise
+        for (let k = 0; k < nbShares; k++) {
+          const noise = Math.ceil(Math.random() * (NOISE_CEILING / nbShares))
+          shares[k].occurences[j][i] += k === nbShares - 1 ? -finalNoise : noise
           finalNoise += noise
         }
-        shares[security - 1].occurences[j][i] -= finalNoise
       }
     }
 
