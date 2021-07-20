@@ -3,79 +3,121 @@ global.btoa = require('btoa')
 
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
-import { BANK_DOCTYPE, DISSEC_DOCTYPE } from '../../doctypes'
+import { BANK_DOCTYPE } from '../../doctypes'
 
 import { Model } from './helpers'
 
 export const contribution = async () => {
-  const { parents, nbShares, pretrained } =
-    process.env['COZY_PAYLOAD'] || []
-
-  // eslint-disable-next-line no-console
-  console.log('contribution received', parents, nbShares, pretrained)
+  const { parents, nbShares, pretrained, executionId } = JSON.parse(
+    process.env['COZY_PAYLOAD'] || {}
+  )
 
   if (parents.length !== nbShares) {
-    console.log("invalid parents array or number of shares")
     return
   }
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  // 1. Fetch training data
+  // Fetch training data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
-  // 2. Fetch model
+  // Fetch model
   let model
   if (pretrained) {
-    let backup = fs.readFileSync('/mnt/c/Users/Projets/Cozy/categorization-model/model.json')
-    model = Model.fromBackup(backup)
+    try {
+      let backup = fs.readFileSync(
+        '/mnt/c/Users/jumic/Projets/Cozy/categorization-model/model.json'
+      )
+      model = Model.fromBackup(backup)
 
-    // 3. Train locally
-    model.train(operations)
+      model.train(operations)
+    } catch (e) {
+      model = Model.fromDocs(operations)
+    }
   } else {
     model = Model.fromDocs(operations)
   }
 
-  // 4. Split model in shares
+  // Split model in shares
   let shares = model.getShares(nbShares)
 
-  // 5. Save shares in instance and create share links
-  let links = []
-  for (let i = 0; i < nbShares; i++) {
-    const document = await client.create(DISSEC_DOCTYPE, {
-      ...shares[i],
-      shareIndex: i
-    })
+  // Storing shares as files to be shared
+  // Create or find a DISSEC directory
+  const baseFolder = 'DISSEC'
+  let dissecDirectory
+  try {
+    const { data } = await client.stackClient.fetchJSON(
+      'POST',
+      `/files/io.cozy.files.root-dir?Type=directory&Name=${baseFolder}`
+    )
+    dissecDirectory = data.id
+  } catch (e) {
+    const { included } = await client.stackClient.fetchJSON(
+      'GET',
+      '/files/io.cozy.files.root-dir'
+    )
+    dissecDirectory = included.filter(
+      dir => dir.attributes.name === baseFolder
+    )[0].id
+  }
+
+  // Create a directory specifically for this aggregation
+  // This prevents mixing shares from different execution
+  const { data: aggregationDirectory } = await client.stackClient.fetchJSON(
+    'POST',
+    `/files/${dissecDirectory}?Type=directory&Name=${executionId}`
+  )
+
+  // Create a file for each share
+  const files = []
+  for (let i in shares) {
+    const { data: file } = await client.stackClient.fetchJSON(
+      'POST',
+      `/files/${aggregationDirectory.id}?Type=file&Name=contribution-${i}`,
+      shares[i]
+    )
+    files.push(file.id)
+  }
+
+  // Create sharing permissions for shares
+  const shareCodes = []
+  for (let i in files) {
     const body = {
       data: {
-        type: 'io.cozy.sharings',
+        type: 'io.cozy.permissions',
         attributes: {
-          description: 'secret shares sharing',
-          preview_path: '/preview-sharing',
-          rules: [
-            {
-              title: 'Standard sharing',
-              doctype: 'io.cozy.dissec.shares',
-              values: [document._id],
-              add: 'push',
-              update: 'none',
-              remove: 'revoke'
+          source_id: 'io.cozy.dissec.shares',
+          permissions: {
+            shares: {
+              type: 'io.cozy.files',
+              verbs: ['GET', 'POST'],
+              values: [files[i]]
             }
-          ]
+          }
         }
       }
     }
-    const result = await client.stackClient.fetchJSON('POST', '/sharings', body)
-    links.push(result.data.links.self)
+    const { data: sharing } = await client.stackClient.fetchJSON(
+      'POST',
+      `/permissions?codes=aggregator${i}&ttl=1h`,
+      body
+    )
+    shareCodes.push(sharing.attributes.shortcodes[`aggregator${i}`])
   }
 
-  // 6. Call webhooks of parents with the links
-  links.forEach((link, i) =>
-    fetch(parents[i].webhook, {
-      method: 'POST',
-      body: { share: link, nbShares, parents: parents[i].parents, finalize: parents[i].finalize }
+  // Call webhooks of parents with the share.
+  shareCodes.forEach(async (code, i) => {
+    await client.stackClient.fetchJSON('POST', parents[i].webhook, {
+      executionId,
+      docId: files[i],
+      sharecode: code,
+      uri: client.stackClient.uri,
+      nbShares,
+      parents: parents[i].parents,
+      finalize: parents[i].finalize,
+      level: parents[i].level
     })
-  )
+  })
 }
 
 contribution().catch(e => {
