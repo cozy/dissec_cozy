@@ -27,6 +27,7 @@ export const categorize = async () => {
       )
       model = Model.fromBackup(backup)
     } catch (err) {
+      console.error('Model does not exist at path', dissecConfig.localModelPath)
       model = Model.fromDocs(operations)
     }
   } else {

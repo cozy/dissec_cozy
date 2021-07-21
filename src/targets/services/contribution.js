@@ -32,6 +32,7 @@ export const contribution = async () => {
 
       model.train(operations)
     } catch (e) {
+      console.error('Model does not exist at path', dissecConfig.localModelPath)
       model = Model.fromDocs(operations)
     }
   } else {
