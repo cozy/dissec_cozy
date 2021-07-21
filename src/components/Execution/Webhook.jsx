@@ -12,7 +12,7 @@ export const Webhook = ({ hook, onUpdate }) => {
   const [input, setInput] = useState('')
   const [pretrained, setPretrained] = useState(true)
 
-  let name = '?'
+  let name = ''
   if (hook && hook.attributes) {
     if (hook.attributes.arguments.length !== 0) {
       name = hook.attributes.arguments
@@ -67,8 +67,8 @@ export const Webhook = ({ hook, onUpdate }) => {
 
   return (
     <div className="webhook">
-      <div className="webhook-title">
-        <b>{name.toUpperCase()}</b>
+      <div className="info-category">
+        <b>{name.toUpperCase() || '?'}</b>
       </div>
       <div className="webhook-url">{hook.links.webhook}</div>
       {name === 'categorize' ? (
