@@ -4,8 +4,8 @@ global.btoa = require('btoa')
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
-
 import { Model } from './helpers'
+import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
   const { parents, nbShares, pretrained, executionId } = JSON.parse(
@@ -26,7 +26,7 @@ export const contribution = async () => {
   if (pretrained) {
     try {
       let backup = fs.readFileSync(
-        '/mnt/c/Users/jumic/Projets/Cozy/categorization-model/model.json'
+        dissecConfig.localModelPath
       )
       model = Model.fromBackup(backup)
 
