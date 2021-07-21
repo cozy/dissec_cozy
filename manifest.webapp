@@ -16,10 +16,6 @@
       "folder": "/",
       "index": "index.html",
       "public": false
-    }, 
-    "/shares": {
-      "folder": "/shares",
-      "public": true
     }
   },
   "services": {
@@ -50,11 +46,6 @@
       "type": "io.cozy.settings",
       "verbs": ["GET"]
     },
-    "bank.operations": {
-      "description": "Used to manage your bank operations",
-      "type": "io.cozy.bank.operations",
-      "verbs": ["GET", "POST", "PUT", "DELETE"]
-    },
     "jobs": {
       "description": "Required to run the services",
       "type": "io.cozy.jobs",
@@ -64,6 +55,11 @@
       "description": "Required to run the services",
       "type": "io.cozy.triggers",
       "verbs": ["ALL"]
+    },
+    "files": {
+      "description": "Required to store intermediate results",
+      "type": "io.cozy.files",
+      "verbs": ["GET", "POST"]
     },
     "dissec.shares": {
       "description": "Intermediate results used for privately aggregating data",
@@ -81,6 +77,11 @@
       "verbs": ["POST"],
       "selector": "worker",
       "values": ["service"]
+    },
+    "bank.operations": {
+      "description": "Used to manage your bank operations",
+      "type": "io.cozy.bank.operations",
+      "verbs": ["ALL"]
     }
   }
 }

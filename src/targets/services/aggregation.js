@@ -5,24 +5,42 @@ import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { SHARES_DOCTYPE } from '../../doctypes'
 import { Model } from './helpers'
+import dissecConfig from '../../../dissec.config.json'
 
 export const aggregation = async () => {
   // Worker's arguments
-  const { link, security, parentWebhook, finalize } = process.env['COZY_PAYLOAD'] || []
+  const { docId, sharecode, uri, nbShares, parents, finalize, level, executionId } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
 
   // eslint-disable-next-line no-console
-  console.log('aggregation received', link)
+  console.log('aggregation received', process.env['COZY_PAYLOAD'])
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  // 1. Download share using provided link
-  const result = await client.stackClient.fetchJSON('GET', link)
-  const data = result.relationship.shared_docs.data
+  // 1. Download share using provided informations
+  const sharedClient = new CozyClient({
+    uri: uri,
+    token: sharecode,
+    schema: {
+      files: {
+        doctype: "io.cozy.files",
+        relationships: {
+          old_versions: {
+            type: 'has-many',
+            doctype: 'io.cozy.files.versions'
+          }
+        }
+      }
+    },
+    store: false
+  })
+  console.log("Requesting the share")
+  const share = await sharedClient.stackClient.fetchJSON('GET', `/files/download/${docId}`)
+  console.log(Object.keys(share))
 
   // 2. Save the document
 
   // 3. If some shares are missing, end now
-  if (data.length != security) return
+  if (data.length != nbShares) return
 
   // 4. Fetch all stored shares
   let shares = await Promise.all(
@@ -38,7 +56,7 @@ export const aggregation = async () => {
   if (finalize) {
     // 6. Write a file that will be used as a remote asset by the stack
     fs.writeFileSync(
-      '/mnt/c/Users/Projets/Cozy/categorization-model/model.json',
+      dissecConfig.localModelPath,
       JSON.stringify(model.getBackup())
     )
   } else {

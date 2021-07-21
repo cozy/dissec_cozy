@@ -1,3 +1,46 @@
+.single-node {
+  margin: auto;
+  padding: 10px;
+  max-width: 80%;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  background-color: #F5F6F7;
+  padding-left: .5rem;
+}
+
+.selected-single-node {
+  margin: auto;
+  padding: 10px;
+  max-width: 80%;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  background-color: #e8eaeb;
+  padding-left: .5rem;
+}
+
+.single-node > * {
+  min-width: 32em;
+}
+
+.single-node-title {
+  font-size: 18px;
+}
+
+.card-title {
+  text-align: center;
+  font-size: 24px;
+}
+
 .webhook {
   margin: auto;
   padding: 10px;
@@ -13,7 +56,15 @@
   padding-left: .5rem;
 }
 
-.info-category {
+.webhook-title {
+  margin: 5px;
+}
+
+.webhook-url {
+  margin: 5px;
+}
+
+.webhook-body {
   margin: 5px;
 }
 
@@ -24,4 +75,8 @@
   width: 100%;
   justify-content: center;
   align-items: center;
+}
+
+.spacer-sm {
+  margin: 0.5em;
 }

@@ -1,5 +1,5 @@
 import { BANK_DOCTYPE } from './bank'
-import { AGGREGATORS_DOCTYPE } from './aggregators'
+import { NODES_DOCTYPE } from './nodes'
 import { SHARES_DOCTYPE } from './shares'
 import { MODELS_DOCTYPE } from './models'
 
@@ -10,8 +10,8 @@ export default {
     attributes: {},
     relationships: {}
   },
-  aggregators: {
-    doctype: AGGREGATORS_DOCTYPE,
+  nodes: {
+    doctype: NODES_DOCTYPE,
     attributes: {},
     relationships: {}
   },
@@ -29,6 +29,6 @@ export default {
 
 // export all doctypes for the application
 export * from './bank'
-export * from './aggregators'
+export * from './nodes'
 export * from './shares'
 export * from './models'

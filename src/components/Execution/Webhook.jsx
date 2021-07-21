@@ -70,6 +70,7 @@ export const Webhook = ({ hook, onUpdate }) => {
       <div className="info-category">
         <b>{name.toUpperCase() || '?'}</b>
       </div>
+      <div className="webhook-url">{hook.links.webhook}</div>
       {name === 'categorize' ? (
         <>
           <FormControlLabel

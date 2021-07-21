@@ -1,15 +1,24 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { queryConnect, useClient } from 'cozy-client'
+import { nodesQuery } from 'doctypes'
 
+import SelectBox from 'cozy-ui/transpiled/react/SelectBox'
 import Spinner from 'cozy-ui/react/Spinner'
 import Button from 'cozy-ui/react/Button'
-import { useClient } from 'cozy-client'
-import Webhook from './Webhook'
 
-export const Execution = () => {
+import Webhook from './Webhook'
+import SingleNodeAggregation from './SingleNodeAggregation'
+import Label from 'cozy-ui/react/Label'
+
+export const Execution = ({ nodes }) => {
   const client = useClient()
+
+  const { isLoading, data } = nodes
+  const options = data.map(e => ({ value: e, label: e.id }))
 
   const [isWorking, setIsWorking] = useState(false)
   const [webhooks, setWebhooks] = useState([])
+  const [singleNode, setSingleNode] = useState(data[0])
 
   const createWebhooks = useCallback(
     async () => {
@@ -47,6 +56,8 @@ export const Execution = () => {
     [client, fetchWebhooks]
   )
 
+  const handleSelectNode = useCallback(() => {}, [])
+
   const fetchWebhooks = useCallback(
     async () => {
       let webhooks = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
@@ -69,6 +80,28 @@ export const Execution = () => {
 
   return (
     <div className="todos">
+      {isLoading ? (
+        <Spinner size="xxlarge" middle />
+      ) : (
+        <div className="single-node">
+          <div className="card-title">
+            <b>Single node aggregation</b>
+          </div>
+          <div>
+            <Label htmlFor="single-node-selector">
+              Select the node performing the execution:{' '}
+            </Label>
+            <SelectBox
+              id="single-node-selector"
+              options={options}
+              name="Select a node"
+              onChange={e => setSingleNode(e.value)}
+            />
+          </div>
+          <div className="spacer-sm" />
+          {singleNode && <SingleNodeAggregation node={singleNode} />}
+        </div>
+      )}
       {webhooks &&
         webhooks.map(hook => (
           <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
@@ -96,4 +129,9 @@ export const Execution = () => {
 }
 
 // get data from the client state: data, fetchStatus
-export default Execution
+export default queryConnect({
+  nodes: {
+    query: nodesQuery,
+    as: 'nodes'
+  }
+})(Execution)
