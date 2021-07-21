@@ -25,15 +25,12 @@ export const contribution = async () => {
   let model
   if (pretrained) {
     try {
-      let backup = fs.readFileSync(
-        dissecConfig.localModelPath
-      )
+      let backup = fs.readFileSync(dissecConfig.localModelPath)
       model = Model.fromBackup(backup)
 
       model.train(operations)
     } catch (e) {
-      console.error('Model does not exist at path', dissecConfig.localModelPath)
-      model = Model.fromDocs(operations)
+      throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
     model = Model.fromDocs(operations)

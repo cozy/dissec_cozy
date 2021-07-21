@@ -20,15 +20,10 @@ export const categorize = async () => {
   if (pretrained) {
     // Use the stack's remote assets
     try {
-      const backup = JSON.parse(
-        fs.readFileSync(
-          dissecConfig.localModelPath
-        )
-      )
+      const backup = JSON.parse(fs.readFileSync(dissecConfig.localModelPath))
       model = Model.fromBackup(backup)
     } catch (err) {
-      console.error('Model does not exist at path', dissecConfig.localModelPath)
-      model = Model.fromDocs(operations)
+      throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
     model = Model.fromDocs(operations)
