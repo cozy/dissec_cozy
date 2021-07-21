@@ -7,8 +7,9 @@
 
 ## What's DISSEC-COZY?
 
-<TODO>...
+DISSEC-COZY is a proof-of-concept implementation of DISSEC-ML, the academic work done by Cozy and PETRUS. 
 
+It is a decentralized aggregation protocol designed to be used for privacy-preserving machine learning. Nodes locally learn a model and then use a simple additively homomorphic secret-sharing scheme to send data to aggregators. Aggregators form a tree to maximize efficiency.
 
 ## Hack
 
@@ -30,26 +31,11 @@ $ yarn install
 
 Cozy's apps use a standard set of _npm scripts_ to run common tasks, like watch, lint, test, build…
 
+### Configuration
 
-### Run it inside a Cozy using Docker
+In order to allow continuous enhancement of performances, nodes in the protocol can start training from a pretrained model, which is the result of the last training. 
 
-You can run your application inside a Cozy thanks to the [cozy-stack docker image][cozy-stack-docker]:
-
-```sh
-# in a terminal, run your app in watch mode with a docker running Cozy
-$ cd dissec_cozy
-$ yarn start
-```
-
-```sh
-# in an other terminal, run the docker image 
-$ cd dissec_cozy
-$ yarn stack:docker:dev
-``` 
-
-After the build and the docker image launched, your app is now available at http://dissec_cozy.cozy.tools:8080.
-
-Note: By default, HMR (Hot Module Replacement) is enabled on your front application. To have it working, we have disabled our CSP (Content Security Policy) when running `yarn stack:docker:dev`. This is not the configuration we'll have in a production environnement. To test our app in real conditions, build your application by running `yarn build` and launch the docker image with the `yarn stack:docker:prod` command.
+Currently, this model is stored on the local file system and the path needs to be defined for the execution to work. In the file `dissec.config.json`, set the `localModelPath` value to a path where you want this shared model to be stored.
 
 ### Living on the edge
 
@@ -71,7 +57,6 @@ yarn link cozy-ui
 
 [Cozy-client-js] is our API library that provides an unified API on top of the cozy-stack. If you need to develop / hack cozy-client-js in parallel of your application, you can use the same trick that we used with [cozy-ui]: yarn linking.
 
-
 ### Tests
 
 Tests are run by [jest] under the hood. You can easily run the tests suite with:
@@ -90,16 +75,13 @@ The Cozy datastore stores documents, which can be seen as JSON objects. A `docty
 
 Cozy ships a [built-in list of `doctypes`][doctypes] for representation of most of the common documents (Bills, Contacts, Files, ...).
 
-Whenever your app needs to use a given `doctype`, you should:
+DISSEC-COZY uses the following additionnal doctypes:
 
-- Check if this is a standard `doctype` defined in Cozy itself. If this is the case, you should add a model declaration in your app containing at least the fields listed in the [main fields list for this `doctype`][doctypes]. Note that you can extend the Cozy-provided `doctype` with your own customs fields. This is typically what is done in [Konnectors] for the [Bill `doctype`][bill-doctype].
-- If no standards `doctypes` fit your needs, you should define your own `doctype` in your app. In this case, you do not have to put any field you want in your model, but you should crosscheck other cozy apps to try to homogeneize the names of your fields, so that your `doctype` data could be reused by other apps. This is typically the case for the [Konnector `doctype`][konnector-doctype] in [Konnectors].
-
+- `dissec.nodes` is used to register instances willing to participate in the protocol, so that the querier can organize them to create an efficient tree.
 
 ### Open a Pull-Request
 
 If you want to work on DISSEC-COZY and submit code modifications, feel free to open pull-requests! See the [contributing guide][contribute] for more information about how to properly open pull-requests.
-
 
 ## Community
 
@@ -125,7 +107,7 @@ As a _developer_, you must [configure the transifex client][tx-client], and clai
 
 ### Maintainer
 
-The lead maintainer for DISSEC-COZY is [JulienMirval](https://github.com/JulienMirval), send him/her a :beers: to say hello!
+The lead maintainer for DISSEC-COZY is [Julien Mirval](https://github.com/JulienMirval), send him/her a :beers: to say hello!
 
 
 ### Get in touch
@@ -140,7 +122,7 @@ You can reach the Cozy Community by:
 
 ## License
 
-DISSEC-COZY is developed by JulienMirval and distributed under the [AGPL v3 license][agpl-3.0].
+DISSEC-COZY is developed by Julien Mirval and distributed under the [AGPL v3 license][agpl-3.0].
 
 
 
