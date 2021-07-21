@@ -8,17 +8,13 @@ export const NodeRemoveButton = ({ node }) => {
 
   const [isWorking, setIsWorking] = useState(false)
 
-  // delete the related todo
   const removeNode = useCallback(
     async () => {
-      // display a spinner during the process
       setIsWorking(true)
-      // delete the todo in the Cozy : asynchronous
+
       await client.destroy(node)
-      // remove the spinner
+
       setIsWorking(false)
-      // We can omit that since this component will be
-      // unmount after the document is deleted by the client
     },
     [node, client, setIsWorking]
   )
@@ -37,5 +33,4 @@ export const NodeRemoveButton = ({ node }) => {
   )
 }
 
-// get mutations from the client to use deleteDocument
 export default NodeRemoveButton

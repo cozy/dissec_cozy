@@ -36,7 +36,7 @@ export const AggregatorAdd = () => {
     [setAggregationWebhook]
   )
 
-  // create the new todo
+  // create a new node to be used during the protocol
   const handleSubmit = useCallback(
     async () => {
       // reset the input and display a spinner during the process
@@ -104,5 +104,4 @@ export const AggregatorAdd = () => {
   )
 }
 
-// get mutations from the client to use createDocument
 export default AggregatorAdd
