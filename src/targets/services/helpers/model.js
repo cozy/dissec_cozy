@@ -26,7 +26,6 @@ export class Model {
 
   static fromBackup(doc) {
     let model = new Model()
-    model.uniqueY = doc.uniqueY
     model.occurences = doc.occurences
     model.contributions = doc.contributions
     model.initialize()
@@ -142,10 +141,10 @@ export class Model {
   }
 
   getBackup() {
+    const { occurences, contributions } = this
     return {
-      occurences: this.occurences,
-      contributions: this.contributions,
-      uniqueY: this.uniqueY
+      occurences,
+      contributions
     }
   }
 }

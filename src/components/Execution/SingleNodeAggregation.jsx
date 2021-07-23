@@ -19,13 +19,22 @@ export const SingleNodeAggregation = ({ node }) => {
     async () => {
       setIsWorking(true)
       // Create a tree with one contributor, nbShares aggregators and one finalizer
+      const finalAggregatorId = uuid()
       const parents = Array(nbShares)
         .fill()
         .map(() => ({
           level: 0,
+          aggregatorId: uuid(),
+          nbChild: 1,
           finalize: false,
           webhook: node.aggregationWebhook,
-          parents: [{ level: 1, webhook: node.aggregationWebhook, finalize: true }]
+          parent: {
+            level: 1,
+            aggregatorId: finalAggregatorId,
+            nbChild: nbShares,
+            webhook: node.aggregationWebhook,
+            finalize: true
+          }
         }))
       const contributionBody = {
         executionId: uuid(),
@@ -40,7 +49,7 @@ export const SingleNodeAggregation = ({ node }) => {
       )
       setIsWorking(false)
     },
-    [node, client, nbShares, setIsWorking]
+    [node, client, nbShares, pretrained, setIsWorking]
   )
 
   return (
