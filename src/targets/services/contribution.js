@@ -103,10 +103,10 @@ export const contribution = async () => {
     shareCodes.push(sharing.attributes.shortcodes[`aggregator${i}`])
   }
 
-  // Call webhooks of parents with the share.
-  for(let i in shareCodes) {
+  // Call webhooks of parents with the share
+  for (let i in shareCodes) {
     // HACK: Using a delay to give enough time to the responding service to store shares
-    await new Promise((resolve, ) => setTimeout(resolve, 5000))
+    await new Promise(resolve => setTimeout(resolve, 5000))
     await client.stackClient.fetchJSON('POST', parents[i].webhook, {
       executionId,
       docId: files[i],

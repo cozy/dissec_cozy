@@ -5,7 +5,6 @@ import fs from 'fs'
 import CozyClient from 'cozy-client'
 import { Model } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
-import { SHARES_DOCTYPE } from '../../../src/doctypes'
 
 export const aggregation = async () => {
   // Worker's arguments
@@ -21,9 +20,6 @@ export const aggregation = async () => {
     executionId,
     nbChild
   } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
-
-  // eslint-disable-next-line no-console
-  console.log('aggregation received', process.env['COZY_PAYLOAD'])
 
   const client = CozyClient.fromEnv(process.env, {})
 
@@ -60,7 +56,6 @@ export const aggregation = async () => {
     )
     dissecDirectory = data.id
   } catch (e) {
-    console.log('DISSEC folder already exists')
     const { included } = await client.stackClient.fetchJSON(
       'GET',
       '/files/io.cozy.files.root-dir'
@@ -80,9 +75,6 @@ export const aggregation = async () => {
     )
     aggregationDirectory = data
   } catch (e) {
-    console.log(
-      `Execution folder already exists, fetching ${dissecDirectory} instead`
-    )
     const { included } = await client.stackClient.fetchJSON(
       'GET',
       `/files/${dissecDirectory}`
@@ -93,7 +85,6 @@ export const aggregation = async () => {
   }
 
   // Fetch currently owned shares
-  console.log(`Fetching the content of folder ${aggregationDirectory}`)
   const { included: allSharesReceived } = await client.stackClient.fetchJSON(
     'GET',
     `/files/${aggregationDirectory}`
@@ -103,13 +94,11 @@ export const aggregation = async () => {
     dir.attributes.name.includes(`aggregator${aggregatorId}_level${level}`)
   )
   const received = sharesReceived.length
-  console.log(`Found ${received} shares`)
 
   // Check if shares of each child has been received
   if (received < nbChild - 1) {
     // Some shares are missing
     // Save the received share
-    console.log(`Aggregator ${aggregatorId} storing share ${received} while waiting for more`)
     await client.stackClient.fetchJSON(
       'POST',
       `/files/${aggregationDirectory}?Type=file&Name=aggregator${aggregatorId}_level${level}_${sharecode}`,
@@ -122,7 +111,6 @@ export const aggregation = async () => {
   // Fetch all stored shares
   const shares = [share]
   for (let s of sharesReceived) {
-    console.log(`Downloading share ${received} `)
     shares.push(
       await client.stackClient.fetchJSON('GET', `/files/download/${s.id}`)
     )
@@ -184,8 +172,6 @@ export const aggregation = async () => {
       nbChild: parent.nbChild
     })
   }
-
-  console.log('Finished execution of aggregation by', aggregatorId, '\n\n')
 }
 
 aggregation().catch(e => {
