@@ -71,7 +71,7 @@ export const contribution = async () => {
   for (let i in shares) {
     const { data: file } = await client.stackClient.fetchJSON(
       'POST',
-      `/files/${aggregationDirectory.id}?Type=file&Name=contribution-${i}`,
+      `/files/${aggregationDirectory.id}?Type=file&Name=contribution${i}`,
       shares[i]
     )
     files.push(file.id)
@@ -103,19 +103,23 @@ export const contribution = async () => {
     shareCodes.push(sharing.attributes.shortcodes[`aggregator${i}`])
   }
 
-  // Call webhooks of parents with the share.
-  shareCodes.forEach(async (code, i) => {
+  // Call webhooks of parents with the share
+  for (let i in shareCodes) {
+    // HACK: Using a delay to give enough time to the responding service to store shares
+    await new Promise(resolve => setTimeout(resolve, 5000))
     await client.stackClient.fetchJSON('POST', parents[i].webhook, {
       executionId,
       docId: files[i],
-      sharecode: code,
+      sharecode: shareCodes[i],
       uri: client.stackClient.uri,
       nbShares,
-      parents: parents[i].parents,
+      parent: parents[i].parent,
       finalize: parents[i].finalize,
-      level: parents[i].level
+      level: parents[i].level,
+      aggregatorId: parents[i].aggregatorId,
+      nbChild: parents[i].nbChild
     })
-  })
+  }
 }
 
 contribution().catch(e => {
