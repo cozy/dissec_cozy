@@ -25,9 +25,9 @@ const main = async () => {
     .sort((a, b) => a.id > b.id)
 
   // Save DISSEC webhooks
-  let entry = {}
-  for(let webhook of webhooks) {
-    if(webhook.attributes.message.name === "contribution") {
+  let entry = { label: process.argv[2] }
+  for (let webhook of webhooks) {
+    if (webhook.attributes.message.name === "contribution") {
       entry.contributionWebhook = webhook.links.webhook
     } else {
       entry.aggregationWebhook = webhook.links.webhook
@@ -38,10 +38,10 @@ const main = async () => {
   let result
   try {
     result = JSON.parse(fs.readFileSync(process.argv[4]))
-  } catch(err) {
+  } catch (err) {
     result = []
   }
-  
+
   // Insert the new entry
   result.push(entry)
 
