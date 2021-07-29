@@ -1,0 +1,42 @@
+[
+  {
+    "aggregationWebhook": "http://test1.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c04d455",
+    "contributionWebhook": "http://test1.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c04c1f9"
+  },
+  {
+    "contributionWebhook": "http://test2.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c0562c6",
+    "aggregationWebhook": "http://test2.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c057e58"
+  },
+  {
+    "contributionWebhook": "http://test3.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c061bba",
+    "aggregationWebhook": "http://test3.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c06178c"
+  },
+  {
+    "aggregationWebhook": "http://test4.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c06aebd",
+    "contributionWebhook": "http://test4.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c06a87c"
+  },
+  {
+    "contributionWebhook": "http://test5.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c0731c3",
+    "aggregationWebhook": "http://test5.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c07375f"
+  },
+  {
+    "aggregationWebhook": "http://test6.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c07e4a5",
+    "contributionWebhook": "http://test6.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c07ebf1"
+  },
+  {
+    "contributionWebhook": "http://test7.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c087720",
+    "aggregationWebhook": "http://test7.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c088070"
+  },
+  {
+    "contributionWebhook": "http://test8.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c093b41",
+    "aggregationWebhook": "http://test8.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c09422e"
+  },
+  {
+    "contributionWebhook": "http://test9.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c0a0101",
+    "aggregationWebhook": "http://test9.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c09f28c"
+  },
+  {
+    "aggregationWebhook": "http://test10.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c0aa19b",
+    "contributionWebhook": "http://test10.cozy.localhost:8080/jobs/webhooks/972a535ee19374a1555ba6009c0a918b"
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "io.cozy.bank.operations": [
+    {
+      "amount": 23,
+      "automaticCategoryId": "100",
+      "cozyCategoryId": "100",
+      "label": "petit bateau"
+    },
+    {
+      "amount": 75,
+      "automaticCategoryId": "100",
+      "cozyCategoryId": "100",
+      "label": "carte de bus"
+    },
+    {
+      "amount": 24,
+      "automaticCategoryId": "200",
+      "cozyCategoryId": "200",
+      "label": "producteur de lait"
+    },
+    {
+      "vendorId": "2",
+      "vendorAccountId": "1",
+      "label": "Petit producteur",
+      "amount": -50
+    },
+    {
+      "amount": 10,
+      "cozyCategoryId": "100",
+      "label": "aa"
+    }
+  ]
+}
