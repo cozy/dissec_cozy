@@ -60,6 +60,7 @@ export const Execution = ({ nodes }) => {
 
   const fetchWebhooks = useCallback(
     async () => {
+      console.log(client.stackClient)
       let webhooks = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
 
       setWebhooks(
