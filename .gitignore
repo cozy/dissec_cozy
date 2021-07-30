@@ -1,5 +1,7 @@
 # Cozy
 .token.json
+data/split.json
+data/webhooks.json
 
 
 # NPM
