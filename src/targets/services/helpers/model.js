@@ -12,7 +12,7 @@ export class Model {
       .map(() =>
         Array(this.uniqueY.length)
           .fill()
-          .map(() => 1)
+          .map(() => 0)
       )
     this.logProbabilities = Array(vocabulary.length)
       .fill()
@@ -50,7 +50,7 @@ export class Model {
     if (finalize) {
       for (let j = 0; j < vocabulary.length; j++) {
         for (let i = 0; i < model.uniqueY.length; i++) {
-          model.occurences[j][i] /= model.contributions
+          model.occurences[j][i] /= shares.length
         }
       }
 
@@ -70,9 +70,9 @@ export class Model {
 
   initialize() {
     for (const j in vocabulary) {
-      const total = this.occurences[j].reduce((a, b) => a + b)
+      const total = 1 + this.occurences[j].reduce((a, b) => a + b)
       for (const i in this.uniqueY) {
-        this.logProbabilities[j][i] = Math.log(this.occurences[j][i] / total)
+        this.logProbabilities[j][i] = Math.log((1 + this.occurences[j][i]) / total)
       }
     }
   }
@@ -110,6 +110,7 @@ export class Model {
       }
     }
 
+    console.log('Probabilities for', text, probability)
     const best = Math.max(...probability)
     const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
 
@@ -131,7 +132,7 @@ export class Model {
         let finalNoise = 0
         for (let k = 0; k < nbShares; k++) {
           const noise = Math.ceil(Math.random() * (NOISE_CEILING / nbShares))
-          shares[k].occurences[j][i] += k === nbShares - 1 ? -finalNoise : noise
+          shares[k].occurences[j][i] += (k === nbShares - 1 ? -finalNoise : noise)
           finalNoise += noise
         }
       }
