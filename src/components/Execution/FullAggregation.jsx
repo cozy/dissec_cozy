@@ -5,8 +5,6 @@ import Input from 'cozy-ui/react/Input'
 import { Switch, FormControlLabel } from '@material-ui/core'
 import Button from 'cozy-ui/react/Button'
 
-import Tree from 'react-tree-graph'
-
 import { useClient } from 'cozy-client'
 import { v4 as uuid } from 'uuid'
 
