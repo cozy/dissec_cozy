@@ -8,7 +8,7 @@ import Button from 'cozy-ui/react/Button'
 import { useClient } from 'cozy-client'
 import { v4 as uuid } from 'uuid'
 
-export const SingleNodeAggregation = ({ node }) => {
+const SingleNodeAggregation = ({ node }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
