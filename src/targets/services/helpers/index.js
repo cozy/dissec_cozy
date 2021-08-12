@@ -1,4 +1,4 @@
-import vocabulary from './vocabulary.json'
+import vocabulary from './vocabulary_tiny.json'
 import classes from './classes.json'
 
 export { Model } from './model'

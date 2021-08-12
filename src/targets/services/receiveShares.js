@@ -2,7 +2,7 @@ global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
 import CozyClient from 'cozy-client'
-import { Model } from './helpers'
+import log from 'cozy-logger'
 
 export const receiveShares = async () => {
   // Worker's arguments
@@ -21,17 +21,9 @@ export const receiveShares = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  var originalConsoleLog = console.log
-  console.log = function () {
-    let args = []
-    args.push('[' + client.stackClient.uri.split('/')[2] + '] ')
-    for (var i = 0; i < arguments.length; i++) {
-      args.push(arguments[i])
-    }
-    originalConsoleLog.apply(console, args)
-  }
+  const infoTag = 'info: [' + client.stackClient.uri.split('/')[2] + ']'
 
-  console.log('Received share')
+  log(infoTag, 'Received share')
 
   // Download share using provided informations
   const sharedClient = new CozyClient({
@@ -55,62 +47,31 @@ export const receiveShares = async () => {
     `/files/download/${docId}`
   )
 
+  log(infoTag, 'Type of share', typeof share)
+  //const share = await sharedClient.collection('io.cozy.files').
+
   // Storing shares as files to be shared
   // Create or find a DISSEC directory
   const baseFolder = 'DISSEC'
-  let dissecDirectory
-  try {
-    const { data } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/io.cozy.files.root-dir?Type=directory&Name=${baseFolder}`
-    )
-    console.log('Created DISSEC directory:', data)
-    dissecDirectory = data.id
-  } catch (e) {
-    const { included } = await client.stackClient.fetchJSON(
-      'GET',
-      '/files/io.cozy.files.root-dir'
-    )
-    dissecDirectory = included.filter(
-      dir => dir.attributes.name === baseFolder
-    )[0].id
-    console.log('Found DISSEC directory:', dissecDirectory)
-  }
+  const parentDirectory = { _id: 'io.cozy.files.root-dir', attributes: {} }
+  const { data: dissecDirectory } = await client
+    .collection('io.cozy.files')
+    .getDirectoryOrCreate(baseFolder, parentDirectory)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
   // TODO: Remove hierarchy and base only on metadata and id
-  let aggregationDirectory
-  try {
-    console.log('Creating aggregation folder in', dissecDirectory, 'with name', executionId)
-    const { data } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/${dissecDirectory}?Type=directory&Name=${executionId}`
-    )
-    console.log('Created aggregation directory:', data)
-    aggregationDirectory = data.id
-  } catch (e) {
-    // Finding the folder with the correct name
-    console.log('Failed creating folder', executionId)
-    const { included } = await client.stackClient.fetchJSON(
-      'GET',
-      `/files/${dissecDirectory}`
-    )
-    const dir = included.filter(
-      dir => dir.attributes.name === executionId
-    )[0]
-    if (!dir) {
-      console.log(included, '\n\n', dir)
-    }
-    console.log('Aggregation folder already exists: ', dir)
-    aggregationDirectory = dir.id
-  }
+  const { data: aggregationDirectory } = await client
+    .collection('io.cozy.files')
+    .getDirectoryOrCreate(executionId, dissecDirectory)
+  const aggregationDirectoryId = aggregationDirectory._id
+  log(infoTag, 'Aggregation folder id', aggregationDirectoryId)
 
   // Save the received share
   await client.create('io.cozy.files', {
     type: 'file',
-    data: JSON.stringify(share),
-    dirId: aggregationDirectory,
+    data: share,
+    dirId: aggregationDirectoryId,
     name: `aggregator_${aggregatorId}_level_${level}_${sharecode}`,
     metadata: {
       dissec: true,
@@ -123,7 +84,7 @@ export const receiveShares = async () => {
       nbChild
     }
   })
-  console.log('Stored share!')
+  log(infoTag, 'Stored share!')
 }
 
 receiveShares().catch(e => {

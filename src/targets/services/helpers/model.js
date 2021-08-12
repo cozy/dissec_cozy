@@ -1,4 +1,4 @@
-import vocabulary from './vocabulary.json'
+import vocabulary from './vocabulary_tiny.json'
 import classes from './classes.json'
 
 const NOISE_CEILING = 1000000000000
@@ -72,7 +72,9 @@ export class Model {
     for (const j in vocabulary) {
       const total = 1 + this.occurences[j].reduce((a, b) => a + b)
       for (const i in this.uniqueY) {
-        this.logProbabilities[j][i] = Math.log((1 + this.occurences[j][i]) / total)
+        this.logProbabilities[j][i] = Math.log(
+          (1 + this.occurences[j][i]) / total
+        )
       }
     }
   }
@@ -110,7 +112,6 @@ export class Model {
       }
     }
 
-    console.log('Probabilities for', text, probability)
     const best = Math.max(...probability)
     const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
 
@@ -132,7 +133,7 @@ export class Model {
         let finalNoise = 0
         for (let k = 0; k < nbShares; k++) {
           const noise = Math.ceil(Math.random() * (NOISE_CEILING / nbShares))
-          shares[k].occurences[j][i] += (k === nbShares - 1 ? -finalNoise : noise)
+          shares[k].occurences[j][i] += k === nbShares - 1 ? -finalNoise : noise
           finalNoise += noise
         }
       }

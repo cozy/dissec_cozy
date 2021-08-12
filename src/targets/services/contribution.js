@@ -3,6 +3,7 @@ global.btoa = require('btoa')
 
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
+import log from 'cozy-logger'
 import { BANK_DOCTYPE } from '../../doctypes'
 import { Model } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
@@ -18,15 +19,7 @@ export const contribution = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  var originalConsoleLog = console.log
-  console.log = function () {
-    let args = []
-    args.push('[' + client.stackClient.uri.split('/')[2] + '] ')
-    for (var i = 0; i < arguments.length; i++) {
-      args.push(arguments[i])
-    }
-    originalConsoleLog.apply(console, args)
-  }
+  const infoTag = 'info: [' + client.stackClient.uri.split('/')[2] + ']'
 
   // Fetch training data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
@@ -52,64 +45,46 @@ export const contribution = async () => {
   // Storing shares as files to be shared
   // Create or find a DISSEC directory
   const baseFolder = 'DISSEC'
-  let dissecDirectory
-  try {
-    const { data } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/io.cozy.files.root-dir?Type=directory&Name=${baseFolder}`
-    )
-    dissecDirectory = data.id
-  } catch (e) {
-    const { included } = await client.stackClient.fetchJSON(
-      'GET',
-      '/files/io.cozy.files.root-dir'
-    )
-    dissecDirectory = included.filter(
-      dir => dir.attributes.name === baseFolder
-    )[0].id
-  }
+  const parentDirectory = { _id: 'io.cozy.files.root-dir', attributes: {} }
+  const { data: dissecDirectory } = await client
+    .collection('io.cozy.files')
+    .getDirectoryOrCreate(baseFolder, parentDirectory)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
-  const { data: aggregationDirectory } = await client.stackClient.fetchJSON(
-    'POST',
-    `/files/${dissecDirectory}?Type=directory&Name=${executionId}`
-  )
+  const { data: aggregationDirectoryDoc } = await client
+    .collection('io.cozy.files')
+    .getDirectoryOrCreate(executionId, dissecDirectory)
+  const aggregationDirectoryId = aggregationDirectoryDoc._id
+  log(infoTag, aggregationDirectoryId)
 
   // Create a file for each share
   const files = []
   for (let i in shares) {
-    const { data: file } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/${aggregationDirectory.id}?Type=file&Name=contribution${i}`,
-      shares[i]
-    )
-    files.push(file.id)
+    const { data: file } = await client.create('io.cozy.files', {
+      type: 'file',
+      name: `contribution_${i}`,
+      dirId: aggregationDirectoryId,
+      data: JSON.stringify(shares[i])
+    })
+    log(infoTag, 'file creation', file._id)
+    files.push(file._id)
   }
 
   // Create sharing permissions for shares
   const shareCodes = []
   for (let i in files) {
-    const body = {
-      data: {
-        type: 'io.cozy.permissions',
-        attributes: {
-          source_id: 'io.cozy.dissec.shares',
-          permissions: {
-            shares: {
-              type: 'io.cozy.files',
-              verbs: ['GET', 'POST'],
-              values: [files[i]]
-            }
-          }
+    const { data: sharing } = await client.create('io.cozy.permissions', {
+      codes: `aggregator${i}`,
+      ttl: '1h',
+      permissions: {
+        shares: {
+          type: 'io.cozy.files',
+          verbs: ['GET', 'POST'],
+          values: [files[i]]
         }
       }
-    }
-    const { data: sharing } = await client.stackClient.fetchJSON(
-      'POST',
-      `/permissions?codes=aggregator${i}&ttl=1h`,
-      body
-    )
+    })
     shareCodes.push(sharing.attributes.shortcodes[`aggregator${i}`])
   }
 
@@ -117,6 +92,7 @@ export const contribution = async () => {
   for (let i in shareCodes) {
     // HACK: Using a delay to give enough time to the responding service to store shares
     await new Promise(resolve => setTimeout(resolve, 5000))
+    // TODO: Launch the webhook without using fetchJSON
     await client.stackClient.fetchJSON('POST', parents[i].webhook, {
       executionId,
       docId: files[i],
@@ -129,7 +105,7 @@ export const contribution = async () => {
       aggregatorId: parents[i].aggregatorId,
       nbChild: parents[i].nbChild
     })
-    console.log('Activated webhook', parents[i].webhook)
+    log(infoTag, 'Activated webhook', parents[i].webhook)
   }
 }
 

@@ -14,25 +14,25 @@ const main = () => {
   // Aggregators don't get data
   switch (currentInstance) {
     case 4:
-      records.push(createRecord("producteur de lait", "100"))
+      records.push(createRecord("producteur de lait", "400110"))
       break
     case 5:
-      records.push(createRecord("petit bateau", "200"))
+      records.push(createRecord("petit bateau", "400200"))
       break
     case 6:
-      records.push(createRecord("carte de bus", "200"))
+      records.push(createRecord("carte de bus", "400200"))
       break
     case 7:
-      records.push(createRecord("ticket de bus", "200"))
+      records.push(createRecord("ticket de bus", "400200"))
       break
     case 8:
-      records.push(createRecord("producteur de fruits", "100"))
+      records.push(createRecord("producteur de fruits", "400110"))
       break
     case 9:
-      records.push(createRecord("mangeur de fruits", "100"))
+      records.push(createRecord("mangeur de fruits", "400110"))
       break
     case 10:
-      records.push(createRecord("bateau de mer", "200"))
+      records.push(createRecord("bateau de mer", "400200"))
       break
   }
 
