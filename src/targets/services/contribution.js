@@ -18,6 +18,16 @@ export const contribution = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
+  var originalConsoleLog = console.log
+  console.log = function () {
+    let args = []
+    args.push('[' + client.stackClient.uri.split('/')[2] + '] ')
+    for (var i = 0; i < arguments.length; i++) {
+      args.push(arguments[i])
+    }
+    originalConsoleLog.apply(console, args)
+  }
+
   // Fetch training data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
@@ -119,6 +129,7 @@ export const contribution = async () => {
       aggregatorId: parents[i].aggregatorId,
       nbChild: parents[i].nbChild
     })
+    console.log('Activated webhook', parents[i].webhook)
   }
 }
 
