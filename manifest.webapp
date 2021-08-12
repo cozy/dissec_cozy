@@ -24,10 +24,15 @@
       "file": "services/contribution/dissecozy.js",
       "trigger": "@webhook"
     },
+    "receiveShares": {
+      "type": "node",
+      "file": "services/receiveShares/dissecozy.js",
+      "trigger": "@webhook"
+    },
     "aggregation": {
       "type": "node",
       "file": "services/aggregation/dissecozy.js",
-      "trigger": "@webhook"
+      "trigger": "@event io.cozy.files:CREATED"
     },
     "categorize": {
       "type": "node",
