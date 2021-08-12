@@ -1,5 +1,6 @@
 # Cozy
 .token.json
+scripts/.token.json
 data/split.json
 data/webhooks.json
 

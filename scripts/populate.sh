@@ -35,17 +35,22 @@ do
     go run main.go instances add --apps drive,photos ${domain} --passphrase cozy
     go run main.go instances modify ${domain} --onboarding-finished
 
+    # Generate token first
+    ACH_token=$(go run main.go instances token-cli ${domain} io.cozy.bank.operations)
+
     cd $current_path
-    # Split our dataset in chunks
-    node split.js ../data/split.json 5
+    # Split our dataset in chunks (deterministic)
+    node split.js ../data/split.json ${i}
     # Populate the instance with data using ACH. Helper will randomly select samples
-    ACH import ../data/split.json
+    ACH -u http://${domain} -y import ../data/split.json -t ${ACH_token}
     cd $stack_path
+    
+    # Generate a token
+    token=$(go run main.go instances token-app ${domain} dissecozy)
     # Install the app
     go run main.go apps install --domain ${domain} dissecozy file:///mnt/c/Users/jumic/Projets/Cozy/dissec_cozy/build/
-    token=$(go run main.go instances token-app ${domain} dissecozy)
+    
     cd $current_path
     # Fetch webhooks
-    # token=$(ACH token --url http://${domain} io.cozy.dissec.nodes)
     node webhooks.js http://${domain} ${token} ../data/webhooks.json
 done

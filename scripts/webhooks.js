@@ -22,14 +22,13 @@ const main = async () => {
   // Filter for webhooks
   let webhooks = data
     .filter(hook => hook.attributes.type === '@webhook')
-    .sort((a, b) => a.id > b.id)
 
   // Save DISSEC webhooks
   let entry = { label: process.argv[2] }
   for (let webhook of webhooks) {
     if (webhook.attributes.message.name === "contribution") {
       entry.contributionWebhook = webhook.links.webhook
-    } else {
+    } else if (webhook.attributes.message.name === "receiveShares") {
       entry.aggregationWebhook = webhook.links.webhook
     }
   }

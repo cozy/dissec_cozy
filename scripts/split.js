@@ -2,16 +2,46 @@ const fs = require('fs')
 const data = require('../data/operations.json')
 
 const main = () => {
-  let records = data['io.cozy.bank.operations']
+  const currentInstance = Number(process.argv[3])
 
-  for (let i = 0; i < 5; i++) {
-    records.sort(() => Math.random() * 2 - 1)
+  const createRecord = (label, category) => ({
+    label,
+    cozyCategoryId: category,
+    amount: 1000 * (Math.random() - 0.5)
+  })
+
+  let records = []
+  // Aggregators don't get data
+  switch (currentInstance) {
+    case 4:
+      records.push(createRecord("producteur de lait", "100"))
+      break
+    case 5:
+      records.push(createRecord("petit bateau", "200"))
+      break
+    case 6:
+      records.push(createRecord("carte de bus", "200"))
+      break
+    case 7:
+      records.push(createRecord("ticket de bus", "200"))
+      break
+    case 8:
+      records.push(createRecord("producteur de fruits", "100"))
+      break
+    case 9:
+      records.push(createRecord("mangeur de fruits", "100"))
+      break
+    case 10:
+      records.push(createRecord("bateau de mer", "200"))
+      break
   }
+
+  console.log('Creating records:', records)
 
   fs.writeFileSync(
     process.argv[2],
     JSON.stringify(
-      { 'io.cozy.bank.operations': records.slice(0, process.argv[3]) },
+      { 'io.cozy.bank.operations': records },
       null,
       2
     )
