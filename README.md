@@ -11,13 +11,13 @@ DISSEC-COZY is a proof-of-concept implementation of DISSEC-ML, the academic work
 
 It is a decentralized aggregation protocol designed to be used for privacy-preserving machine learning. Nodes locally learn a model and then use a simple additively homomorphic secret-sharing scheme to send data to aggregators. Aggregators form a tree to maximize efficiency.
 
-## Hack
+## Setup
 
 _:pushpin: Note:_ we recommend to use [Yarn] instead of NPM for package management. Don't hesitate to [install][yarn-install] and use it for your Cozy projects, it's now our main node packages tool for Cozy official apps.
 
 ### Install
 
-Hacking the Cozy DISSEC-COZY app requires you to [setup a dev environment][setup].
+Setting up the Cozy DISSEC-COZY app requires you to [setup a dev environment][setup].
 
 You can then clone the app repository and install dependencies:
 
@@ -68,7 +68,27 @@ $ yarn test
 
 :pushpin: Don't forget to update / create new tests when you contribute to code to keep the app the consistent.
 
+## Demonstration
 
+A test scenario has been developed to test the protocol with multiple instances.
+It is currently static and will involves 11 nodes: 7 nodes will contribute a single data to the protocol, 3 nodes will serve as intermediate aggregators and the querier (the default instance of the stack) will act as the querier, creating the tree and triggerring contributors.
+
+The steps to to execute the demonstration are as follows:
+
+1. Have a `build` folder in the in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
+2. Launch `cozy-stack serve --appdir /path/to/your/dissecozy_repo --disable-csp` to start the stack with the dissecozy app loaded.
+3. Create test instances by running `sh script/populate 10`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provide the contributing ones (instances 4-10) with a single, hand craft banking operation. It will also output a JSON file containing all these instances' webhooks, to be used by the querier for creating the tree. The file is located in `data/webhooks.json`.
+4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.tools:8080/`)
+5. In the *Nodes* section, click the 'Choose a file' button and select the JSON file containing webhooks. Then, click upload to register all the test instances to the querier.
+6. Go to the *Execution* section and, in the *Full Aggregation* sub section, first click the 'Generate new tree' button, then 'Launch execution' button.
+
+Congratulations, you launched the execution. After a few seconds, you should see new file created at the location indicated by `localModelPath` value of `dissec.config.json` file.
+
+To verify the correctness of the execution, you can test the following sentences:
+
+- "fruits frais" should be classified as "Supermarket"
+- "lait de vach" should be classified as "Supermarket"
+- "carte de metro" should be classified as "Transportation"
 ## Models
 
 The Cozy datastore stores documents, which can be seen as JSON objects. A `doctype` is simply a declaration of the fields in a given JSON object, to store similar objects in an homogeneous fashion.
