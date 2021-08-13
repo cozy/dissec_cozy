@@ -14,7 +14,7 @@ repository=$(pwd)
 cd ${repository}/scripts
 
 echo "Clearing old webhooks data..."
-rm ../data/webhooks.json
+rm ../assets/webhooks.json
 
 for i in `seq 1 ${1}`
 do

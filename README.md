@@ -77,7 +77,7 @@ The steps to to execute the demonstration are as follows:
 
 1. Have a `build` folder in the in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
 2. Launch `cozy-stack serve --disable-csp` to start the stack with the dissecozy app loaded.
-3. Create test instances by running `yarn run populate 10`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provide the contributing ones (instances 4-10) with a single, hand craft banking operation. It will also output a JSON file containing all these instances' webhooks, to be used by the querier for creating the tree. The file is located in `data/webhooks.json`.
+3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provide the contributing ones (instances 4-10) with a single, hand craft banking operation. It will also output a JSON file containing all these instances' webhooks, to be used by the querier for creating the tree. The file is located in `assets/webhooks.json`.
 4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.tools:8080/`)
 5. In the *Nodes* section, click the 'Choose a file' button and select the JSON file containing webhooks. Then, click upload to register all the test instances to the querier.
 6. Go to the *Execution* section and, in the *Full Aggregation* sub section, first click the 'Generate new tree' button, then 'Launch execution' button.
@@ -89,6 +89,7 @@ To verify the correctness of the execution, you can test the following sentences
 - "fruits frais" should be classified as "Supermarket"
 - "lait de vach" should be classified as "Supermarket"
 - "carte de metro" should be classified as "Transportation"
+
 ## Models
 
 The Cozy datastore stores documents, which can be seen as JSON objects. A `doctype` is simply a declaration of the fields in a given JSON object, to store similar objects in an homogeneous fashion.
