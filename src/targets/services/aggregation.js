@@ -60,10 +60,7 @@ export const aggregation = async () => {
   // Fetch all stored shares
   const shares = []
   for (let s of receivedShares) {
-    const receivedShare = await client.stackClient.fetchJSON(
-      'GET',
-      `/files/download/${s.id}`
-    )
+    const receivedShare = await client.collection('io.cozy.files').download(s)
     shares.push(JSON.parse(receivedShare))
   }
 
