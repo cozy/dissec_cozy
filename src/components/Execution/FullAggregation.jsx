@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 
 import Label from 'cozy-ui/react/Label'
 import Input from 'cozy-ui/react/Input'
@@ -18,11 +18,11 @@ const FullAggregation = ({ nodes, webhooks }) => {
     async () => {
       setIsWorking(true)
 
+      if(!webhooks) return
+
       console.log(nodes)
 
       console.log(webhooks.filter(webhook => webhook.attributes.message.name === "receiveShares")[0].links.webhook)
-
-      if(!webhooks) return
 
       let querier = {
         webhook: webhooks.filter(webhook => webhook.attributes.message.name === "receiveShares")[0].links.webhook,
@@ -76,6 +76,10 @@ const FullAggregation = ({ nodes, webhooks }) => {
     [nodes, webhooks, client, setIsWorking, setContributors]
   )
 
+  useEffect(() => {
+    if(!contributors && webhooks.length !== 0) handleGenerateTree()
+  }, [webhooks, contributors, handleGenerateTree])
+
   const handleLaunchExecution = useCallback(
     async () => {
       if (!contributors) return
@@ -93,7 +97,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
           nbShares: 3,
           parents: contributor.parents
         }
-
+        await new Promise(resolve => {setTimeout(resolve, 1000)})
         await client.stackClient.fetchJSON(
           'POST',
           contributor.contributionWebhook,
@@ -108,22 +112,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
 
   return (
     <div className="selected-single-node">
-      <div className="single-node-title">Preview</div>
-      <div>
-        <p>Cool preview here</p>
-      </div>
-      <Button
-        className="button-basic"
-        //theme="danger"
-        iconOnly
-        label="Launch execution"
-        busy={isWorking}
-        disabled={isWorking}
-        onClick={handleGenerateTree}
-        extension="narrow"
-      >
-        Generate new tree
-      </Button>
+      <div className="single-node-title">Actions</div>
       <Button
         className="button-basic"
         //theme="danger"
