@@ -48,7 +48,6 @@ export const receiveShares = async () => {
   )
 
   log(infoTag, 'Type of share', typeof share)
-  //const share = await sharedClient.collection('io.cozy.files').
 
   // Storing shares as files to be shared
   // Create or find a DISSEC directory
