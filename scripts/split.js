@@ -1,5 +1,5 @@
 const fs = require('fs')
-const data = require('../data/operations.json')
+const path = require('path')
 
 const main = () => {
   const currentInstance = Number(process.argv[3])
@@ -11,6 +11,8 @@ const main = () => {
   })
 
   let records = []
+
+  // TODO: Use better synthetic data
   // Aggregators don't get data
   switch (currentInstance) {
     case 4:
@@ -38,8 +40,14 @@ const main = () => {
 
   console.log('Creating records:', records)
 
+  const dir = process.argv[2]
+
+  if (!fs.existsSync(path.dirname(dir))) {
+    fs.mkdirSync(path.dirname(dir));
+  }
+
   fs.writeFileSync(
-    process.argv[2],
+    dir,
     JSON.stringify(
       { 'io.cozy.bank.operations': records },
       null,
