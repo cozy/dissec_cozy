@@ -1,4 +1,4 @@
-import vocabulary from './vocabulary.json'
+import vocabulary from './vocabulary_tiny.json'
 import classes from './classes.json'
 
 const NOISE_CEILING = 1000000000000
@@ -12,7 +12,7 @@ export class Model {
       .map(() =>
         Array(this.uniqueY.length)
           .fill()
-          .map(() => 1)
+          .map(() => 0)
       )
     this.logProbabilities = Array(vocabulary.length)
       .fill()
@@ -50,7 +50,7 @@ export class Model {
     if (finalize) {
       for (let j = 0; j < vocabulary.length; j++) {
         for (let i = 0; i < model.uniqueY.length; i++) {
-          model.occurences[j][i] /= model.contributions
+          model.occurences[j][i] /= shares.length
         }
       }
 
@@ -70,9 +70,11 @@ export class Model {
 
   initialize() {
     for (const j in vocabulary) {
-      const total = this.occurences[j].reduce((a, b) => a + b)
+      const total = 1 + this.occurences[j].reduce((a, b) => a + b)
       for (const i in this.uniqueY) {
-        this.logProbabilities[j][i] = Math.log(this.occurences[j][i] / total)
+        this.logProbabilities[j][i] = Math.log(
+          (1 + this.occurences[j][i]) / total
+        )
       }
     }
   }

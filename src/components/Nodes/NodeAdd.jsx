@@ -7,7 +7,7 @@ import Button from 'cozy-ui/react/Button'
 
 import { NODES_DOCTYPE } from 'doctypes'
 
-export const AggregatorAdd = () => {
+export const NodeAdd = () => {
   const client = useClient()
 
   const [label, setLabel] = useState('')
@@ -104,4 +104,4 @@ export const AggregatorAdd = () => {
   )
 }
 
-export default AggregatorAdd
+export default NodeAdd

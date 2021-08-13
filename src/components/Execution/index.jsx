@@ -4,11 +4,13 @@ import { nodesQuery } from 'doctypes'
 
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox'
 import Spinner from 'cozy-ui/react/Spinner'
+import Label from 'cozy-ui/transpiled/react/Label'
 import Button from 'cozy-ui/react/Button'
 
 import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
-import Label from 'cozy-ui/react/Label'
+import FullAggregation from './FullAggregation.jsx'
+
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -56,15 +58,14 @@ export const Execution = ({ nodes }) => {
     [client, fetchWebhooks]
   )
 
-  const handleSelectNode = useCallback(() => {}, [])
-
   const fetchWebhooks = useCallback(
     async () => {
-      let webhooks = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
+      let { data: webhooks } = await client.collection('io.cozy.triggers').all()
+      console.log(webhooks)
 
       setWebhooks(
-        webhooks.data
-          .filter(hook => hook.attributes.type === '@webhook')
+        webhooks
+          .filter(hook => hook.type === '@webhook')
           .sort((a, b) => a.id > b.id)
       )
     },
@@ -83,24 +84,32 @@ export const Execution = ({ nodes }) => {
       {isLoading ? (
         <Spinner size="xxlarge" middle />
       ) : (
-        <div className="single-node">
-          <div className="card-title">
-            <b>Single node aggregation</b>
+        <>
+          <div className="card">
+            <div className="card-title">
+              <b>Full aggreation</b>
+            </div>
+            <FullAggregation nodes={data} webhooks={webhooks}/>
           </div>
-          <div>
-            <Label htmlFor="single-node-selector">
-              Select the node performing the execution:{' '}
-            </Label>
-            <SelectBox
-              id="single-node-selector"
-              options={options}
-              name="Select a node"
-              onChange={e => setSingleNode(e.value)}
-            />
+          <div className="card">
+            <div className="card-title">
+              <b>Single node aggregation</b>
+            </div>
+            <div>
+              <Label htmlFor="single-node-selector">
+                Select the node performing the execution:{' '}
+              </Label>
+              <SelectBox
+                id="single-node-selector"
+                options={options}
+                name="Select a node"
+                onChange={e => setSingleNode(e.value)}
+              />
+            </div>
+            <div className="spacer-sm" />
+            {singleNode && <SingleNodeAggregation node={singleNode} />}
           </div>
-          <div className="spacer-sm" />
-          {singleNode && <SingleNodeAggregation node={singleNode} />}
-        </div>
+        </>
       )}
       {webhooks &&
         webhooks.map(hook => (

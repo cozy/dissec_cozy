@@ -28,9 +28,11 @@ export const OperationAdd = () => {
     [setAmountToAdd]
   )
 
-  // create the new todo
+  // create the new bank operation
   const handleSubmit = useCallback(
-    async () => {
+    async (e) => {
+      e.preventDefault()
+
       // reset the input and display a spinner during the process
       setIsWorking(true)
 

@@ -1,6 +1,9 @@
 # Cozy
 .token.json
+scripts/.token.json
 
+# DISSECOZY
+assets
 
 # NPM
 node_modules/

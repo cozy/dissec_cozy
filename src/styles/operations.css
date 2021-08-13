@@ -27,6 +27,10 @@
   margin-right: 0;
 }
 
+.button-basic {
+  margin: 2px;
+}
+
 .operation-spend {
   font-weight: bold;
   color: red;

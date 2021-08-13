@@ -2,121 +2,71 @@ global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
 import fs from 'fs'
-import CozyClient from 'cozy-client'
-import { Model } from './helpers'
+import CozyClient, { Q } from 'cozy-client'
+
+import { Model, createLogger } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const aggregation = async () => {
+  const client = CozyClient.fromEnv(process.env, {})
+
+  const log = createLogger(client.stackClient.uri)
+
+  log(
+    'Aggregating service called because a document is received:',
+    process.env['COZY_COUCH_DOC']
+  )
+
   // Worker's arguments
+  const { dir_id: aggregationDirectoryId, metadata } = JSON.parse(
+    process.env['COZY_COUCH_DOC'] || {}
+  )
+
+  // This file is not a share uploaded by an aggregator for himself
+  if (!(metadata && metadata.dissec)) return
+
   const {
-    docId,
-    sharecode,
-    uri,
+    executionId,
+    aggregatorId,
+    level,
     nbShares,
     parent,
     finalize,
-    level,
-    aggregatorId,
-    executionId,
     nbChild
-  } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
+  } = metadata
 
-  const client = CozyClient.fromEnv(process.env, {})
-
-  // Download share using provided informations
-  const sharedClient = new CozyClient({
-    uri: uri,
-    token: sharecode,
-    schema: {
-      files: {
-        doctype: 'io.cozy.files',
-        relationships: {
-          old_versions: {
-            type: 'has-many',
-            doctype: 'io.cozy.files.versions'
-          }
-        }
-      }
-    },
-    store: false
-  })
-  const share = await sharedClient.stackClient.fetchJSON(
-    'GET',
-    `/files/download/${docId}`
+  // TODO: Remove hierarchy and base only on metadata and id
+  // Count files in the aggregation folder
+  const { data: unfilteredFiles } = await client.query(
+    Q('io.cozy.files').where({
+      dir_id: aggregationDirectoryId
+    })
+  )
+  const receivedShares = unfilteredFiles.filter(
+    file => file.attributes.metadata && file.attributes.metadata.level === level
   )
 
-  // Storing shares as files to be shared
-  // Create or find a DISSEC directory
-  const baseFolder = 'DISSEC'
-  let dissecDirectory
-  try {
-    const { data } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/io.cozy.files.root-dir?Type=directory&Name=${baseFolder}`
-    )
-    dissecDirectory = data.id
-  } catch (e) {
-    const { included } = await client.stackClient.fetchJSON(
-      'GET',
-      '/files/io.cozy.files.root-dir'
-    )
-    dissecDirectory = included.filter(
-      dir => dir.attributes.name === baseFolder
-    )[0].id
-  }
+  log('Already received shares:', receivedShares.length)
 
-  // Create a directory specifically for this aggregation
-  // This prevents mixing shares from different execution
-  let aggregationDirectory
-  try {
-    const { data } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/${dissecDirectory}?Type=directory&Name=${executionId}`
-    )
-    aggregationDirectory = data
-  } catch (e) {
-    const { included } = await client.stackClient.fetchJSON(
-      'GET',
-      `/files/${dissecDirectory}`
-    )
-    aggregationDirectory = included.filter(
-      dir => dir.attributes.name === executionId
-    )[0].id
-  }
-
-  // Fetch currently owned shares
-  const { included: allSharesReceived } = await client.stackClient.fetchJSON(
-    'GET',
-    `/files/${aggregationDirectory}`
-  )
-  // Filter only the shares for the aggregator in this position
-  const sharesReceived = allSharesReceived.filter(dir =>
-    dir.attributes.name.includes(`aggregator${aggregatorId}_level${level}`)
-  )
-  const received = sharesReceived.length
-
-  // Check if shares of each child has been received
-  if (received < nbChild - 1) {
-    // Some shares are missing
-    // Save the received share
-    await client.stackClient.fetchJSON(
-      'POST',
-      `/files/${aggregationDirectory}?Type=file&Name=aggregator${aggregatorId}_level${level}_${sharecode}`,
-      share
-    )
-    // Wait for more shares
+  if (receivedShares.length !== nbChild) {
+    log('Waiting for more...')
     return
   }
 
+  log('Received the right amount of shares, starting!')
+
   // Fetch all stored shares
-  const shares = [share]
-  for (let s of sharesReceived) {
-    shares.push(
-      await client.stackClient.fetchJSON('GET', `/files/download/${s.id}`)
+  const shares = []
+  for (let s of receivedShares) {
+    // TODO: Should use cozy-client, but fetchFileContentById uses fetch instead of fetchJSON
+    const receivedShare = await client.stackClient.fetchJSON(
+      'GET',
+      `/files/download/${s._id}`
     )
+    shares.push(JSON.parse(receivedShare))
   }
 
-  if (shares.length !== nbChild) throw 'Invalid number of shares received!'
+  log('Downloaded', shares.length, 'shares')
 
   // Combine the shares
   let model = Model.fromShares(shares, finalize)
@@ -127,38 +77,38 @@ export const aggregation = async () => {
       dissecConfig.localModelPath,
       JSON.stringify(model.getBackup())
     )
+    log('Finished the execution, wrote model to disk')
   } else {
     // Store the aggregate as a file to be shared
-    const { data: aggregate } = await client.stackClient.fetchJSON(
-      'POST',
-      `/files/${aggregationDirectory}?Type=file&Name=aggregator${aggregatorId}_level${level}_aggregate${aggregatorId}`,
-      model.getBackup() // Backups are single shares with no noise
-    )
+    const { data: aggregate } = await client.create('io.cozy.files', {
+      type: 'file',
+      name: `aggregator${aggregatorId}_level${level}_aggregate${aggregatorId}`,
+      dirId: aggregationDirectoryId,
+      data: JSON.stringify(model.getBackup())
+    })
+
+    log('Created intermediate aggregate')
 
     // Generate share code
-    const body = {
-      data: {
-        type: 'io.cozy.permissions',
-        attributes: {
-          source_id: aggregatorId,
-          permissions: {
-            shares: {
-              type: 'io.cozy.files',
-              verbs: ['GET', 'POST'],
-              values: [aggregate.id]
-            }
-          }
+    const { data: sharing } = await client.create('io.cozy.permissions', {
+      codes: `parent${aggregatorId}`,
+      ttl: '1h',
+      permissions: {
+        shares: {
+          type: 'io.cozy.files',
+          verbs: ['GET', 'POST'],
+          values: [aggregate.id]
         }
       }
-    }
-    const { data: sharing } = await client.stackClient.fetchJSON(
-      'POST',
-      `/permissions?codes=parent${aggregatorId}&ttl=1h`,
-      body
-    )
+    })
     const shareCode = sharing.attributes.shortcodes[`parent${aggregatorId}`]
 
+    log('Sharing code is', shareCode)
+
+    log('Sending intermediate aggregate via', parent.webhook)
+
     // Call parent's aggregation webhook to send the aggregate
+    // TODO: Callwebhook without using fetchJSON
     await client.stackClient.fetchJSON('POST', parent.webhook, {
       executionId,
       docId: aggregate.id,

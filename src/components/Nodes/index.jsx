@@ -6,6 +6,7 @@ import { nodesQuery } from 'doctypes'
 
 import NodeAdd from './NodeAdd'
 import NodesList from './NodesList'
+import NodeUpload from './NodeUpload'
 
 export const Nodes = ({ nodes }) => {
   const { isLoading, data } = nodes
@@ -17,6 +18,7 @@ export const Nodes = ({ nodes }) => {
       ) : (
         <div>
           <NodesList nodes={data} />
+          <NodeUpload />
           <NodeAdd />
         </div>
       )}
