@@ -86,10 +86,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
 
       const executionId = uuid()
 
-      function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms))
-      }
-      for (let contributor of contributors) {
+      for (const contributor of contributors) {
         const contributionBody = {
           executionId,
           pretrained: false,
@@ -97,8 +94,6 @@ const FullAggregation = ({ nodes, webhooks }) => {
           parents: contributor.parents
         }
 
-        // Queue request to avoid overlapping I/O
-        await sleep(10000)
         await client.stackClient.fetchJSON(
           'POST',
           contributor.contributionWebhook,
