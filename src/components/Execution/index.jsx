@@ -4,7 +4,7 @@ import { nodesQuery } from 'doctypes'
 
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox'
 import Spinner from 'cozy-ui/react/Spinner'
-import Label from 'cozy-ui/react/Label'
+import Label from 'cozy-ui/transpiled/react/Label'
 import Button from 'cozy-ui/react/Button'
 
 import Webhook from './Webhook'
