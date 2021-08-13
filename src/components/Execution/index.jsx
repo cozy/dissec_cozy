@@ -58,19 +58,14 @@ export const Execution = ({ nodes }) => {
     [client, fetchWebhooks]
   )
 
-  const handleSelectNode = useCallback(() => {}, [])
-
   const fetchWebhooks = useCallback(
     async () => {
-      let webhooks = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
-
-      console.log(webhooks.data
-        .filter(hook => hook.attributes.type === '@webhook')
-        .sort((a, b) => a.id > b.id))
+      let { data: webhooks } = await client.collection('io.cozy.triggers').all()
+      console.log(webhooks)
 
       setWebhooks(
-        webhooks.data
-          .filter(hook => hook.attributes.type === '@webhook')
+        webhooks
+          .filter(hook => hook.type === '@webhook')
           .sort((a, b) => a.id > b.id)
       )
     },
