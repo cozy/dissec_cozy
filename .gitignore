@@ -1,9 +1,9 @@
 # Cozy
 .token.json
 scripts/.token.json
-data/split.json
-data/webhooks.json
 
+# DISSECOZY
+assets
 
 # NPM
 node_modules/
