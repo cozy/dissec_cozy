@@ -10,47 +10,31 @@ then
     return
 fi
 
-current_path="/mnt/c/Users/jumic/Projets/Cozy/dissec_cozy/scripts"
-stack_path="/mnt/c/Users/jumic/Projets/Cozy/cozy-stack"
-
-# domain="test1.cozy.localhost:8080"
-# cd $stack_path
-# token=$(go run main.go instances token-app ${domain} dissecozy)
-# cd $current_path
-# node webhooks.js http://${domain} ${token} ../data/webhooks.json
+repository=$(pwd)
+cd ${repository}/scripts
 
 echo "Clearing old webhooks data..."
-rm ./data/webhooks.json
+rm ../data/webhooks.json
 
 for i in `seq 1 ${1}`
 do
     domain="test${i}.cozy.localhost:8080"
     echo "Creating instance ${domain}"
-
-    cd $stack_path
-    
     # Destroy the instance in case it already exists
-    go run main.go instances destroy ${domain} --force
+    cozy-stack instances destroy ${domain} --force
     # Create a new instance
-    go run main.go instances add --apps drive,photos ${domain} --passphrase cozy
-    go run main.go instances modify ${domain} --onboarding-finished
-
+    cozy-stack instances add --apps drive,photos ${domain} --passphrase cozy
+    cozy-stack instances modify ${domain} --onboarding-finished
     # Generate token first
-    ACH_token=$(go run main.go instances token-cli ${domain} io.cozy.bank.operations)
-
-    cd $current_path
+    ACH_token=$(cozy-stack instances token-cli ${domain} io.cozy.bank.operations)
     # Split our dataset in chunks (deterministic)
-    node split.js ../data/split.json ${i}
+    node split.js ../assets/split.json ${i}
     # Populate the instance with data using ACH. Helper will randomly select samples
-    ACH -u http://${domain} -y import ../data/split.json -t ${ACH_token}
-    cd $stack_path
-    
+    ACH -u http://${domain} -y import ../assets/split.json -t ${ACH_token}
     # Generate a token
-    token=$(go run main.go instances token-app ${domain} dissecozy)
+    token=$(cozy-stack instances token-app ${domain} dissecozy)
     # Install the app
-    go run main.go apps install --domain ${domain} dissecozy file:///mnt/c/Users/jumic/Projets/Cozy/dissec_cozy/build/
-    
-    cd $current_path
+    cozy-stack apps install --domain ${domain} dissecozy file://${repository}/build/
     # Fetch webhooks
-    node webhooks.js http://${domain} ${token} ../data/webhooks.json
+    node webhooks.js http://${domain} ${token} ../assets/webhooks.json
 done
