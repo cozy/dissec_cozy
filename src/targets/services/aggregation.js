@@ -3,18 +3,16 @@ global.btoa = require('btoa')
 
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
-import log from 'cozy-logger'
 
-import { Model } from './helpers'
+import { Model, createLogger } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const aggregation = async () => {
   const client = CozyClient.fromEnv(process.env, {})
 
-  const infoTag = 'info: [' + client.stackClient.uri.split('/')[2] + ']'
+  const log = createLogger(client.stackClient.uri)
 
   log(
-    infoTag,
     'Aggregating service called because a document is received:',
     process.env['COZY_COUCH_DOC']
   )
@@ -48,14 +46,14 @@ export const aggregation = async () => {
     file => file.attributes.metadata && file.attributes.metadata.level === level
   )
 
-  log(infoTag, 'Already received shares:', receivedShares.length)
+  log('Already received shares:', receivedShares.length)
 
   if (receivedShares.length !== nbChild) {
-    log(infoTag, 'Waiting for more...')
+    log('Waiting for more...')
     return
   }
 
-  log(infoTag, 'Received the right amount of shares, starting!')
+  log('Received the right amount of shares, starting!')
 
   // Fetch all stored shares
   const shares = []
@@ -67,7 +65,7 @@ export const aggregation = async () => {
     shares.push(JSON.parse(receivedShare))
   }
 
-  log(infoTag, 'Downloaded', shares.length, 'shares')
+  log('Downloaded', shares.length, 'shares')
 
   // Combine the shares
   let model = Model.fromShares(shares, finalize)
@@ -78,7 +76,7 @@ export const aggregation = async () => {
       dissecConfig.localModelPath,
       JSON.stringify(model.getBackup())
     )
-    log(infoTag, 'Finished the execution, wrote model to disk')
+    log('Finished the execution, wrote model to disk')
   } else {
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {
@@ -88,7 +86,7 @@ export const aggregation = async () => {
       data: JSON.stringify(model.getBackup())
     })
 
-    log(infoTag, 'Created intermediate aggregate')
+    log('Created intermediate aggregate')
 
     // Generate share code
     const { data: sharing } = await client.create('io.cozy.permissions', {
@@ -104,9 +102,9 @@ export const aggregation = async () => {
     })
     const shareCode = sharing.attributes.shortcodes[`parent${aggregatorId}`]
 
-    log(infoTag, 'Sharing code is', shareCode)
+    log('Sharing code is', shareCode)
 
-    log(infoTag, 'Sending intermediate aggregate via', parent.webhook)
+    log('Sending intermediate aggregate via', parent.webhook)
 
     // Call parent's aggregation webhook to send the aggregate
     // TODO: Callwebhook without using fetchJSON

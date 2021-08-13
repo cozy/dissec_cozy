@@ -2,7 +2,7 @@ global.fetch = require('node-fetch').default
 global.btoa = require('btoa')
 
 import CozyClient from 'cozy-client'
-import log from 'cozy-logger'
+import { createLogger } from './helpers'
 
 export const receiveShares = async () => {
   // Worker's arguments
@@ -21,9 +21,9 @@ export const receiveShares = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const infoTag = 'info: [' + client.stackClient.uri.split('/')[2] + ']'
+  const log = createLogger(client.stackClient.uri)
 
-  log(infoTag, 'Received share')
+  log('Received share')
 
   // Download share using provided informations
   const sharedClient = new CozyClient({
@@ -47,7 +47,7 @@ export const receiveShares = async () => {
     `/files/download/${docId}`
   )
 
-  log(infoTag, 'Type of share', typeof share)
+  log('Type of share', typeof share)
 
   // Storing shares as files to be shared
   // Create or find a DISSEC directory
@@ -64,7 +64,7 @@ export const receiveShares = async () => {
     .collection('io.cozy.files')
     .getDirectoryOrCreate(executionId, dissecDirectory)
   const aggregationDirectoryId = aggregationDirectory._id
-  log(infoTag, 'Aggregation folder id', aggregationDirectoryId)
+  log('Aggregation folder id', aggregationDirectoryId)
 
   // Save the received share
   await client.create('io.cozy.files', {
@@ -83,7 +83,7 @@ export const receiveShares = async () => {
       nbChild
     }
   })
-  log(infoTag, 'Stored share!')
+  log('Stored share!')
 }
 
 receiveShares().catch(e => {

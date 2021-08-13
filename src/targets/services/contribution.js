@@ -3,9 +3,8 @@ global.btoa = require('btoa')
 
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
-import log from 'cozy-logger'
 import { BANK_DOCTYPE } from '../../doctypes'
-import { Model } from './helpers'
+import { Model, createLogger } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
@@ -19,7 +18,7 @@ export const contribution = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const infoTag = 'info: [' + client.stackClient.uri.split('/')[2] + ']'
+  const log = createLogger(client.stackClient.uri)
 
   // Fetch training data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
@@ -56,7 +55,6 @@ export const contribution = async () => {
     .collection('io.cozy.files')
     .getDirectoryOrCreate(executionId, dissecDirectory)
   const aggregationDirectoryId = aggregationDirectoryDoc._id
-  log(infoTag, aggregationDirectoryId)
 
   // Create a file for each share
   const files = []
@@ -67,7 +65,6 @@ export const contribution = async () => {
       dirId: aggregationDirectoryId,
       data: JSON.stringify(shares[i])
     })
-    log(infoTag, 'file creation', file._id)
     files.push(file._id)
   }
 
@@ -105,7 +102,7 @@ export const contribution = async () => {
       aggregatorId: parents[i].aggregatorId,
       nbChild: parents[i].nbChild
     })
-    log(infoTag, 'Activated webhook', parents[i].webhook)
+    log('Activated webhook', parents[i].webhook)
   }
 }
 
