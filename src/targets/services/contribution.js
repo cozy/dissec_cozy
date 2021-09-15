@@ -57,6 +57,8 @@ export const contribution = async () => {
   const aggregationDirectoryId = aggregationDirectoryDoc._id
 
   // Create a file for each share
+  // TODO: Writing shares in binary
+  // TODO: Compressing shares (e.g. using lz-string)
   const files = []
   for (let i in shares) {
     const { data: file } = await client.create('io.cozy.files', {
