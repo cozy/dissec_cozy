@@ -66,7 +66,7 @@ export const aggregation = async () => {
   log('Downloaded', compressedShares.length, 'shares')
 
   // Combine the shares
-  let model = Model.fromCompressedShares(compressedShares, finalize)
+  let model = Model.fromCompressedShares(compressedShares, { shouldFinalize: finalize })
 
   if (finalize) {
     // Write a file that will be used as a remote asset by the stack
