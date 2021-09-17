@@ -20,9 +20,12 @@ export const categorize = async () => {
   if (pretrained) {
     // Use the stack's remote assets
     try {
-      const backup = JSON.parse(fs.readFileSync(dissecConfig.localModelPath))
-      model = Model.fromBackup(backup)
+      const compressedBackup = fs
+        .readFileSync(dissecConfig.localModelPath)
+        .toString()
+      model = Model.fromCompressedBackup(compressedBackup)
     } catch (err) {
+      console.log(err)
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {

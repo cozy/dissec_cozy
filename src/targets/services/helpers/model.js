@@ -1,7 +1,9 @@
+import LZString from 'lz-string'
+
 import vocabulary from './vocabulary_tiny.json'
 import classes from './classes.json'
 
-const NOISE_CEILING = 1000000000000
+const NOISE_CEILING = 300000
 
 export class Model {
   constructor() {
@@ -32,6 +34,11 @@ export class Model {
     return model
   }
 
+  static fromCompressedBackup(compressedBackup) {
+    const doc = Model.compressedBinaryToShare(compressedBackup)
+    return Model.fromBackup(doc)
+  }
+
   static fromShares(shares, finalize) {
     let model = new Model()
     model.contributions = 0
@@ -58,6 +65,14 @@ export class Model {
     }
 
     return model
+  }
+
+  static fromCompressedShares(compressedShares, finalize) {
+    const shares = compressedShares.map(cshare => {
+      //console.log(String(cshare))
+      return Model.compressedBinaryToShare(String(cshare))
+    })
+    return Model.fromShares(shares, finalize)
   }
 
   static fromDocs(docs) {
@@ -142,11 +157,70 @@ export class Model {
     return shares
   }
 
+  getCompressedShares(nbShares) {
+    const shares = this.getShares(nbShares)
+    return shares.map(share => Model.shareToCompressedBinary(share))
+  }
+
   getBackup() {
     const { occurences, contributions } = this
     return {
       occurences,
       contributions
+    }
+  }
+
+  getCompressedBackup() {
+    const { occurences, contributions } = this
+    return Model.shareToCompressedBinary({
+      occurences,
+      contributions
+    })
+  }
+
+  static shareToCompressedBinary(share) {
+    const ROWS = vocabulary.length
+    const COLS = Object.keys(classes).length
+    const numberSize = 4
+    const buf = Buffer.alloc((ROWS * COLS + 1) * numberSize)
+
+    buf.writeInt32BE(share.contributions, 0)
+    for (let j = 0; j < ROWS; j++) {
+      for (let i = 0; i < COLS; i++) {
+        buf.writeInt32BE(
+          share.occurences[j][i],
+          (j * COLS + i + 1) * numberSize
+        )
+      }
+    }
+
+    return LZString.compressToBase64(buf.toString('base64'))
+  }
+
+  static compressedBinaryToShare(compressed) {
+    const decompressed = LZString.decompressFromBase64(compressed)
+    const buf = Buffer.from(decompressed, 'base64')
+    const ROWS = vocabulary.length
+    const COLS = Object.keys(classes).length
+    const numberSize = 4
+    const contributions = buf.readInt32BE()
+    const occurences = Array(ROWS)
+      .fill()
+      .map(() =>
+        Array(COLS)
+          .fill()
+          .map(() => 0)
+      )
+
+    for (let j = 0; j < ROWS; j++) {
+      for (let i = 0; i < COLS; i++) {
+        occurences[j][i] = buf.readInt32BE((j * COLS + i + 1) * numberSize)
+      }
+    }
+
+    return {
+      contributions,
+      occurences
     }
   }
 }
