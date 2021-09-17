@@ -104,14 +104,14 @@ describe('Model library', () => {
   describe('share to/from compressed binary', () => {
     it('should convert from one to the other without error', () => {
       const nbShares = 3
-      const model = Model.fromDocs(mockDocs)
-      const shares = model.getShares(nbShares)
-      const cshares = model.getCompressedShares(nbShares)
+      const originalModel = Model.fromDocs(mockDocs)
+      const shares = originalModel.getShares(nbShares)
+      const compressedShares = originalModel.getCompressedShares(nbShares)
 
-      const newModel = Model.fromShares(shares, true)
-      const secondModel = Model.fromCompressedShares(cshares, true)
-      expect(newModel.occurences).toEqual(model.occurences)
-      expect(secondModel.occurences).toEqual(model.occurences)
+      const modelFromShares = Model.fromShares(shares, true)
+      const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, true)
+      expect(modelFromShares.occurences).toEqual(originalModel.occurences)
+      expect(modelFromCompressedShares.occurences).toEqual(originalModel.occurences)
     })
   })
 })

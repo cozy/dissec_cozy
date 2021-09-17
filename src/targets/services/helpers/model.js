@@ -1,8 +1,10 @@
 import LZString from 'lz-string'
 
-import vocabulary from './vocabulary_tiny.json'
+import vocabulary from '../../../assets/vocabulary_tiny.json'
 import classes from './classes.json'
 
+// This constant defines the amplitude of the noise added to shares
+// It needs to be small enough to sum all shares without overflows
 const NOISE_CEILING = 300000
 
 export class Model {
@@ -39,7 +41,7 @@ export class Model {
     return Model.fromBackup(doc)
   }
 
-  static fromShares(shares, finalize) {
+  static fromShares(shares, { shouldFinalize }) {
     let model = new Model()
     model.contributions = 0
     shares.forEach(share => (model.contributions += share.contributions))
@@ -54,7 +56,7 @@ export class Model {
       }
     }
 
-    if (finalize) {
+    if (shouldFinalize) {
       for (let j = 0; j < vocabulary.length; j++) {
         for (let i = 0; i < model.uniqueY.length; i++) {
           model.occurences[j][i] /= shares.length
@@ -67,12 +69,12 @@ export class Model {
     return model
   }
 
-  static fromCompressedShares(compressedShares, finalize) {
+  static fromCompressedShares(compressedShares, options) {
     const shares = compressedShares.map(cshare => {
       //console.log(String(cshare))
       return Model.compressedBinaryToShare(String(cshare))
     })
-    return Model.fromShares(shares, finalize)
+    return Model.fromShares(shares, options)
   }
 
   static fromDocs(docs) {
@@ -179,17 +181,17 @@ export class Model {
   }
 
   static shareToCompressedBinary(share) {
-    const ROWS = vocabulary.length
-    const COLS = Object.keys(classes).length
+    const rows = vocabulary.length
+    const cols = Object.keys(classes).length
     const numberSize = 4
-    const buf = Buffer.alloc((ROWS * COLS + 1) * numberSize)
+    const buf = Buffer.alloc((rows * cols + 1) * numberSize)
 
     buf.writeInt32BE(share.contributions, 0)
-    for (let j = 0; j < ROWS; j++) {
-      for (let i = 0; i < COLS; i++) {
+    for (let j = 0; j < rows; j++) {
+      for (let i = 0; i < cols; i++) {
         buf.writeInt32BE(
           share.occurences[j][i],
-          (j * COLS + i + 1) * numberSize
+          (j * cols + i + 1) * numberSize
         )
       }
     }
@@ -200,21 +202,21 @@ export class Model {
   static compressedBinaryToShare(compressed) {
     const decompressed = LZString.decompressFromBase64(compressed)
     const buf = Buffer.from(decompressed, 'base64')
-    const ROWS = vocabulary.length
-    const COLS = Object.keys(classes).length
+    const rows = vocabulary.length
+    const cols = Object.keys(classes).length
     const numberSize = 4
     const contributions = buf.readInt32BE()
-    const occurences = Array(ROWS)
+    const occurences = Array(rows)
       .fill()
       .map(() =>
-        Array(COLS)
+        Array(cols)
           .fill()
           .map(() => 0)
       )
 
-    for (let j = 0; j < ROWS; j++) {
-      for (let i = 0; i < COLS; i++) {
-        occurences[j][i] = buf.readInt32BE((j * COLS + i + 1) * numberSize)
+    for (let j = 0; j < rows; j++) {
+      for (let i = 0; i < cols; i++) {
+        occurences[j][i] = buf.readInt32BE((j * cols + i + 1) * numberSize)
       }
     }
 
