@@ -1,6 +1,3 @@
-global.fetch = require('node-fetch').default
-global.btoa = require('btoa')
-
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
