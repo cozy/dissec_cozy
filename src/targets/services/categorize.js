@@ -25,7 +25,6 @@ export const categorize = async () => {
         .toString()
       model = Model.fromCompressedBackup(compressedBackup)
     } catch (err) {
-      console.log(err)
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
