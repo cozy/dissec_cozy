@@ -1,7 +1,7 @@
 import LZString from 'lz-string'
 
 import vocabulary from '../../../assets/vocabulary_tiny.json'
-import classes from './classes.json'
+import classes from '../../../assets/classes.json'
 
 // This constant defines the amplitude of the noise added to shares
 // It needs to be small enough to sum all shares without overflows
@@ -60,7 +60,7 @@ export class Model {
    * @param {boolean} shouldFinalize Used by the final aggregator to produce a usable model
    * @return {Model} The new model
    */
-  static fromShares(shares, { shouldFinalize }) {
+  static fromShares(shares, { shouldFinalize } = {}) {
     let model = new Model()
     model.contributions = 0
     shares.forEach(share => (model.contributions += share.contributions))

@@ -2,8 +2,8 @@
 
 /* eslint-env jest */
 
-import vocabulary from '../../src/targets/services/helpers/vocabulary_tiny.json'
-import { Model } from "../../src/targets/services/helpers"
+import vocabulary from '../../src/assets/vocabulary_tiny.json'
+import { Model } from '../../src/targets/services/helpers'
 
 describe('Model library', () => {
   const mockDocs = [
@@ -47,7 +47,7 @@ describe('Model library', () => {
       const nbShares = 2
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
-      const model = Model.fromShares(shares, true)
+      const model = Model.fromShares(shares, { shouldFinalize: true })
       expect(model.occurences[0][1]).toEqual(1)
       expect(model.occurences[1][1]).toEqual(1)
       expect(model.occurences[2][1]).toEqual(1)
@@ -64,7 +64,7 @@ describe('Model library', () => {
       const shares2 = secondModel.getShares(nbShares)
       const agg1 = Model.fromShares([shares1[0], shares2[0]])
       const agg2 = Model.fromShares([shares1[1], shares2[1]])
-      const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], true)
+      const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], { shouldFinalize: true })
       const model = Model.fromDocs(mockDocs.concat(mockDocs2))
       expect(modelRecomposed.occurences).toEqual(model.occurences)
     })
@@ -96,7 +96,7 @@ describe('Model library', () => {
       const nbShares = 3
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
-      const model = Model.fromShares(shares, true)
+      const model = Model.fromShares(shares, { shouldFinalize: true })
       expect(firstModel.occurences).toEqual(model.occurences)
     })
   })
@@ -108,8 +108,8 @@ describe('Model library', () => {
       const shares = originalModel.getShares(nbShares)
       const compressedShares = originalModel.getCompressedShares(nbShares)
 
-      const modelFromShares = Model.fromShares(shares, true)
-      const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, true)
+      const modelFromShares = Model.fromShares(shares, { shouldFinalize: true })
+      const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, { shouldFinalize: true })
       expect(modelFromShares.occurences).toEqual(originalModel.occurences)
       expect(modelFromCompressedShares.occurences).toEqual(originalModel.occurences)
     })
