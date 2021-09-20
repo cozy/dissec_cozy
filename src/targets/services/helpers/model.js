@@ -28,7 +28,13 @@ export class Model {
     this.contributions = 1
   }
 
-  static fromBackup(doc) {
+  /**
+   * Returns a new model created using a model representation
+   * 
+   * @param {string} doc The aggregate
+   * @return {Model} The new model
+   */
+  static fromAggregate(doc) {
     let model = new Model()
     model.occurences = doc.occurences
     model.contributions = doc.contributions
@@ -36,11 +42,24 @@ export class Model {
     return model
   }
 
-  static fromCompressedBackup(compressedBackup) {
-    const doc = Model.compressedBinaryToShare(compressedBackup)
-    return Model.fromBackup(doc)
+  /**
+   * Returns a new model created using a compressed model representation
+   * 
+   * @param {string} compressedAggregate The compressed aggregate
+   * @return {Model} The new model
+   */
+  static fromCompressedAggregate(compressedAggregate) {
+    const doc = Model.compressedBinaryToShare(compressedAggregate)
+    return Model.fromAggregate(doc)
   }
 
+  /**
+   * Returns a new model created using shares
+   * 
+   * @param {Object[]} shares The array of shares
+   * @param {boolean} shouldFinalize Used by the final aggregator to produce a usable model
+   * @return {Model} The new model
+   */
   static fromShares(shares, { shouldFinalize }) {
     let model = new Model()
     model.contributions = 0
@@ -69,6 +88,12 @@ export class Model {
     return model
   }
 
+  /**
+   * Returns a new model created using compressed shares
+   * 
+   * @param {string[]} compressedShares The array of compressed shares  
+   * @return {Model} The new model
+   */
   static fromCompressedShares(compressedShares, options) {
     const shares = compressedShares.map(cshare => {
       //console.log(String(cshare))
@@ -77,6 +102,12 @@ export class Model {
     return Model.fromShares(shares, options)
   }
 
+  /**
+   * Returns a new model trained with the given documents
+   * 
+   * @param {Object[]} docs An array of documents
+   * @return {Model} The new model
+   */
   static fromDocs(docs) {
     let model = new Model()
 
@@ -85,6 +116,11 @@ export class Model {
     return model
   }
 
+  /**
+   * Internal function used to initialize the model given occurences
+   * 
+   * @private
+   */
   initialize() {
     for (const j in vocabulary) {
       const total = 1 + this.occurences[j].reduce((a, b) => a + b)
@@ -96,6 +132,11 @@ export class Model {
     }
   }
 
+  /**
+   * Updates the model's parameters with the given documents
+   * 
+   * @param {Object[]} docs An array of documents
+   */
   train(docs) {
     for (let doc of docs) {
       // Only learn from categorized docs
@@ -116,6 +157,12 @@ export class Model {
     this.initialize()
   }
 
+  /**
+   * Predicts the class of a given text sample
+   * 
+   * @param {string} text The text on which the prediction will be done
+   * @return {string} The predicted label
+   */
   predict(text) {
     let probability = Array(this.uniqueY.length).fill(0)
     const tokens = text.split(' ')
@@ -135,6 +182,12 @@ export class Model {
     return this.uniqueY[result]
   }
 
+  /**
+   * Returns the model's shares
+   * 
+   * @param {Number} nbShares The number of shares to create
+   * @return {Object[]} An array of shares
+   */
   getShares(nbShares) {
     // Initialize shares array
     let shares = Array(nbShares)
@@ -164,7 +217,12 @@ export class Model {
     return shares.map(share => Model.shareToCompressedBinary(share))
   }
 
-  getBackup() {
+  /**
+   * Returns the model's aggregated parameters
+   * 
+   * @return {Object} The aggregated model's parameters
+   */
+  getAggregate() {
     const { occurences, contributions } = this
     return {
       occurences,
@@ -172,7 +230,12 @@ export class Model {
     }
   }
 
-  getCompressedBackup() {
+  /**
+   * Returns a compressed version of the model's aggregated parameters
+   * 
+   * @return {string} The compressed aggregated model's parameters
+   */
+  getCompressedAggregate() {
     const { occurences, contributions } = this
     return Model.shareToCompressedBinary({
       occurences,
@@ -180,6 +243,12 @@ export class Model {
     })
   }
 
+  /**
+   * Transforms a share into a compressed string representation
+   * 
+   * @param {Object} share A share object to compress
+   * @return {string} the string representing the compressed share
+   */
   static shareToCompressedBinary(share) {
     const rows = vocabulary.length
     const cols = Object.keys(classes).length
@@ -199,6 +268,12 @@ export class Model {
     return LZString.compressToBase64(buf.toString('base64'))
   }
 
+  /**
+   * Decompresses a share's string representation
+   * 
+   * @param {string} compressed The compressed share
+   * @return {Object} The share object
+   */
   static compressedBinaryToShare(compressed) {
     const decompressed = LZString.decompressFromBase64(compressed)
     const buf = Buffer.from(decompressed, 'base64')

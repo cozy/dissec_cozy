@@ -64,7 +64,7 @@ describe('Model library', () => {
       const shares2 = secondModel.getShares(nbShares)
       const agg1 = Model.fromShares([shares1[0], shares2[0]])
       const agg2 = Model.fromShares([shares1[1], shares2[1]])
-      const modelRecomposed = Model.fromShares([agg1.getBackup(), agg2.getBackup()], true)
+      const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], true)
       const model = Model.fromDocs(mockDocs.concat(mockDocs2))
       expect(modelRecomposed.occurences).toEqual(model.occurences)
     })
