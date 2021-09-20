@@ -1,6 +1,3 @@
-global.fetch = require('node-fetch').default
-global.btoa = require('btoa')
-
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
@@ -38,9 +35,6 @@ export const contribution = async () => {
     model = Model.fromDocs(operations)
   }
 
-  // Split model in shares
-  let shares = model.getShares(nbShares)
-
   // Storing shares as files to be shared
   // Create or find a DISSEC directory
   const baseFolder = 'DISSEC'
@@ -56,6 +50,9 @@ export const contribution = async () => {
     .getDirectoryOrCreate(executionId, dissecDirectory)
   const aggregationDirectoryId = aggregationDirectoryDoc._id
 
+  // Split model in shares
+  let shares = model.getCompressedShares(nbShares)
+
   // Create a file for each share
   const files = []
   for (let i in shares) {
@@ -63,7 +60,7 @@ export const contribution = async () => {
       type: 'file',
       name: `contribution_${i}`,
       dirId: aggregationDirectoryId,
-      data: JSON.stringify(shares[i])
+      data: shares[i]
     })
     files.push(file._id)
   }

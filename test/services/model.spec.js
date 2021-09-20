@@ -2,29 +2,30 @@
 
 /* eslint-env jest */
 
-import { Model } from "../../src/targets/services/helpers"
+import vocabulary from '../../src/assets/vocabulary_tiny.json'
+import { Model } from '../../src/targets/services/helpers'
 
 describe('Model library', () => {
   const mockDocs = [
     {
-      label: "aa aaa aaaa",
+      label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(" "),
       cozyCategoryId: "100"
     }, {
-      label: "aaapi aac aad",
+      label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(" "),
       cozyCategoryId: "200"
     }, {
-      label: "aaapi aaa aa",
+      label: [vocabulary[3], vocabulary[1], vocabulary[2]].join(" "),
     }, {
-      label: "aaapi aac aa",
+      label: [vocabulary[6], vocabulary[5], vocabulary[4]].join(" "),
     },
   ]
 
   const mockDocs2 = [
     {
-      label: "aac aafip aafflelou",
+      label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(" "),
       cozyCategoryId: "200"
     }, {
-      label: "aar aarpi aat",
+      label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(" "),
       cozyCategoryId: "200"
     }
   ]
@@ -46,7 +47,7 @@ describe('Model library', () => {
       const nbShares = 2
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
-      const model = Model.fromShares(shares, true)
+      const model = Model.fromShares(shares, { shouldFinalize: true })
       expect(model.occurences[0][1]).toEqual(1)
       expect(model.occurences[1][1]).toEqual(1)
       expect(model.occurences[2][1]).toEqual(1)
@@ -56,7 +57,6 @@ describe('Model library', () => {
     })
 
     it('should gives the same result as a centralized dataset', () => {
-      console.log('should gives the same result as a centralized dataset')
       const nbShares = 2
       const firstModel = Model.fromDocs(mockDocs)
       const secondModel = Model.fromDocs(mockDocs2)
@@ -64,8 +64,7 @@ describe('Model library', () => {
       const shares2 = secondModel.getShares(nbShares)
       const agg1 = Model.fromShares([shares1[0], shares2[0]])
       const agg2 = Model.fromShares([shares1[1], shares2[1]])
-      console.log(agg1.contributions, agg2.contributions)
-      const modelRecomposed = Model.fromShares([agg1.getBackup(), agg2.getBackup()], true)
+      const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], { shouldFinalize: true })
       const model = Model.fromDocs(mockDocs.concat(mockDocs2))
       expect(modelRecomposed.occurences).toEqual(model.occurences)
     })
@@ -89,16 +88,30 @@ describe('Model library', () => {
       const nbShares = 3
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
-      expect(shares[0].occurences).not.toEqual(shares[1].occurences)
-      expect(shares[0].occurences).not.toEqual(shares[2].occurences)
+      expect(shares[0]).not.toEqual(shares[1])
+      expect(shares[0]).not.toEqual(shares[2])
     })
 
     it('should generate coherent shares', () => {
       const nbShares = 3
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
-      const model = Model.fromShares(shares, true)
+      const model = Model.fromShares(shares, { shouldFinalize: true })
       expect(firstModel.occurences).toEqual(model.occurences)
+    })
+  })
+
+  describe('share to/from compressed binary', () => {
+    it('should convert from one to the other without error', () => {
+      const nbShares = 3
+      const originalModel = Model.fromDocs(mockDocs)
+      const shares = originalModel.getShares(nbShares)
+      const compressedShares = originalModel.getCompressedShares(nbShares)
+
+      const modelFromShares = Model.fromShares(shares, { shouldFinalize: true })
+      const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, { shouldFinalize: true })
+      expect(modelFromShares.occurences).toEqual(originalModel.occurences)
+      expect(modelFromCompressedShares.occurences).toEqual(originalModel.occurences)
     })
   })
 })

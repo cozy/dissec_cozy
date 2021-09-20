@@ -1,6 +1,3 @@
-global.fetch = require('node-fetch').default
-global.btoa = require('btoa')
-
 import CozyClient from 'cozy-client'
 import { createLogger } from './helpers'
 

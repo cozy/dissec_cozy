@@ -1,6 +1,3 @@
-global.fetch = require('node-fetch').default
-global.btoa = require('btoa')
-
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 
@@ -56,27 +53,24 @@ export const aggregation = async () => {
   log('Received the right amount of shares, starting!')
 
   // Fetch all stored shares
-  const shares = []
+  const compressedShares = []
   for (let s of receivedShares) {
     // TODO: Should use cozy-client, but fetchFileContentById uses fetch instead of fetchJSON
     const receivedShare = await client.stackClient.fetchJSON(
       'GET',
       `/files/download/${s._id}`
     )
-    shares.push(JSON.parse(receivedShare))
+    compressedShares.push(receivedShare)
   }
 
-  log('Downloaded', shares.length, 'shares')
+  log('Downloaded', compressedShares.length, 'shares')
 
   // Combine the shares
-  let model = Model.fromShares(shares, finalize)
+  let model = Model.fromCompressedShares(compressedShares, { shouldFinalize: finalize })
 
   if (finalize) {
     // Write a file that will be used as a remote asset by the stack
-    fs.writeFileSync(
-      dissecConfig.localModelPath,
-      JSON.stringify(model.getBackup())
-    )
+    fs.writeFileSync(dissecConfig.localModelPath, model.getCompressedBackup())
     log('Finished the execution, wrote model to disk')
   } else {
     // Store the aggregate as a file to be shared
@@ -84,7 +78,7 @@ export const aggregation = async () => {
       type: 'file',
       name: `aggregator${aggregatorId}_level${level}_aggregate${aggregatorId}`,
       dirId: aggregationDirectoryId,
-      data: JSON.stringify(model.getBackup())
+      data: model.getCompressedBackup()
     })
 
     log('Created intermediate aggregate')
