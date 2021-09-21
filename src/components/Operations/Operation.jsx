@@ -17,7 +17,7 @@ import {
 
 import OperationRemoveButton from './OperationRemoveButton'
 
-import categories from '../../targets/services/helpers/classes.json'
+import categories from '../../assets/classes.json'
 
 const capitalizeFirstLetter = str => {
   return str.charAt(0).toUpperCase() + str.substring(1, str.length)

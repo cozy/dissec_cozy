@@ -2,8 +2,7 @@
 
 /* eslint-env jest */
 
-import vocabulary from '../../src/assets/vocabulary_tiny.json'
-import { Model } from '../../src/targets/services/helpers'
+import { Model, vocabulary } from '../../src/targets/services/helpers'
 
 describe('Model library', () => {
   const mockDocs = [
@@ -66,7 +65,10 @@ describe('Model library', () => {
       const agg2 = Model.fromShares([shares1[1], shares2[1]])
       const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], { shouldFinalize: true })
       const model = Model.fromDocs(mockDocs.concat(mockDocs2))
-      expect(modelRecomposed.occurences).toEqual(model.occurences)
+
+      for(let i=0; i<5; i++) {
+        expect(modelRecomposed.occurences[i]).toEqual(model.occurences[i])
+      }
     })
   })
 
@@ -97,7 +99,10 @@ describe('Model library', () => {
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
-      expect(firstModel.occurences).toEqual(model.occurences)
+      
+      for(let i=0; i<5; i++) {
+        expect(firstModel.occurences[i]).toEqual(model.occurences[i])
+      }
     })
   })
 
@@ -110,8 +115,13 @@ describe('Model library', () => {
 
       const modelFromShares = Model.fromShares(shares, { shouldFinalize: true })
       const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, { shouldFinalize: true })
-      expect(modelFromShares.occurences).toEqual(originalModel.occurences)
-      expect(modelFromCompressedShares.occurences).toEqual(originalModel.occurences)
+
+      for(let i=0; i<5; i++) {
+        expect(modelFromShares.occurences[i]).toEqual(originalModel.occurences[i])
+      }
+      for(let i=0; i<5; i++) {
+        expect(modelFromCompressedShares.occurences[i]).toEqual(originalModel.occurences[i])
+      }
     })
   })
 })

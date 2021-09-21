@@ -61,7 +61,7 @@
     "cozy-logger": "^1.7.0",
     "cozy-scripts": "5.7.0",
     "cozy-ui": "37.8.0",
-    "lz-string": "^1.4.4",
+    "lzutf8": "^0.6.0",
     "node-fetch": "^2.6.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",

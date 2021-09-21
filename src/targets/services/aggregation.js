@@ -1,3 +1,5 @@
+global.fetch = require('node-fetch').default
+
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 
@@ -66,11 +68,13 @@ export const aggregation = async () => {
   log('Downloaded', compressedShares.length, 'shares')
 
   // Combine the shares
-  let model = Model.fromCompressedShares(compressedShares, { shouldFinalize: finalize })
+  let model = Model.fromCompressedShares(compressedShares, {
+    shouldFinalize: finalize
+  })
 
   if (finalize) {
     // Write a file that will be used as a remote asset by the stack
-    fs.writeFileSync(dissecConfig.localModelPath, model.getCompressedBackup())
+    fs.writeFileSync(dissecConfig.localModelPath, model.getCompressedAggregate())
     log('Finished the execution, wrote model to disk')
   } else {
     // Store the aggregate as a file to be shared
@@ -78,7 +82,7 @@ export const aggregation = async () => {
       type: 'file',
       name: `aggregator${aggregatorId}_level${level}_aggregate${aggregatorId}`,
       dirId: aggregationDirectoryId,
-      data: model.getCompressedBackup()
+      data: model.getCompressedAggregate()
     })
 
     log('Created intermediate aggregate')
