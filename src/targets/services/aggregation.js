@@ -74,7 +74,10 @@ export const aggregation = async () => {
 
   if (finalize) {
     // Write a file that will be used as a remote asset by the stack
-    fs.writeFileSync(dissecConfig.localModelPath, model.getCompressedAggregate())
+    fs.writeFileSync(
+      dissecConfig.localModelPath,
+      model.getCompressedAggregate()
+    )
     log('Finished the execution, wrote model to disk')
   } else {
     // Store the aggregate as a file to be shared
