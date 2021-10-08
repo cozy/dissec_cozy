@@ -10,27 +10,19 @@ export class Model {
   constructor() {
     this.uniqueY = Object.keys(classes)
     this.priors = Array(classes.length).fill(1)
-    this.occurences = Array(vocabulary.length)
-      .fill()
-      .map(() =>
-        Array(this.uniqueY.length)
-          .fill()
-          .map(() => 0)
-      )
-    this.logProbabilities = Array(vocabulary.length)
-      .fill()
-      .map(() =>
-        Array(this.uniqueY.length)
-          .fill()
-          .map(() => 0)
-      )
+    this.occurences = Array(vocabulary.length).fill(
+      Array(this.uniqueY.length).fill(0)
+    )
+    this.logProbabilities = Array(vocabulary.length).fill(
+      Array(this.uniqueY.length).fill(0)
+    )
     this.contributions = 1
   }
 
   /**
    * Returns a new model created using a model representation
    *
-   * @param {string} doc The aggregate
+   * @param {Object} doc The aggregate
    * @return {Model} The new model
    */
   static fromAggregate(doc) {
@@ -189,12 +181,10 @@ export class Model {
    */
   getShares(nbShares) {
     // Initialize shares array
-    let shares = Array(nbShares)
-      .fill()
-      .map(() => ({
-        occurences: this.occurences.map(e => e.map(f => f)),
-        contributions: this.contributions
-      }))
+    let shares = Array(nbShares).fill({
+      occurences: this.occurences.map(e => e.map(f => f)),
+      contributions: this.contributions
+    })
 
     for (let j = 0; j < vocabulary.length; j++) {
       for (let i = 0; i < this.uniqueY.length; i++) {
@@ -212,8 +202,9 @@ export class Model {
   }
 
   getCompressedShares(nbShares) {
-    const shares = this.getShares(nbShares)
-    return shares.map(share => Model.shareToCompressedBinary(share))
+    return this.getShares(nbShares).map(share =>
+      Model.shareToCompressedBinary(share)
+    )
   }
 
   /**
@@ -222,10 +213,9 @@ export class Model {
    * @return {Object} The aggregated model's parameters
    */
   getAggregate() {
-    const { occurences, contributions } = this
     return {
-      occurences,
-      contributions
+      occurences: this.occurences,
+      contributions: this.contributions
     }
   }
 
@@ -284,13 +274,7 @@ export class Model {
     const cols = Object.keys(classes).length
     const numberSize = 4
     const contributions = buf.readInt32BE()
-    const occurences = Array(rows)
-      .fill()
-      .map(() =>
-        Array(cols)
-          .fill()
-          .map(() => 0)
-      )
+    const occurences = Array(rows).fill(Array(cols).fill(0))
 
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
