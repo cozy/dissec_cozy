@@ -11,7 +11,6 @@ import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import FullAggregation from './FullAggregation.jsx'
 
-
 export const Execution = ({ nodes }) => {
   const client = useClient()
 
@@ -61,7 +60,6 @@ export const Execution = ({ nodes }) => {
   const fetchWebhooks = useCallback(
     async () => {
       let { data: webhooks } = await client.collection('io.cozy.triggers').all()
-      console.log(webhooks)
 
       setWebhooks(
         webhooks
@@ -89,7 +87,7 @@ export const Execution = ({ nodes }) => {
             <div className="card-title">
               <b>Full aggreation</b>
             </div>
-            <FullAggregation nodes={data} webhooks={webhooks}/>
+            <FullAggregation nodes={data} webhooks={webhooks} />
           </div>
           <div className="card">
             <div className="card-title">

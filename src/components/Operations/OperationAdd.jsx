@@ -30,7 +30,7 @@ export const OperationAdd = () => {
 
   // create the new bank operation
   const handleSubmit = useCallback(
-    async (e) => {
+    async e => {
       e.preventDefault()
 
       // reset the input and display a spinner during the process

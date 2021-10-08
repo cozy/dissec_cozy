@@ -73,11 +73,7 @@ export const NodeAdd = () => {
       <h2>Add a new Node:</h2>
       <form className="node-form" onSubmit={e => e.preventDefault()}>
         <Label htmlFor="label-input">Node label (optionnal):</Label>
-        <Input
-          value={label}
-          onChange={handleLabelChange}
-          id="label-input"
-        />
+        <Input value={label} onChange={handleLabelChange} id="label-input" />
         <Label htmlFor="contribution-input">Contribution webhook:</Label>
         <Input
           value={contributionWebhook}

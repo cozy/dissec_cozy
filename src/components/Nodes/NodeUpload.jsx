@@ -15,8 +15,6 @@ export const NodeUpload = () => {
 
   const handleFileChange = useCallback(
     async file => {
-      console.log(file)
-
       const reader = new FileReader()
       const content = await new Promise((resolve, reject) => {
         reader.onload = event => resolve(event.target.result)
@@ -31,9 +29,11 @@ export const NodeUpload = () => {
 
   const handleUpload = useCallback(
     async () => {
+      setIsWorking(true)
       for (let entry of entries) {
         await client.create(NODES_DOCTYPE, entry)
       }
+      setIsWorking(false)
     },
     [client, entries]
   )

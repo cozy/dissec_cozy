@@ -5,7 +5,6 @@ import Button from 'cozy-ui/react/Button'
 import NodeRemoveButton from './NodeRemoveButton'
 
 export const Node = ({ node }) => {
-  console.log(node)
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
@@ -32,7 +31,9 @@ export const Node = ({ node }) => {
 
   return (
     <div className="node">
-      <div className="node-label"><b>{label ? label : 'Unnamed node'}</b></div>
+      <div className="node-label">
+        <b>{label ? label : 'Unnamed node'}</b>
+      </div>
       <div className="node-body">
         <Button
           className="node-contribution-button"
