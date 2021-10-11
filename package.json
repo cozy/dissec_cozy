@@ -54,7 +54,7 @@
     "btoa": "^1.2.1",
     "clsx": "^1.1.1",
     "cozy-bar": "7.12.3",
-    "cozy-client": "23.1.1",
+    "cozy-client": "24.10.1",
     "cozy-doctypes": "^1.82.2",
     "cozy-flags": "^2.7.2",
     "cozy-konnector-libs": "^4.42.1",

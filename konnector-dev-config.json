@@ -1,4 +1,4 @@
 {
-  "COZY_URL": "http://cozy.tools:8080",
+  "COZY_URL": "http://cozy.localhost:8080",
   "fields": {}
 }

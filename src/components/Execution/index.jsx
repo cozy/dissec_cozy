@@ -47,7 +47,7 @@ export const Execution = ({ nodes }) => {
       await query('contribution')
 
       // Register aggregation webhook
-      await query('aggregation')
+      await query('receiveShares')
 
       setTimeout(async () => {
         await fetchWebhooks()
