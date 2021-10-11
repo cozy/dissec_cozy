@@ -1,3 +1,5 @@
+global.fetch = require('node-fetch').default
+
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'

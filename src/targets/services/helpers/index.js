@@ -1,6 +1,4 @@
-import vocabulary from '../../../assets/vocabulary_tiny.json'
-import classes from '../../../assets/classes.json'
-
 export { Model } from './model'
-export { vocabulary, classes }
+export { default as vocabulary } from '../../../assets/vocabulary.json'
+export { default as classes } from '../../../assets/classes.json'
 export { createLogger } from './utils'

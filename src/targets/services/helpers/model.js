@@ -1,7 +1,6 @@
-import LZString from 'lz-string'
+import LZUTF8 from 'lzutf8'
 
-import vocabulary from '../../../assets/vocabulary_tiny.json'
-import classes from '../../../assets/classes.json'
+import { classes, vocabulary } from './index'
 
 // This constant defines the amplitude of the noise added to shares
 // It needs to be small enough to sum all shares without overflows
@@ -30,7 +29,7 @@ export class Model {
 
   /**
    * Returns a new model created using a model representation
-   * 
+   *
    * @param {string} doc The aggregate
    * @return {Model} The new model
    */
@@ -44,7 +43,7 @@ export class Model {
 
   /**
    * Returns a new model created using a compressed model representation
-   * 
+   *
    * @param {string} compressedAggregate The compressed aggregate
    * @return {Model} The new model
    */
@@ -55,7 +54,7 @@ export class Model {
 
   /**
    * Returns a new model created using shares
-   * 
+   *
    * @param {Object[]} shares The array of shares
    * @param {boolean} shouldFinalize Used by the final aggregator to produce a usable model
    * @return {Model} The new model
@@ -90,8 +89,8 @@ export class Model {
 
   /**
    * Returns a new model created using compressed shares
-   * 
-   * @param {string[]} compressedShares The array of compressed shares  
+   *
+   * @param {string[]} compressedShares The array of compressed shares
    * @return {Model} The new model
    */
   static fromCompressedShares(compressedShares, options) {
@@ -104,7 +103,7 @@ export class Model {
 
   /**
    * Returns a new model trained with the given documents
-   * 
+   *
    * @param {Object[]} docs An array of documents
    * @return {Model} The new model
    */
@@ -118,7 +117,7 @@ export class Model {
 
   /**
    * Internal function used to initialize the model given occurences
-   * 
+   *
    * @private
    */
   initialize() {
@@ -134,7 +133,7 @@ export class Model {
 
   /**
    * Updates the model's parameters with the given documents
-   * 
+   *
    * @param {Object[]} docs An array of documents
    */
   train(docs) {
@@ -159,7 +158,7 @@ export class Model {
 
   /**
    * Predicts the class of a given text sample
-   * 
+   *
    * @param {string} text The text on which the prediction will be done
    * @return {string} The predicted label
    */
@@ -184,7 +183,7 @@ export class Model {
 
   /**
    * Returns the model's shares
-   * 
+   *
    * @param {Number} nbShares The number of shares to create
    * @return {Object[]} An array of shares
    */
@@ -219,7 +218,7 @@ export class Model {
 
   /**
    * Returns the model's aggregated parameters
-   * 
+   *
    * @return {Object} The aggregated model's parameters
    */
   getAggregate() {
@@ -232,7 +231,7 @@ export class Model {
 
   /**
    * Returns a compressed version of the model's aggregated parameters
-   * 
+   *
    * @return {string} The compressed aggregated model's parameters
    */
   getCompressedAggregate() {
@@ -245,7 +244,7 @@ export class Model {
 
   /**
    * Transforms a share into a compressed string representation
-   * 
+   *
    * @param {Object} share A share object to compress
    * @return {string} the string representing the compressed share
    */
@@ -265,17 +264,21 @@ export class Model {
       }
     }
 
-    return LZString.compressToBase64(buf.toString('base64'))
+    return LZUTF8.compress(buf.toString('base64'), {
+      outputEncoding: 'StorageBinaryString'
+    })
   }
 
   /**
    * Decompresses a share's string representation
-   * 
+   *
    * @param {string} compressed The compressed share
    * @return {Object} The share object
    */
   static compressedBinaryToShare(compressed) {
-    const decompressed = LZString.decompressFromBase64(compressed)
+    const decompressed = LZUTF8.decompress(compressed, {
+      inputEncoding: 'StorageBinaryString'
+    })
     const buf = Buffer.from(decompressed, 'base64')
     const rows = vocabulary.length
     const cols = Object.keys(classes).length
