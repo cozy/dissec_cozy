@@ -1,5 +1,3 @@
-global.fetch = require('node-fetch').default
-
 import CozyClient from 'cozy-client'
 import { createLogger } from './helpers'
 
@@ -16,7 +14,7 @@ export const receiveShares = async () => {
     aggregatorId,
     executionId,
     nbChild
-  } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
+  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
 

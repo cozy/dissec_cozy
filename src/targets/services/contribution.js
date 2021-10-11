@@ -1,5 +1,3 @@
-global.fetch = require('node-fetch').default
-
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
@@ -8,7 +6,7 @@ import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
   const { parents, nbShares, pretrained, executionId } = JSON.parse(
-    process.env['COZY_PAYLOAD'] || {}
+    process.env['COZY_PAYLOAD'] || '{}'
   )
 
   if (parents.length !== nbShares) {
