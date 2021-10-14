@@ -1,3 +1,5 @@
+global.fetch = require('node-fetch').default
+
 import CozyClient from 'cozy-client'
 import { createLogger } from './helpers'
 
