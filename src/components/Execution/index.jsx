@@ -10,6 +10,11 @@ import Button from 'cozy-ui/react/Button'
 import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import FullAggregation from './FullAggregation.jsx'
+import {
+  SERVICE_CATEGORIZE,
+  SERVICE_CONTRIBUTION,
+  SERVICE_RECEIVE_SHARES
+} from '../../targets/services/helpers'
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -41,13 +46,13 @@ export const Execution = ({ nodes }) => {
       }
 
       // Register categorization webhook
-      await query('categorize')
+      await query(SERVICE_CATEGORIZE)
 
       // Register contribution webhook
-      await query('contribution')
+      await query(SERVICE_CONTRIBUTION)
 
       // Register aggregation webhook
-      await query('receiveShares')
+      await query(SERVICE_RECEIVE_SHARES)
 
       setTimeout(async () => {
         await fetchWebhooks()

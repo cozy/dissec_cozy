@@ -2,6 +2,7 @@ import React, { useCallback, useState, useEffect } from 'react'
 import Button from 'cozy-ui/react/Button'
 import { useClient } from 'cozy-client'
 import { v4 as uuid } from 'uuid'
+import { SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
 
 const FullAggregation = ({ nodes, webhooks }) => {
   const client = useClient()
@@ -17,7 +18,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
 
       let querier = {
         webhook: webhooks.filter(
-          webhook => webhook.attributes.message.name === 'receiveShares'
+          webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES
         )[0].links.webhook,
         level: 0,
         nbChild: 3,
