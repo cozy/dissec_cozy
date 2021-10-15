@@ -7,25 +7,29 @@ import { Model, vocabulary } from '../../src/targets/services/helpers'
 describe('Model library', () => {
   const mockDocs = [
     {
-      label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(" "),
-      cozyCategoryId: "100"
-    }, {
-      label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(" "),
-      cozyCategoryId: "200"
-    }, {
-      label: [vocabulary[3], vocabulary[1], vocabulary[2]].join(" "),
-    }, {
-      label: [vocabulary[6], vocabulary[5], vocabulary[4]].join(" "),
+      label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(' '),
+      cozyCategoryId: '100'
     },
+    {
+      label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(' '),
+      cozyCategoryId: '200'
+    },
+    {
+      label: [vocabulary[3], vocabulary[1], vocabulary[2]].join(' ')
+    },
+    {
+      label: [vocabulary[6], vocabulary[5], vocabulary[4]].join(' ')
+    }
   ]
 
   const mockDocs2 = [
     {
-      label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(" "),
-      cozyCategoryId: "200"
-    }, {
-      label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(" "),
-      cozyCategoryId: "200"
+      label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(' '),
+      cozyCategoryId: '200'
+    },
+    {
+      label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(' '),
+      cozyCategoryId: '200'
     }
   ]
 
@@ -63,10 +67,13 @@ describe('Model library', () => {
       const shares2 = secondModel.getShares(nbShares)
       const agg1 = Model.fromShares([shares1[0], shares2[0]])
       const agg2 = Model.fromShares([shares1[1], shares2[1]])
-      const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], { shouldFinalize: true })
+      const modelRecomposed = Model.fromShares(
+        [agg1.getAggregate(), agg2.getAggregate()],
+        { shouldFinalize: true }
+      )
       const model = Model.fromDocs(mockDocs.concat(mockDocs2))
 
-      for(let i=0; i<5; i++) {
+      for (let i = 0; i < 5; i++) {
         expect(modelRecomposed.occurences[i]).toEqual(model.occurences[i])
       }
     })
@@ -75,13 +82,13 @@ describe('Model library', () => {
   describe('predict', () => {
     it('should classify labels', () => {
       const model = Model.fromDocs(mockDocs)
-      expect(model.predict(mockDocs[2].label)).toEqual("100")
-      expect(model.predict(mockDocs[3].label)).toEqual("200")
+      expect(model.predict(mockDocs[2].label)).toEqual('100')
+      expect(model.predict(mockDocs[3].label)).toEqual('200')
     })
 
     it('should send uncategorized when only unknown tokens', () => {
       const model = Model.fromDocs(mockDocs)
-      expect(model.predict("bloubliblou")).toEqual("0")
+      expect(model.predict('bloubliblou')).toEqual('0')
     })
   })
 
@@ -99,8 +106,8 @@ describe('Model library', () => {
       const firstModel = Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
-      
-      for(let i=0; i<5; i++) {
+
+      for (let i = 0; i < 5; i++) {
         expect(firstModel.occurences[i]).toEqual(model.occurences[i])
       }
     })
@@ -114,13 +121,20 @@ describe('Model library', () => {
       const compressedShares = originalModel.getCompressedShares(nbShares)
 
       const modelFromShares = Model.fromShares(shares, { shouldFinalize: true })
-      const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, { shouldFinalize: true })
+      const modelFromCompressedShares = Model.fromCompressedShares(
+        compressedShares,
+        { shouldFinalize: true }
+      )
 
-      for(let i=0; i<5; i++) {
-        expect(modelFromShares.occurences[i]).toEqual(originalModel.occurences[i])
+      for (let i = 0; i < 5; i++) {
+        expect(modelFromShares.occurences[i]).toEqual(
+          originalModel.occurences[i]
+        )
       }
-      for(let i=0; i<5; i++) {
-        expect(modelFromCompressedShares.occurences[i]).toEqual(originalModel.occurences[i])
+      for (let i = 0; i < 5; i++) {
+        expect(modelFromCompressedShares.occurences[i]).toEqual(
+          originalModel.occurences[i]
+        )
       }
     })
   })

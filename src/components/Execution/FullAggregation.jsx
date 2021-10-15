@@ -1,12 +1,8 @@
 import React, { useCallback, useState, useEffect } from 'react'
-
-import Label from 'cozy-ui/react/Label'
-import Input from 'cozy-ui/react/Input'
-import { Switch, FormControlLabel } from '@material-ui/core'
 import Button from 'cozy-ui/react/Button'
-
 import { useClient } from 'cozy-client'
 import { v4 as uuid } from 'uuid'
+import { SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
 
 const FullAggregation = ({ nodes, webhooks }) => {
   const client = useClient()
@@ -18,14 +14,12 @@ const FullAggregation = ({ nodes, webhooks }) => {
     async () => {
       setIsWorking(true)
 
-      if(!webhooks) return
-
-      console.log(nodes)
-
-      console.log(webhooks.filter(webhook => webhook.attributes.message.name === "receiveShares")[0].links.webhook)
+      if (!webhooks) return
 
       let querier = {
-        webhook: webhooks.filter(webhook => webhook.attributes.message.name === "receiveShares")[0].links.webhook,
+        webhook: webhooks.filter(
+          webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES
+        )[0].links.webhook,
         level: 0,
         nbChild: 3,
         aggregatorId: uuid(),
@@ -73,18 +67,19 @@ const FullAggregation = ({ nodes, webhooks }) => {
 
       setIsWorking(false)
     },
-    [nodes, webhooks, client, setIsWorking, setContributors]
+    [nodes, webhooks, setIsWorking, setContributors]
   )
 
-  useEffect(() => {
-    if(!contributors && webhooks.length !== 0) handleGenerateTree()
-  }, [webhooks, contributors, handleGenerateTree])
+  useEffect(
+    () => {
+      if (!contributors && webhooks.length !== 0) handleGenerateTree()
+    },
+    [webhooks, contributors, handleGenerateTree]
+  )
 
   const handleLaunchExecution = useCallback(
     async () => {
       if (!contributors) return
-
-      console.log('Launching execution')
 
       setIsWorking(true)
 
@@ -97,7 +92,9 @@ const FullAggregation = ({ nodes, webhooks }) => {
           nbShares: 3,
           parents: contributor.parents
         }
-        await new Promise(resolve => {setTimeout(resolve, 1000)})
+        await new Promise(resolve => {
+          setTimeout(resolve, 1000)
+        })
         await client.stackClient.fetchJSON(
           'POST',
           contributor.contributionWebhook,

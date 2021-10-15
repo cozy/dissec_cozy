@@ -7,7 +7,7 @@ import { Model } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const categorize = async () => {
-  const { pretrained } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
+  const { pretrained } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
 

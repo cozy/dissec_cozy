@@ -18,7 +18,7 @@ rm ../assets/webhooks.json
 
 for i in `seq 1 ${1}`
 do
-    domain="test${i}.cozy.localhost:8080"
+    domain="test${i}.localhost:8080"
     echo "Creating instance ${domain}"
     # Destroy the instance in case it already exists
     cozy-stack instances destroy ${domain} --force

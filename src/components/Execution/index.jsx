@@ -10,7 +10,11 @@ import Button from 'cozy-ui/react/Button'
 import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import FullAggregation from './FullAggregation.jsx'
-
+import {
+  SERVICE_CATEGORIZE,
+  SERVICE_CONTRIBUTION,
+  SERVICE_RECEIVE_SHARES
+} from '../../targets/services/helpers'
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -42,13 +46,13 @@ export const Execution = ({ nodes }) => {
       }
 
       // Register categorization webhook
-      await query('categorize')
+      await query(SERVICE_CATEGORIZE)
 
       // Register contribution webhook
-      await query('contribution')
+      await query(SERVICE_CONTRIBUTION)
 
       // Register aggregation webhook
-      await query('aggregation')
+      await query(SERVICE_RECEIVE_SHARES)
 
       setTimeout(async () => {
         await fetchWebhooks()
@@ -61,7 +65,6 @@ export const Execution = ({ nodes }) => {
   const fetchWebhooks = useCallback(
     async () => {
       let { data: webhooks } = await client.collection('io.cozy.triggers').all()
-      console.log(webhooks)
 
       setWebhooks(
         webhooks
@@ -89,7 +92,7 @@ export const Execution = ({ nodes }) => {
             <div className="card-title">
               <b>Full aggreation</b>
             </div>
-            <FullAggregation nodes={data} webhooks={webhooks}/>
+            <FullAggregation nodes={data} webhooks={webhooks} />
           </div>
           <div className="card">
             <div className="card-title">

@@ -18,7 +18,7 @@ export const aggregation = async () => {
 
   // Worker's arguments
   const { dir_id: aggregationDirectoryId, metadata } = JSON.parse(
-    process.env['COZY_COUCH_DOC'] || {}
+    process.env['COZY_COUCH_DOC'] || '{}'
   )
 
   // This file is not a share uploaded by an aggregator for himself

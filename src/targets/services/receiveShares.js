@@ -16,7 +16,7 @@ export const receiveShares = async () => {
     aggregatorId,
     executionId,
     nbChild
-  } = JSON.parse(process.env['COZY_PAYLOAD'] || {})
+  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
 
