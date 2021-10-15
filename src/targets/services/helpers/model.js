@@ -180,6 +180,12 @@ export class Model {
    * @return {Object[]} An array of shares
    */
   getShares(nbShares) {
+    // It could be reasonnable to partition these matrices
+    // It would allow using couch docs or enable streaming.
+    // Another possibility is to never generate shares matrices.
+    // Instead, only create nbShares-1 noises matrices.
+    // Actual shares would then be generated on the fly.
+    // It would use nbShares instead of nbShares + 1 copies
     // Initialize shares array
     let shares = Array(nbShares).fill({
       occurences: this.occurences.map(e => e.map(f => f)),
