@@ -11,31 +11,25 @@ export const aggregation = async () => {
 
   const log = createLogger(client.stackClient.uri)
 
-  log(
-    'Aggregating service called because a document is received:',
-    process.env['COZY_COUCH_DOC']
-  )
+  console.log(process.env)
 
-  // Worker's arguments
-  const { dir_id: aggregationDirectoryId, metadata } = JSON.parse(
-    process.env['COZY_COUCH_DOC'] || '{}'
-  )
+  const jobId = process.env['COZY_JOB_ID'].split('/')[2]
 
-  // This file is not a share uploaded by an aggregator for himself
-  if (!(metadata && metadata.dissec)) return
+  log('Aggregating service. Fetching job:', jobId)
+
+  // Retrieve arguments stored in the jobs
+  const job = await client.query(Q('io.cozy.jobs').getById(jobId))
 
   const {
+    aggregationDirectoryId,
     executionId,
     aggregatorId,
     level,
     nbShares,
     parent,
-    finalize,
-    nbChild
-  } = metadata
+    finalize
+  } = job.data.attributes.message.metadata
 
-  // TODO: Remove hierarchy and base only on metadata and id
-  // Count files in the aggregation folder
   const { data: unfilteredFiles } = await client.query(
     Q('io.cozy.files').where({
       dir_id: aggregationDirectoryId
@@ -44,15 +38,6 @@ export const aggregation = async () => {
   const receivedShares = unfilteredFiles.filter(
     file => file.attributes.metadata && file.attributes.metadata.level === level
   )
-
-  log('Already received shares:', receivedShares.length)
-
-  if (receivedShares.length !== nbChild) {
-    log('Waiting for more...')
-    return
-  }
-
-  log('Received the right amount of shares, starting!')
 
   // Fetch all stored shares
   const compressedShares = []
@@ -108,7 +93,7 @@ export const aggregation = async () => {
 
     log('Sending intermediate aggregate via', parent.webhook)
 
-    // Call parent's aggregation webhook to send the aggregate
+    // Call parent's receiving webhook to send the aggregate
     // TODO: Callwebhook without using fetchJSON
     await client.stackClient.fetchJSON('POST', parent.webhook, {
       executionId,

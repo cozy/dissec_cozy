@@ -1,6 +1,6 @@
 global.fetch = require('node-fetch').default
 
-import CozyClient from 'cozy-client'
+import CozyClient, { Q } from 'cozy-client'
 import { createLogger } from './helpers'
 
 export const receiveShares = async () => {
@@ -85,6 +85,41 @@ export const receiveShares = async () => {
     }
   })
   log('Stored share!')
+
+  // Aggergations are triggered after writing the share
+  // It prevents synchronicity issues
+  // TODO: Remove hierarchy and base only on metadata and id
+  // Count files in the aggregation folder
+  const { data: unfilteredFiles } = await client.query(
+    Q('io.cozy.files').where({
+      dir_id: aggregationDirectoryId
+    })
+  )
+  const receivedShares = unfilteredFiles.filter(
+    file => file.attributes.metadata && file.attributes.metadata.level === level
+  )
+
+  log('Already stored shares:', receivedShares.length)
+
+  if (receivedShares.length === nbChild) {
+    log('Received the right amount of shares, starting!')
+    client.collection('io.cozy.jobs').create('service', {
+      message: {
+        name: 'aggregation',
+        slug: 'dissecozy'
+      },
+      metadata: {
+        aggregationDirectoryId,
+        dissec: true,
+        executionId,
+        aggregatorId,
+        level,
+        nbShares,
+        parent,
+        finalize
+      }
+    })
+  }
 }
 
 receiveShares().catch(e => {
