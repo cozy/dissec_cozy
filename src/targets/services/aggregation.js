@@ -11,11 +11,9 @@ export const aggregation = async () => {
 
   const log = createLogger(client.stackClient.uri)
 
-  console.log(process.env)
-
   const jobId = process.env['COZY_JOB_ID'].split('/')[2]
 
-  log('Aggregating service. Fetching job:', jobId)
+  log('Aggregating service. Fetching job: ', jobId)
 
   // Retrieve arguments stored in the jobs
   const job = await client.query(Q('io.cozy.jobs').getById(jobId))
