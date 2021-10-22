@@ -31,8 +31,7 @@
     },
     "aggregation": {
       "type": "node",
-      "file": "services/aggregation/dissecozy.js",
-      "trigger": "@event io.cozy.files:CREATED"
+      "file": "services/aggregation/dissecozy.js"
     },
     "categorize": {
       "type": "node",
