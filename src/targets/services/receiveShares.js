@@ -91,9 +91,11 @@ export const receiveShares = async () => {
   // TODO: Remove hierarchy and base only on metadata and id
   // Count files in the aggregation folder
   const { data: unfilteredFiles } = await client.query(
-    Q('io.cozy.files').where({
-      dir_id: aggregationDirectoryId
-    })
+    Q('io.cozy.files')
+      .where({
+        dir_id: aggregationDirectoryId
+      })
+      .indexFields(['dir_id'])
   )
   const receivedShares = unfilteredFiles.filter(
     file => file.attributes.metadata && file.attributes.metadata.level === level

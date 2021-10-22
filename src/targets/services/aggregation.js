@@ -29,9 +29,11 @@ export const aggregation = async () => {
   } = job.data.attributes.message.metadata
 
   const { data: unfilteredFiles } = await client.query(
-    Q('io.cozy.files').where({
-      dir_id: aggregationDirectoryId
-    })
+    Q('io.cozy.files')
+      .where({
+        dir_id: aggregationDirectoryId
+      })
+      .indexFields(['dir_id'])
   )
   const receivedShares = unfilteredFiles.filter(
     file => file.attributes.metadata && file.attributes.metadata.level === level
