@@ -2,13 +2,15 @@
 
 # This script is used to populate the stack with cozy instances
 # It requires updating /etc/hosts
-
-if [ $# != 1 ]
+if [ $# != 3 ]
 then
     echo "Wrong number of arguments!"
-    echo "Usage: populate [number of instances to create]"
+    echo "Usage: populate <number of instances to create> [number of classes] [data per instance]"
     return
 fi
+
+n_classes=${2:-1}
+data_per_instance=${3:-10}
 
 repository=$(pwd)
 cd ${repository}/scripts
@@ -27,10 +29,13 @@ do
     cozy-stack instances modify ${domain} --onboarding-finished
     # Generate token first
     ACH_token=$(cozy-stack instances token-cli ${domain} io.cozy.bank.operations)
+
     # Split our dataset in chunks (deterministic)
     node split.js ../assets/split.json ${i}
     # Populate the instance with data using ACH. Helper will randomly select samples
-    ACH -u http://${domain} -y import ../assets/split.json -t ${ACH_token}
+    classes=$(node splitClasses.js ${i} ${1} ${n_classes})
+    echo "Importing operations of the following classes: ${classes}"
+    ACH -u http://${domain} -y script banking/importFilteredOperations ../assets/fixtures-l.json ${classes} ${data_per_instance} -x -t ${ACH_token}
     # Generate a token
     token=$(cozy-stack instances token-app ${domain} dissecozy)
     # Install the app

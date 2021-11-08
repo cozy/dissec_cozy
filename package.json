@@ -21,7 +21,7 @@
     "dissecozy:aggregation": "yarn run cozy-konnector-dev -m manifest.webapp build/services/aggregation/dissecozy.js",
     "dissecozy:categorize": "yarn run cozy-konnector-dev -m manifest.webapp build/services/categorize/dissecozy.js",
     "dissecozy:contribution": "yarn run cozy-konnector-dev -m manifest.webapp build/services/contribution/dissecozy.js",
-    "populate": "sh ./scripts/populate.sh 10"
+    "populate": "sh ./scripts/populate.sh 10 2 30"
   },
   "repository": {
     "type": "git",
