@@ -27,7 +27,7 @@ export const Operation = ({ operation }) => {
   const client = useClient()
 
   const [category, setCategory] = useState(
-    operation.cozyCategoryId || operation.manualCategoryId || ''
+    operation.manualCategoryId || operation.cozyCategoryId || ''
   )
 
   const handleCategoryChange = useCallback(
