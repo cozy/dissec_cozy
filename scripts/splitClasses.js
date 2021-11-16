@@ -1,29 +1,29 @@
 const fs = require('fs')
 
 const classes = JSON.parse(
-  fs.readFileSync('../src/assets/classes.json').toString()
+  fs.readFileSync('./src/assets/classes.json').toString()
 )
 
 /**
  * Splits the category labels between a given number of instances.
- * 
+ *
  * If there more instances than categories, categories are cyclically reused.
  */
-const main = () => {
-  const nInstances = process.argv[3] || 1
-  const current = process.argv[2] || nInstances
-  const nClasses = process.argv[4] || 1
-
+export const splitClasses = (nInstances, nClassesPerInstance) => {
   let keys = Object.keys(classes)
 
-  const keysUsed = nInstances * nClasses
-
-  let result = []
-  for(let i=0; i<nClasses; i++) {
-    result.push(keys[((current - 1) * nClasses + i) % keys.length])
+  const result = []
+  for (let current = 1; current <= nInstances; current++) {
+    const instanceResult = []
+    for (let i = 0; i < nClassesPerInstance; i++) {
+      instanceResult.push(
+        keys[((current - 1) * nClassesPerInstance + i) % keys.length]
+      )
+    }
+    result.push(instanceResult.join(','))
   }
 
-  console.log(result.join(','))
+  console.log(result.join(' '))
 }
 
-main()
+splitClasses(process.argv[2] || 1, process.argv[3] || 1)
