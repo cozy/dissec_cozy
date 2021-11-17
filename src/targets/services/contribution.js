@@ -3,7 +3,7 @@ global.fetch = require('node-fetch').default
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
-import { Model, createLogger } from './helpers'
+import { Model, createLogger, getAppDirectory } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
@@ -37,19 +37,13 @@ export const contribution = async () => {
     model = Model.fromDocs(operations)
   }
 
-  // Storing shares as files to be shared
-  // Create or find a DISSEC directory
-  const baseFolder = 'DISSEC'
-  const parentDirectory = { _id: 'io.cozy.files.root-dir', attributes: {} }
-  const { data: dissecDirectory } = await client
-    .collection('io.cozy.files')
-    .getDirectoryOrCreate(baseFolder, parentDirectory)
+  const appDirectory = await getAppDirectory(client)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
   const { data: aggregationDirectoryDoc } = await client
     .collection('io.cozy.files')
-    .getDirectoryOrCreate(executionId, dissecDirectory)
+    .getDirectoryOrCreate(executionId, appDirectory)
   const aggregationDirectoryId = aggregationDirectoryDoc._id
 
   // Split model in shares
