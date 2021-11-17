@@ -15,13 +15,14 @@
     "start": "cs start --browser",
     "deploy": "git-directory-deploy --directory build/ --branch ${DEPLOY_BRANCH:-build} --repo=${DEPLOY_REPOSITORY:-https://$GITHUB_TOKEN@github.com/JulienMirval/dissec_cozy.git}",
     "test": "cs test --verbose --coverage",
+    "test-scripts": "jest ./scripts",
     "cozyPublish": "git fetch origin ${DEPLOY_BRANCH:-build}:${DEPLOY_BRANCH:-build} && cs publish --token $REGISTRY_TOKEN --build-commit $(git rev-parse ${DEPLOY_BRANCH:-build})",
     "stack:docker:dev": "cs stackDocker",
     "stack:docker:prod": "cs stackDocker --prod",
     "dissecozy:aggregation": "yarn run cozy-konnector-dev -m manifest.webapp build/services/aggregation/dissecozy.js",
     "dissecozy:categorize": "yarn run cozy-konnector-dev -m manifest.webapp build/services/categorize/dissecozy.js",
     "dissecozy:contribution": "yarn run cozy-konnector-dev -m manifest.webapp build/services/contribution/dissecozy.js",
-    "populate": "sh ./scripts/populate.sh 10"
+    "populate": "bash ./scripts/populate.sh"
   },
   "repository": {
     "type": "git",

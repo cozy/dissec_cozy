@@ -26,7 +26,9 @@ const capitalizeFirstLetter = str => {
 export const Operation = ({ operation }) => {
   const client = useClient()
 
-  const [category, setCategory] = useState(operation.cozyCategoryId || '')
+  const [category, setCategory] = useState(
+    operation.manualCategoryId || operation.cozyCategoryId || ''
+  )
 
   const handleCategoryChange = useCallback(
     async e => {

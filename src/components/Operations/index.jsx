@@ -6,6 +6,7 @@ import { bankQuery } from 'doctypes'
 
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
+import OperationDeleteAll from './OperationsDeleteAll'
 
 export const Operations = ({ bank }) => {
   const { isLoading, data } = bank
@@ -18,6 +19,7 @@ export const Operations = ({ bank }) => {
         <div>
           <OperationsList operations={data} />
           <OperationAdd />
+          <OperationDeleteAll operations={data} />
         </div>
       )}
     </div>
