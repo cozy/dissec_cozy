@@ -13,3 +13,19 @@ export const getAppDirectory = async client => {
 
   return appDirectory
 }
+
+export const deleteFilesById = async (client, ids) => {
+  const promises = ids.map(
+    id =>
+      new Promise(async (resolve, reject) => {
+        try {
+          await client.collection('io.cozy.files').deleteFilePermanently(id)
+          resolve()
+        } catch (err) {
+          reject(err)
+        }
+      })
+  )
+
+  await Promise.all(promises)
+}
