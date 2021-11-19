@@ -1,7 +1,7 @@
 global.fetch = require('node-fetch').default
 
 import CozyClient, { Q } from 'cozy-client'
-import { createLogger } from './helpers'
+import { createLogger, getAppDirectory } from './helpers'
 
 export const receiveShares = async () => {
   // Worker's arguments
@@ -50,20 +50,14 @@ export const receiveShares = async () => {
 
   log('Type of share', typeof share)
 
-  // Storing shares as files to be shared
-  // Create or find a DISSEC directory
-  const baseFolder = 'DISSEC'
-  const parentDirectory = { _id: 'io.cozy.files.root-dir', attributes: {} }
-  const { data: dissecDirectory } = await client
-    .collection('io.cozy.files')
-    .getDirectoryOrCreate(baseFolder, parentDirectory)
+  const appDirectory = await getAppDirectory(client)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
   // TODO: Remove hierarchy and base only on metadata and id
   const { data: aggregationDirectory } = await client
     .collection('io.cozy.files')
-    .getDirectoryOrCreate(executionId, dissecDirectory)
+    .getDirectoryOrCreate(executionId, appDirectory)
   const aggregationDirectoryId = aggregationDirectory._id
   log('Aggregation folder id', aggregationDirectoryId)
 

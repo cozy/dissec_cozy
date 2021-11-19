@@ -1,3 +1,4 @@
 {
-    "localModelPath": "/path/to/my/model/model.data"
+    "localModelPath": "/path/to/my/model/model.data",
+    "secondsBeforeDeletion": 86400
 }
