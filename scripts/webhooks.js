@@ -1,6 +1,6 @@
 global.fetch = require('node-fetch').default
 const fs = require('fs')
-const { default: CozyClient, Q } = require('cozy-client')
+const { default: CozyClient } = require('cozy-client')
 
 const main = async () => {
   // Connect to the instance
