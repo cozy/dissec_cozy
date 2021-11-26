@@ -42,13 +42,13 @@ export const receiveShares = async () => {
     store: false
   })
 
-  // TODO: Should use cozy-client, but fetchFileContentById uses fetch instead of fetchJSON
+  // TODO: Should use cozy-client, but fetchFileContentById returns a XMLHttpRequest that fails when parsed
   const share = await sharedClient.stackClient.fetchJSON(
     'GET',
     `/files/download/${docId}`
   )
 
-  log('Type of share', typeof share)
+  log('Type of share', typeof share, Object.keys(blob), share)
 
   const appDirectory = await getAppDirectory(client)
 

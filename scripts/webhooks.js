@@ -17,7 +17,7 @@ const main = async () => {
   })
 
   // Fetch triggers
-  const { data } = await client.stackClient.fetchJSON('GET', '/jobs/triggers')
+  const { data } = await client.collection('io.cozy.triggers').all()
 
   // Filter for webhooks
   let webhooks = data

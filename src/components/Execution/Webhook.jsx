@@ -44,7 +44,7 @@ export const Webhook = ({ hook, onUpdate }) => {
   const handleRemoveWebhook = useCallback(
     async () => {
       setIsWorking(true)
-      await client.stackClient.fetchJSON('DELETE', hook.links.self)
+      await client.collection('io.cozy.trigggers').destroy(hook.link.self)
       setIsWorking(false)
       onUpdate && onUpdate()
     },
