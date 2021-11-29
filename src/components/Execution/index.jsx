@@ -31,7 +31,7 @@ export const Execution = ({ nodes }) => {
       const query = async name => {
         setIsWorking(true)
 
-        await client.collection('io.cozy.triggers').create({
+        await client.create('io.cozy.triggers', {
           type: '@webhook',
           worker: 'service',
           message: {

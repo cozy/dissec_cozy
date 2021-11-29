@@ -44,7 +44,7 @@ export const Webhook = ({ hook, onUpdate }) => {
   const handleRemoveWebhook = useCallback(
     async () => {
       setIsWorking(true)
-      await client.collection('io.cozy.trigggers').destroy(hook.link.self)
+      await client.destroy(hook)
       setIsWorking(false)
       onUpdate && onUpdate()
     },

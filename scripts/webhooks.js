@@ -17,7 +17,7 @@ const main = async () => {
   })
 
   // Fetch triggers
-  const { data } = await client.collection('io.cozy.triggers').all()
+  const { data } = await client.queryAll(Q('io.cozy.triggers'))
 
   // Filter for webhooks
   let webhooks = data
