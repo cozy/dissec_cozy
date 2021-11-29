@@ -35,3 +35,7 @@ do
     # Fetch webhooks
     node ./scripts/webhooks.js http://${domain} ${token} ./assets/webhooks.json
 done
+
+# Upload new instances webhooks to the querier instance
+token=$(cozy-stack instances token-app cozy.localhost:8080 dissecozy)
+node ./scripts/loadWebhooks.js http://cozy.localhost:8080 ${token}
