@@ -42,11 +42,8 @@ export const aggregation = async () => {
   // Fetch all stored shares
   const compressedShares = []
   for (let s of receivedShares) {
-    // TODO: Should use cozy-client, but fetchFileContentById uses fetch instead of fetchJSON
-    const receivedShare = await client.stackClient.fetchJSON(
-      'GET',
-      `/files/download/${s._id}`
-    )
+    const response = await client.collection('io.cozy.files').fetchFileContentById(s._id)
+    const receivedShare = await response.text()
     compressedShares.push(receivedShare)
   }
 

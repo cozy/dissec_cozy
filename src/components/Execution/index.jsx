@@ -31,16 +31,12 @@ export const Execution = ({ nodes }) => {
       const query = async name => {
         setIsWorking(true)
 
-        client.stackClient.fetchJSON('POST', '/jobs/triggers', {
-          data: {
-            attributes: {
-              type: '@webhook',
-              worker: 'service',
-              message: {
-                slug: 'dissecozy',
-                name: name
-              }
-            }
+        await client.create('io.cozy.triggers', {
+          type: '@webhook',
+          worker: 'service',
+          message: {
+            slug: 'dissecozy',
+            name: name
           }
         })
       }

@@ -44,7 +44,7 @@ export const Webhook = ({ hook, onUpdate }) => {
   const handleRemoveWebhook = useCallback(
     async () => {
       setIsWorking(true)
-      await client.stackClient.fetchJSON('DELETE', hook.links.self)
+      await client.destroy(hook)
       setIsWorking(false)
       onUpdate && onUpdate()
     },
