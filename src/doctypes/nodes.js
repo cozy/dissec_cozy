@@ -1,7 +1,12 @@
-import { Q } from 'cozy-client'
+const { Q } = require('cozy-client')
 
-export const NODES_DOCTYPE = 'io.cozy.dissec.nodes'
+const NODES_DOCTYPE = 'io.cozy.dissec.nodes'
 
 // queries for CozyClient
 
-export const nodesQuery = Q(NODES_DOCTYPE)
+const nodesQuery = Q(NODES_DOCTYPE)
+
+module.exports = {
+  NODES_DOCTYPE,
+  nodesQuery
+}

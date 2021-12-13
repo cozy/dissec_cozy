@@ -42,7 +42,9 @@ export const receiveShares = async () => {
     store: false
   })
 
-  const response = await sharedClient.collection('io.cozy.files').fetchFileContentById(docId)
+  const response = await sharedClient
+    .collection('io.cozy.files')
+    .fetchFileContentById(docId)
   const share = await response.text()
 
   const appDirectory = await getAppDirectory(client)

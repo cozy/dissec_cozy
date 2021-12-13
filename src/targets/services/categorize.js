@@ -5,32 +5,51 @@ import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
 import { Model } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
+import { JOBS_DOCTYPE } from '../../doctypes/jobs'
 
 export const categorize = async () => {
-  const { pretrained } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
-
   const client = CozyClient.fromEnv(process.env, {})
 
-  // 1. Fetch data
+  // Fetching parameters (if any) from the jobs
+  const { data: job } = await client.query(
+    Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2])
+  )
+
+  const { pretrained, filters = {} } = job.attributes.message
+
+  // Fetch data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
-  // 2. Fetch model or initialize it
-  let model
-  if (pretrained) {
-    // Use the stack's remote assets
-    try {
-      const compressedBackup = fs
-        .readFileSync(dissecConfig.localModelPath)
-        .toString()
-      model = Model.fromCompressedBackup(compressedBackup)
-    } catch (err) {
-      throw `Model does not exist at path ${dissecConfig.localModelPath}`
-    }
-  } else {
-    model = Model.fromDocs(operations)
+  // Apply filters first
+  let filteredOperations = operations
+  if (filters.date) {
+    filteredOperations = filteredOperations.filter(
+      e =>
+        new Date(filters.date).valueOf() -
+          new Date(e.cozyMetadata.createdAt).valueOf() <=
+        0
+    )
   }
 
-  // 3. Categorize each doc and update it
+  // Fetch model or initialize it
+  let model
+  if (pretrained) {
+    // Use the shared model
+    try {
+      const compressedAggregate = fs
+        .readFileSync(dissecConfig.localModelPath)
+        .toString()
+      model = Model.fromCompressedAggregate(compressedAggregate)
+    } catch (err) {
+      throw `Model does not exist at path ${
+        dissecConfig.localModelPath
+      } ? ${err}`
+    }
+  } else {
+    model = Model.fromDocs(filteredOperations)
+  }
+
+  // Categorize each doc and update it
   operations.forEach(async operation => {
     const prediction = model.predict(operation.label)
     await client.save({

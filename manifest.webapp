@@ -80,6 +80,11 @@
       "type": "io.cozy.dissec.nodes",
       "verbs": ["ALL"]
     },
+    "dissec.performances": {
+      "description": "performances metrics and metadata",
+      "type": "io.cozy.dissec.performances",
+      "verbs": ["ALL"]
+    },
     "dissecozy": {
       "description": "Required to enable asynchronous computations",
       "type": "io.cozy.triggers",

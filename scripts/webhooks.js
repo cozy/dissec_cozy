@@ -1,6 +1,6 @@
 global.fetch = require('node-fetch').default
 const fs = require('fs')
-const { default: CozyClient } = require('cozy-client')
+const { default: CozyClient, Q } = require('cozy-client')
 
 const main = async () => {
   // Connect to the instance
@@ -17,7 +17,7 @@ const main = async () => {
   })
 
   // Fetch triggers
-  const { data } = await client.queryAll(Q('io.cozy.triggers'))
+  const data = await client.queryAll(Q('io.cozy.triggers'))
 
   // Filter for webhooks
   let webhooks = data
