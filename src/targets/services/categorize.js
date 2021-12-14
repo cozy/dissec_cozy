@@ -20,17 +20,6 @@ export const categorize = async () => {
   // Fetch data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
-  // Apply filters first
-  let filteredOperations = operations
-  if (filters.date) {
-    filteredOperations = filteredOperations.filter(
-      e =>
-        new Date(filters.date).valueOf() -
-          new Date(e.cozyMetadata.createdAt).valueOf() <=
-        0
-    )
-  }
-
   // Fetch model or initialize it
   let model
   if (pretrained) {
@@ -46,17 +35,29 @@ export const categorize = async () => {
       } ? ${err}`
     }
   } else {
+    // Apply filters first
+    let filteredOperations = operations
+    if (filters.date) {
+      filteredOperations = filteredOperations.filter(
+        e =>
+          new Date(filters.date).valueOf() -
+            new Date(e.cozyMetadata.createdAt).valueOf() <=
+          0
+      )
+    }
+
     model = Model.fromDocs(filteredOperations)
   }
 
   // Categorize each doc and update it
-  operations.forEach(async operation => {
+  const categorized = operations.map(operation => {
     const prediction = model.predict(operation.label)
-    await client.save({
+    return {
       ...operation,
       automaticCategoryId: prediction
-    })
+    }
   })
+  await client.saveAll(categorized)
 }
 
 categorize().catch(e => {

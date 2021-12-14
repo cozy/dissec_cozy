@@ -7,9 +7,13 @@ import { Model, createLogger, getAppDirectory } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
-  const { parents, nbShares, pretrained, executionId } = JSON.parse(
-    process.env['COZY_PAYLOAD'] || '{}'
-  )
+  const {
+    parents,
+    nbShares,
+    pretrained,
+    executionId,
+    filters = {}
+  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   if (parents.length !== nbShares) {
     return
@@ -22,6 +26,17 @@ export const contribution = async () => {
   // Fetch training data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
+  // Filter data
+  let filteredOperations = operations
+  if (filters.date) {
+    filteredOperations = filteredOperations.filter(
+      e =>
+        new Date(filters.date).valueOf() -
+          new Date(e.cozyMetadata.createdAt).valueOf() <=
+        0
+    )
+  }
+
   // Fetch model
   let model
   if (pretrained) {
@@ -29,12 +44,12 @@ export const contribution = async () => {
       let backup = fs.readFileSync(dissecConfig.localModelPath)
       model = Model.fromBackup(backup)
 
-      model.train(operations)
+      model.train(filteredOperations)
     } catch (e) {
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
-    model = Model.fromDocs(operations)
+    model = Model.fromDocs(filteredOperations)
   }
 
   const appDirectory = await getAppDirectory(client)
