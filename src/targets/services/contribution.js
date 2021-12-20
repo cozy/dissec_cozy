@@ -23,19 +23,19 @@ export const contribution = async () => {
 
   const log = createLogger(client.stackClient.uri)
 
-  // Fetch training data
-  const { data: operations } = await client.query(Q(BANK_DOCTYPE))
-
-  // Filter data
-  let filteredOperations = operations
-  if (filters.date) {
-    filteredOperations = filteredOperations.filter(
-      e =>
-        new Date(filters.date).valueOf() -
-          new Date(e.cozyMetadata.createdAt).valueOf() <=
-        0
-    )
+  let filtersToApply = {}
+  if (filters.minOperationDate) {
+    filtersToApply = Object.assign(filtersToApply, {
+      date: { $gt: filters.minOperationDate }
+    })
   }
+
+  // Fetch training data
+  const { data: operations } = await client.query(
+    Q(BANK_DOCTYPE)
+      .where(filtersToApply)
+      .sortBy([{ date: 'asc' }])
+  )
 
   // Fetch model
   let model
@@ -44,12 +44,12 @@ export const contribution = async () => {
       let backup = fs.readFileSync(dissecConfig.localModelPath)
       model = Model.fromBackup(backup)
 
-      model.train(filteredOperations)
+      model.train(operations)
     } catch (e) {
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
-    model = Model.fromDocs(filteredOperations)
+    model = Model.fromDocs(operations)
   }
 
   const appDirectory = await getAppDirectory(client)

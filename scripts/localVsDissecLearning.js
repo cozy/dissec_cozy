@@ -8,21 +8,26 @@ const {
 
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
-const { NODES_DOCTYPE } = require('../src/doctypes/nodes')
-const { PERFORMANCES_DOCTYPE } = require('../src/doctypes/performances')
 const dissecConfig = require('../dissec.config.json')
 
 const aggregationNodes = require('../assets/webhooks.json')
 const { exit } = require('process')
+const createTree = require('./helpers/createTree')
 
 /**
  * This script measures performances of DISSEC vs local learning.
  *
- * It supposes that the querier instance has at least 2 categories of bank operations.
+ * The local instance's dataset is split into a training set and a validation set.
+ * First, a prediction model is trained using only the training set.
+ * The script makes prediction on the validation set and accuracy is then computed.
+ * Then, a model is trained using the training set plus datasets of other instance using a DISSEC training.
+ * The resulting model is used to generate predictions on the validation set.
+ * Both result can then be meaningfully compared, as they result from predictions on the same validation set.
+ *
+ * @param {string} uri The URI of the local instance
  */
 
-const runExperiment = async () => {
-  const uri = process.argv[2]
+const runExperiment = async uri => {
   if (!uri)
     throw new Error('Expected the URI of the executing instance as parameter')
 
@@ -34,7 +39,7 @@ const runExperiment = async () => {
   // Connect to the instance
   const client = await createClientInteractive({
     scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
-    uri: process.argv[2],
+    uri: uri,
     schema: {
       operations: {
         doctype: BANK_DOCTYPE,
@@ -48,31 +53,21 @@ const runExperiment = async () => {
   })
 
   // Download all bank operations
-  const allOperations = await client.queryAll(Q(BANK_DOCTYPE))
+  const sortedOperations = await client.queryAll(
+    Q(BANK_DOCTYPE).where({}).sortBy([{ date: 'asc' }])
+  )
 
   // Filter and update data
-  const allCategories = allOperations.map(e => getCategory(e))
+  const allCategories = sortedOperations.map(e => getCategory(e))
   const uniqueCategories = []
   allCategories.forEach(
     e => !uniqueCategories.includes(e) && uniqueCategories.push(e)
   )
 
-  const sortedOperations = allOperations.sort(
-    (a, b) =>
-      new Date(a.cozyMetadata.createdAt).valueOf() -
-      new Date(b.cozyMetadata.createdAt).valueOf()
+  const validationSet = sortedOperations.slice(
+    Math.round(sortedOperations.length / 2)
   )
-  const cutoffDate = new Date(
-    sortedOperations[
-      Math.round(sortedOperations.length / 2)
-    ].cozyMetadata.createdAt
-  )
-  const validationSet = sortedOperations
-    .filter(
-      e =>
-        cutoffDate.valueOf() - new Date(e.cozyMetadata.createdAt).valueOf() > 0
-    )
-    .sort((a, b) => a.id - b.id)
+  const cutoffDate = new Date(validationSet[0].date)
   const validationIds = validationSet.map(e => e.id)
 
   /** ===== LOCAL TRAINING ===== **/
@@ -83,10 +78,11 @@ const runExperiment = async () => {
       name: 'categorize',
       pretrained: false,
       filters: {
-        date: cutoffDate
+        minOperationDate: cutoffDate
       }
     })
 
+  console.log('Waiting for the local categorization to finish...')
   const jobData = await client
     .collection(JOBS_DOCTYPE)
     .waitFor(localTrainingJob.id)
@@ -97,10 +93,11 @@ const runExperiment = async () => {
     )
 
   // Measure performance
-  const locallyTrainedOperations = await client.queryAll(Q(BANK_DOCTYPE))
-  const locallyTrainedValidationSet = locallyTrainedOperations
-    .filter(e => validationIds.includes(e.id))
-    .sort((a, b) => a.id - b.id)
+  const locallyTrainedValidationSet = await client.queryAll(
+    Q(BANK_DOCTYPE)
+      .getByIds(validationIds)
+      .sortBy([{ date: 'asc' }])
+  )
 
   // Both array are sorted and contain the same elements
   let correct = 0
@@ -117,62 +114,27 @@ const runExperiment = async () => {
 
   /** ===== DISSEC TRAINING ===== **/
   // Create the tree
-  // TODO: Make a dynamic tree
   const querierWebhooks = aggregationNodes.filter(e => e.label === uri)[0]
   const aggregatorsWebhooks = aggregationNodes.filter(e => e.label !== uri)
-  let querier = {
-    webhook: querierWebhooks.aggregationWebhook,
-    level: 0,
-    nbChild: 3,
-    aggregatorId: uuid(),
-    finalize: true
-  }
-
-  let aggregators = [
-    {
-      webhook: aggregatorsWebhooks[0].aggregationWebhook,
-      level: 1,
-      nbChild: 6,
-      parent: querier,
-      aggregatorId: uuid(),
-      finalize: false
-    },
-    {
-      webhook: aggregatorsWebhooks[1].aggregationWebhook,
-      level: 1,
-      nbChild: 6,
-      parent: querier,
-      aggregatorId: uuid(),
-      finalize: false
-    },
-    {
-      webhook: aggregatorsWebhooks[2].aggregationWebhook,
-      level: 1,
-      nbChild: 6,
-      parent: querier,
-      aggregatorId: uuid(),
-      finalize: false
-    }
-  ]
-
-  // All instances with data will contribute
-  let contributors = aggregatorsWebhooks.map(e => ({
-    ...e,
-    level: 2,
-    nbChild: 0,
-    parents: aggregators
-  }))
-
+  const contributorsWebhooks = aggregatorsWebhooks
+  
+  const contributors = createTree(querierWebhooks, aggregatorsWebhooks, contributorsWebhooks)
   const executionId = uuid()
 
-  // Triggering contributions
+  /**
+   * The way DISSEC works currently, contributors do their local computations before passing the aggregate to their parents.
+   * Contributors know the whole tree's structure and pass it to aggregators upon contributing.
+   * To run DISSEC, we thus only trigger contributors by indicating their parents.
+   */
   for (const contributor of contributors) {
     const contributionBody = {
       executionId,
       pretrained: false,
       nbShares: 3,
       parents: contributor.parents,
-      filters: contributor
+      filters: {
+        minOperationDate: cutoffDate
+      }
     }
     await new Promise(resolve => {
       setTimeout(resolve, 1000)
@@ -196,10 +158,11 @@ const runExperiment = async () => {
         name: 'categorize',
         pretrained: true,
         filters: {
-          date: cutoffDate
+          minOperationDate: cutoffDate
         }
       })
 
+    console.log('Waiting for the local categorization to finish...')
     const jobData = await client
       .collection(JOBS_DOCTYPE)
       .waitFor(dissecTrainingJob.id)
@@ -210,10 +173,11 @@ const runExperiment = async () => {
       )
 
     // Measure performance
-    const dissecTrainedOperations = await client.queryAll(Q(BANK_DOCTYPE))
-    const dissecTrainedValidationSet = dissecTrainedOperations
-      .filter(e => validationIds.includes(e.id))
-      .sort((a, b) => a.id - b.id)
+    const dissecTrainedValidationSet = await client.queryAll(
+      Q(BANK_DOCTYPE)
+        .getByIds(validationIds)
+        .sortBy([{ date: 'asc' }])
+    )
 
     // Both array are sorted and contain the same elements
     let correct = 0
@@ -231,7 +195,7 @@ const runExperiment = async () => {
   })
 }
 
-runExperiment()
+runExperiment(process.argv[2])
 
 module.exports = {
   runExperiment
