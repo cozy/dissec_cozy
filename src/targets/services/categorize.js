@@ -36,15 +36,13 @@ export const categorize = async () => {
     }
   } else {
     // Apply filters first
-    let filteredOperations = operations
-
-    if (filters.minOperationDate) {
-      filteredOperations = operations.filter(
-        e =>
-          new Date(e.date).valueOf() <
-          new Date(filters.minOperationDate).valueOf()
-      )
-    }
+    let filteredOperations = filters.minOperationDate
+      ? (filteredOperations = operations.filter(
+          e =>
+            new Date(e.date).valueOf() <
+            new Date(filters.minOperationDate).valueOf()
+        ))
+      : operations
 
     model = Model.fromDocs(filteredOperations)
   }
