@@ -17,6 +17,9 @@ export const categorize = async () => {
 
   const { pretrained, filters = {} } = job.attributes.message
 
+  // Fetch data
+  const { data: operations } = await client.query(Q(BANK_DOCTYPE))
+
   // Fetch model or initialize it
   let model
   if (pretrained) {
@@ -33,25 +36,18 @@ export const categorize = async () => {
     }
   } else {
     // Apply filters first
-    let filtersToApply = {}
+    let filteredOperations = operations
 
     if (filters.minOperationDate) {
-      filtersToApply = Object.assign(filtersToApply, {
-        date: { $gt: filters.minOperationDate }
-      })
+      filteredOperations = operations.filter(
+        e =>
+          new Date(e.date).valueOf() <
+          new Date(filters.minOperationDate).valueOf()
+      )
     }
 
-    model = Model.fromDocs(
-      await client.queryAll(
-        Q(BANK_DOCTYPE)
-          .where(filtersToApply)
-          .sortBy([{ date: 'asc' }])
-      )
-    )
+    model = Model.fromDocs(filteredOperations)
   }
-
-  // Fetch data
-  const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
   // Categorize each doc and update it
   const categorized = operations.map(operation => {

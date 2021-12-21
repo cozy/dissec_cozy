@@ -54,7 +54,10 @@ const runExperiment = async uri => {
 
   // Download all bank operations
   const sortedOperations = await client.queryAll(
-    Q(BANK_DOCTYPE).where({}).sortBy([{ date: 'asc' }])
+    Q(BANK_DOCTYPE)
+      .where({ date: { $gt: null } })
+      .sortBy([{ date: 'asc' }])
+      .indexFields(['date'])
   )
 
   // Filter and update data
@@ -117,8 +120,12 @@ const runExperiment = async uri => {
   const querierWebhooks = aggregationNodes.filter(e => e.label === uri)[0]
   const aggregatorsWebhooks = aggregationNodes.filter(e => e.label !== uri)
   const contributorsWebhooks = aggregatorsWebhooks
-  
-  const contributors = createTree(querierWebhooks, aggregatorsWebhooks, contributorsWebhooks)
+
+  const contributors = createTree(
+    querierWebhooks,
+    aggregatorsWebhooks,
+    contributorsWebhooks
+  )
   const executionId = uuid()
 
   /**

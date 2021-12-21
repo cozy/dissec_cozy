@@ -23,17 +23,16 @@ export const contribution = async () => {
 
   const log = createLogger(client.stackClient.uri)
 
-  let filtersToApply = {}
-  if (filters.minOperationDate) {
-    filtersToApply = Object.assign(filtersToApply, {
-      date: { $gt: filters.minOperationDate }
-    })
-  }
+  const selector = filters.minOperationDate
+    ? {
+        date: { $gt: filters.minOperationDate }
+      }
+    : {}
 
   // Fetch training data
   const { data: operations } = await client.query(
     Q(BANK_DOCTYPE)
-      .where(filtersToApply)
+      .where(selector)
       .sortBy([{ date: 'asc' }])
   )
 
