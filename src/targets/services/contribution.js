@@ -7,9 +7,13 @@ import { Model, createLogger, getAppDirectory } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
-  const { parents, nbShares, pretrained, executionId } = JSON.parse(
-    process.env['COZY_PAYLOAD'] || '{}'
-  )
+  const {
+    parents,
+    nbShares,
+    pretrained,
+    executionId,
+    filters = {}
+  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   if (parents.length !== nbShares) {
     return
@@ -19,8 +23,18 @@ export const contribution = async () => {
 
   const log = createLogger(client.stackClient.uri)
 
+  const selector = filters.minOperationDate
+    ? {
+        date: { $gt: filters.minOperationDate }
+      }
+    : {}
+
   // Fetch training data
-  const { data: operations } = await client.query(Q(BANK_DOCTYPE))
+  const { data: operations } = await client.query(
+    Q(BANK_DOCTYPE)
+      .where(selector)
+      .sortBy([{ date: 'asc' }])
+  )
 
   // Fetch model
   let model

@@ -10,12 +10,14 @@ export class Model {
   constructor() {
     this.uniqueY = Object.keys(classes)
     this.priors = Array(classes.length).fill(1)
-    this.occurences = Array(vocabulary.length).fill(
-      Array(this.uniqueY.length).fill(0)
-    )
-    this.logProbabilities = Array(vocabulary.length).fill(
-      Array(this.uniqueY.length).fill(0)
-    )
+
+    // Using map to allocate a new array for each line
+    this.occurences = Array(vocabulary.length)
+      .fill(0)
+      .map(() => Array(this.uniqueY.length).fill(0))
+    this.logProbabilities = Array(vocabulary.length)
+      .fill(0)
+      .map(() => Array(this.uniqueY.length).fill(0))
     this.contributions = 1
   }
 
@@ -48,10 +50,10 @@ export class Model {
    * Returns a new model created using shares
    *
    * @param {Object[]} shares The array of shares
-   * @param {boolean} shouldFinalize Used by the final aggregator to produce a usable model
+   * @param {{ shouldFinalize: boolean }} options Reconstruction options
    * @return {Model} The new model
    */
-  static fromShares(shares, { shouldFinalize } = {}) {
+  static fromShares(shares, options = {}) {
     let model = new Model()
     model.contributions = 0
     shares.forEach(share => (model.contributions += share.contributions))
@@ -66,7 +68,7 @@ export class Model {
       }
     }
 
-    if (shouldFinalize) {
+    if (options.shouldFinalize) {
       for (let j = 0; j < vocabulary.length; j++) {
         for (let i = 0; i < model.uniqueY.length; i++) {
           model.occurences[j][i] /= shares.length
@@ -83,11 +85,11 @@ export class Model {
    * Returns a new model created using compressed shares
    *
    * @param {string[]} compressedShares The array of compressed shares
+   * @param {{ shouldFinalize: boolean }} options Reconstruction options
    * @return {Model} The new model
    */
   static fromCompressedShares(compressedShares, options) {
     const shares = compressedShares.map(cshare => {
-      //console.log(String(cshare))
       return Model.compressedBinaryToShare(String(cshare))
     })
     return Model.fromShares(shares, options)
@@ -131,9 +133,11 @@ export class Model {
   train(docs) {
     for (let doc of docs) {
       // Only learn from categorized docs
-      if (doc.cozyCategoryId) {
-        const classId = this.uniqueY.indexOf(doc.cozyCategoryId)
-        const tokens = doc.label.split(' ')
+      const category =
+        doc.manualCategoryId || doc.localCategoryId || doc.cozyCategoryId
+      if (category) {
+        const classId = this.uniqueY.indexOf(category)
+        const tokens = Model.normalizeTokens(doc.label.split(' '))
 
         for (const token of tokens) {
           const index = vocabulary.indexOf(token)
@@ -156,7 +160,7 @@ export class Model {
    */
   predict(text) {
     let probability = Array(this.uniqueY.length).fill(0)
-    const tokens = text.split(' ')
+    const tokens = Model.normalizeTokens(text.split(' '))
 
     for (const token of tokens) {
       const index = vocabulary.indexOf(token)
@@ -174,6 +178,16 @@ export class Model {
   }
 
   /**
+   * Preprocessing to normalize tokens
+   *
+   * @param {string[]} tokens The raw array of tokens
+   * @return {string[]}
+   */
+  static normalizeTokens(tokens) {
+    return tokens.map(e => e.toLowerCase())
+  }
+
+  /**
    * Returns the model's shares
    *
    * @param {Number} nbShares The number of shares to create
@@ -187,10 +201,14 @@ export class Model {
     // Actual shares would then be generated on the fly.
     // It would use nbShares instead of nbShares + 1 copies
     // Initialize shares array
-    let shares = Array(nbShares).fill({
-      occurences: this.occurences.map(e => e.map(f => f)),
-      contributions: this.contributions
-    })
+    let shares = Array(nbShares)
+      .fill(0)
+      .map(() => {
+        return {
+          occurences: this.occurences.map(e => e.map(f => f)),
+          contributions: this.contributions
+        }
+      })
 
     for (let j = 0; j < vocabulary.length; j++) {
       for (let i = 0; i < this.uniqueY.length; i++) {
@@ -280,7 +298,9 @@ export class Model {
     const cols = Object.keys(classes).length
     const numberSize = 4
     const contributions = buf.readInt32BE()
-    const occurences = Array(rows).fill(Array(cols).fill(0))
+    const occurences = Array(rows)
+      .fill(0)
+      .map(() => Array(cols).fill(0))
 
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {

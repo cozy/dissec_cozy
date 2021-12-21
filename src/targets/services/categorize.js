@@ -5,39 +5,57 @@ import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
 import { Model } from './helpers'
 import dissecConfig from '../../../dissec.config.json'
+import { JOBS_DOCTYPE } from '../../doctypes/jobs'
 
 export const categorize = async () => {
-  const { pretrained } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
-
   const client = CozyClient.fromEnv(process.env, {})
 
-  // 1. Fetch data
+  // Fetching parameters (if any) from the jobs
+  const { data: job } = await client.query(
+    Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2])
+  )
+
+  const { pretrained, filters = {} } = job.attributes.message
+
+  // Fetch data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
 
-  // 2. Fetch model or initialize it
+  // Fetch model or initialize it
   let model
   if (pretrained) {
-    // Use the stack's remote assets
+    // Use the shared model
     try {
-      const compressedBackup = fs
+      const compressedAggregate = fs
         .readFileSync(dissecConfig.localModelPath)
         .toString()
-      model = Model.fromCompressedBackup(compressedBackup)
+      model = Model.fromCompressedAggregate(compressedAggregate)
     } catch (err) {
-      throw `Model does not exist at path ${dissecConfig.localModelPath}`
+      throw `Model does not exist at path ${
+        dissecConfig.localModelPath
+      } ? ${err}`
     }
   } else {
-    model = Model.fromDocs(operations)
+    // Apply filters first
+    let filteredOperations = filters.minOperationDate
+      ? (filteredOperations = operations.filter(
+          e =>
+            new Date(e.date).valueOf() <
+            new Date(filters.minOperationDate).valueOf()
+        ))
+      : operations
+
+    model = Model.fromDocs(filteredOperations)
   }
 
-  // 3. Categorize each doc and update it
-  operations.forEach(async operation => {
+  // Categorize each doc and update it
+  const categorized = operations.map(operation => {
     const prediction = model.predict(operation.label)
-    await client.save({
+    return {
       ...operation,
       automaticCategoryId: prediction
-    })
+    }
   })
+  await client.saveAll(categorized)
 }
 
 categorize().catch(e => {

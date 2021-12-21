@@ -1,7 +1,12 @@
-import { Q } from 'cozy-client'
+const { Q } = require('cozy-client')
 
-export const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const BANK_DOCTYPE = 'io.cozy.bank.operations'
 
 // queries for CozyClient
 
-export const bankQuery = Q(BANK_DOCTYPE)
+const bankQuery = Q(BANK_DOCTYPE)
+
+module.exports = {
+  BANK_DOCTYPE,
+  bankQuery
+}

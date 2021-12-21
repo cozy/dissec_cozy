@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react'
-
 import { TextField, Switch, FormControlLabel } from '@material-ui/core'
 import Button from 'cozy-ui/react/Button'
-
 import { useClient } from 'cozy-client'
+
+import { JOBS_DOCTYPE } from '../../doctypes/jobs'
 
 export const Webhook = ({ hook, onUpdate }) => {
   const client = useClient()
@@ -27,16 +27,20 @@ export const Webhook = ({ hook, onUpdate }) => {
 
       let body
       if (name === 'categorize') {
-        body = {
-          pretrained
+        await client.collection(JOBS_DOCTYPE).create('service', {
+          slug: 'dissecozy',
+          name: 'categorize',
+          pretrained: pretrained
+        })
+      } else {
+        try {
+          await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
+        } catch (err) {
+          console.log(err)
         }
       }
 
-      try {
-        await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
-      } finally {
-        setIsWorking(false)
-      }
+      setIsWorking(false)
     },
     [hook, name, pretrained, setIsWorking, client.stackClient]
   )
