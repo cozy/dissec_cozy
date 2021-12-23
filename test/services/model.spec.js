@@ -15,10 +15,18 @@ describe('Model library', () => {
       cozyCategoryId: '200'
     },
     {
+      label: [vocabulary[3], vocabulary[5], vocabulary[5]].join(' '),
+      cozyCategoryId: '200'
+    },
+    {
       label: [vocabulary[3], vocabulary[1], vocabulary[2]].join(' ')
     },
     {
       label: [vocabulary[6], vocabulary[5], vocabulary[4]].join(' ')
+    },
+    {
+      label: 'bgsdhgisuh bghebgo gjnpjrgpgnjezjn vnsdflkjnio',
+      cozyCategoryId: '200'
     }
   ]
 
@@ -39,9 +47,9 @@ describe('Model library', () => {
       expect(model.occurences[0][1]).toEqual(1)
       expect(model.occurences[1][1]).toEqual(1)
       expect(model.occurences[2][1]).toEqual(1)
-      expect(model.occurences[3][2]).toEqual(1)
+      expect(model.occurences[3][2]).toEqual(2)
       expect(model.occurences[4][2]).toEqual(1)
-      expect(model.occurences[5][2]).toEqual(1)
+      expect(model.occurences[5][2]).toEqual(3)
     })
   })
 
@@ -54,9 +62,9 @@ describe('Model library', () => {
       expect(model.occurences[0][1]).toEqual(1)
       expect(model.occurences[1][1]).toEqual(1)
       expect(model.occurences[2][1]).toEqual(1)
-      expect(model.occurences[3][2]).toEqual(1)
+      expect(model.occurences[3][2]).toEqual(2)
       expect(model.occurences[4][2]).toEqual(1)
-      expect(model.occurences[5][2]).toEqual(1)
+      expect(model.occurences[5][2]).toEqual(3)
     })
 
     it('should gives the same result as a centralized dataset', () => {
@@ -79,11 +87,41 @@ describe('Model library', () => {
     })
   })
 
+  describe('fromAggregate & getAggregate', () => {
+    it('should preserve the correct occurences', () => {
+      const firstModel = Model.fromDocs(mockDocs)
+      const aggregate = firstModel.getAggregate()
+      const model = Model.fromAggregate(aggregate, { shouldFinalize: true })
+      expect(model.occurences[0][1]).toEqual(1)
+      expect(model.occurences[1][1]).toEqual(1)
+      expect(model.occurences[2][1]).toEqual(1)
+      expect(model.occurences[3][2]).toEqual(2)
+      expect(model.occurences[4][2]).toEqual(1)
+      expect(model.occurences[5][2]).toEqual(3)
+    })
+  })
+
+  describe('fromCompressedAggregate & getCompressedAggregate', () => {
+    it('should preserve the correct occurences', () => {
+      const firstModel = Model.fromDocs(mockDocs)
+      const aggregate = firstModel.getCompressedAggregate()
+      const model = Model.fromCompressedAggregate(aggregate, {
+        shouldFinalize: true
+      })
+      expect(model.occurences[0][1]).toEqual(1)
+      expect(model.occurences[1][1]).toEqual(1)
+      expect(model.occurences[2][1]).toEqual(1)
+      expect(model.occurences[3][2]).toEqual(2)
+      expect(model.occurences[4][2]).toEqual(1)
+      expect(model.occurences[5][2]).toEqual(3)
+    })
+  })
+
   describe('predict', () => {
     it('should classify labels', () => {
       const model = Model.fromDocs(mockDocs)
-      expect(model.predict(mockDocs[2].label)).toEqual('100')
-      expect(model.predict(mockDocs[3].label)).toEqual('200')
+      expect(model.predict(mockDocs[3].label)).toEqual('100')
+      expect(model.predict(mockDocs[4].label)).toEqual('200')
     })
 
     it('should send uncategorized when only unknown tokens', () => {
@@ -109,6 +147,22 @@ describe('Model library', () => {
 
       for (let i = 0; i < 5; i++) {
         expect(firstModel.occurences[i]).toEqual(model.occurences[i])
+      }
+    })
+
+    it('should fail when mixing different shares', () => {
+      const nbShares = 3
+      const model = Model.fromDocs(mockDocs)
+      const firstShares = model.getShares(nbShares)
+      const firstModel = Model.fromShares(firstShares, { shouldFinalize: true })
+      const secondShares = model.getShares(nbShares)
+      const secondModel = Model.fromShares(
+        [firstShares[0], secondShares[1], firstShares[2]],
+        { shouldFinalize: true }
+      )
+
+      for (let i = 0; i < 5; i++) {
+        expect(firstModel.occurences[i] !== secondModel.occurences[i]).toBeTruthy()
       }
     })
   })
