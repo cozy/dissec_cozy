@@ -37,15 +37,27 @@ export const categorize = async () => {
   } else {
     // Apply filters first
     let filteredOperations = filters.minOperationDate
-      ? (filteredOperations = operations.filter(
+      ? operations.filter(
           e =>
             new Date(e.date).valueOf() <
             new Date(filters.minOperationDate).valueOf()
-        ))
+        )
       : operations
 
     model = Model.fromDocs(filteredOperations)
   }
+
+  // Occurences per classes
+  let result = {}
+  for(let i in model.uniqueY) {
+    let sum = 0
+    for(let j=0; j<model.occurences.length; j++) {
+      sum += model.occurences[j][i]
+    }
+    result[model.uniqueY[i]] = sum
+  }
+
+  console.log(result, model.occurences.length)
 
   // Categorize each doc and update it
   const categorized = operations.map(operation => {

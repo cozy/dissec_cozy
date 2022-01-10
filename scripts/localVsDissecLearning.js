@@ -1,10 +1,6 @@
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
-const {
-  default: CozyClient,
-  createClientInteractive,
-  Q
-} = require('cozy-client')
+const { createClientInteractive, Q } = require('cozy-client')
 
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
@@ -60,6 +56,8 @@ const runExperiment = async uri => {
       .indexFields(['date'])
   )
 
+  console.log(`Local instance has ${sortedOperations.length} data`)
+
   // Filter and update data
   const allCategories = sortedOperations.map(e => getCategory(e))
   const uniqueCategories = []
@@ -72,6 +70,11 @@ const runExperiment = async uri => {
   )
   const cutoffDate = new Date(validationSet[0].date)
   const validationIds = validationSet.map(e => e.id)
+
+  console.log(
+    `Training on ${sortedOperations.length -
+      validationSet.length} data, validating on ${validationSet.length}`
+  )
 
   /** ===== LOCAL TRAINING ===== **/
   const { data: localTrainingJob } = await client
@@ -100,6 +103,7 @@ const runExperiment = async uri => {
     Q(BANK_DOCTYPE)
       .getByIds(validationIds)
       .sortBy([{ date: 'asc' }])
+      .indexFields(['date'])
   )
 
   // Both array are sorted and contain the same elements
