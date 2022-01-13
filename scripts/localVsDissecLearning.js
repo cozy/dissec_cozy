@@ -120,7 +120,7 @@ const runExperiment = async uri => {
   console.log('Local accuracy', localAccuracy)
 
   /** ===== DISSEC TRAINING ===== **/
-  // Create the tree
+  // Create the tree, exclude the querier from contributors and aggregators
   const querierWebhooks = aggregationNodes.filter(e => e.label === uri)[0]
   const aggregatorsWebhooks = aggregationNodes.filter(e => e.label !== uri)
   const contributorsWebhooks = aggregatorsWebhooks
@@ -142,10 +142,7 @@ const runExperiment = async uri => {
       executionId,
       pretrained: false,
       nbShares: 3,
-      parents: contributor.parents,
-      filters: {
-        minOperationDate: cutoffDate
-      }
+      parents: contributor.parents
     }
     await new Promise(resolve => {
       setTimeout(resolve, 1000)

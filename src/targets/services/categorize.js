@@ -49,9 +49,9 @@ export const categorize = async () => {
 
   // Occurences per classes
   let result = {}
-  for(let i in model.uniqueY) {
+  for (let i in model.uniqueY) {
     let sum = 0
-    for(let j=0; j<model.occurences.length; j++) {
+    for (let j = 0; j < model.occurences.length; j++) {
       sum += model.occurences[j][i]
     }
     result[model.uniqueY[i]] = sum

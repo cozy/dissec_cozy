@@ -22,7 +22,7 @@ const createTree = (querierWebhooks, aggregatorsWebhooks, contributorsWebhooks) 
     {
       webhook: aggregatorsWebhooks[0].aggregationWebhook,
       level: 1,
-      nbChild: 6,
+      nbChild: contributorsWebhooks.length,
       parent: querier,
       aggregatorId: uuid(),
       finalize: false
@@ -30,7 +30,7 @@ const createTree = (querierWebhooks, aggregatorsWebhooks, contributorsWebhooks) 
     {
       webhook: aggregatorsWebhooks[1].aggregationWebhook,
       level: 1,
-      nbChild: 6,
+      nbChild: contributorsWebhooks.length,
       parent: querier,
       aggregatorId: uuid(),
       finalize: false
@@ -38,14 +38,13 @@ const createTree = (querierWebhooks, aggregatorsWebhooks, contributorsWebhooks) 
     {
       webhook: aggregatorsWebhooks[2].aggregationWebhook,
       level: 1,
-      nbChild: 6,
+      nbChild: contributorsWebhooks.length,
       parent: querier,
       aggregatorId: uuid(),
       finalize: false
     }
   ]
 
-  // All instances with data will contribute
   let contributors = contributorsWebhooks.map(e => ({
     ...e,
     level: 2,

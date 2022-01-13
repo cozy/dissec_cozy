@@ -62,7 +62,6 @@ export const aggregation = async () => {
       dissecConfig.localModelPath,
       model.getCompressedAggregate()
     )
-    log('Finished the execution, wrote model to disk')
   } else {
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {
@@ -88,9 +87,7 @@ export const aggregation = async () => {
     })
     const shareCode = sharing.attributes.shortcodes[`parent${aggregatorId}`]
 
-    log('Sharing code is', shareCode)
-
-    log('Sending intermediate aggregate via', parent.webhook)
+    log('Sharing code is', shareCode, 'sent to', parent.webhook)
 
     // Call parent's receiving webhook to send the aggregate
     // TODO: Callwebhook without using fetchJSON

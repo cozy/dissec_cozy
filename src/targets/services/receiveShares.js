@@ -56,7 +56,6 @@ export const receiveShares = async () => {
     .collection('io.cozy.files')
     .getDirectoryOrCreate(executionId, appDirectory)
   const aggregationDirectoryId = aggregationDirectory._id
-  log('Aggregation folder id', aggregationDirectoryId)
 
   // Save the received share
   await client.create('io.cozy.files', {

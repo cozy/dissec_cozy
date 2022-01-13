@@ -8,6 +8,7 @@ repository=$(pwd)
 n_instances=${1:-10}
 n_classes=${2:-10}
 operations_per_instances=${3:-30}
+fixture_file=${4:-"./assets/fixtures-l.json"}
 
 echo "Clearing old webhooks data..."
 rm ./assets/webhooks.json
@@ -27,7 +28,7 @@ do
     ACH_token=$(cozy-stack instances token-cli ${domain} io.cozy.bank.operations)
     # Populate the instance with data using ACH. Helper will randomly select samples
     echo "Importing operations of the following classes: ${classes[$i - 1]}"
-    ACH -u http://${domain} -y script banking/importFilteredOperations ./assets/fixtures-l.json ${classes[$i - 1]} ${operations_per_instances} -x -t ${ACH_token}
+    ACH -u http://${domain} -y script banking/importFilteredOperations ${fixture_file} ${classes[$i - 1]} ${operations_per_instances} -x -t ${ACH_token}
     # Generate a token
     token=$(cozy-stack instances token-app ${domain} dissecozy)
     # Install the app
