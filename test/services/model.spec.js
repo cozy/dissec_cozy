@@ -162,7 +162,9 @@ describe('Model library', () => {
       )
 
       for (let i = 0; i < 5; i++) {
-        expect(firstModel.occurences[i] !== secondModel.occurences[i]).toBeTruthy()
+        expect(
+          firstModel.occurences[i] !== secondModel.occurences[i]
+        ).toBeTruthy()
       }
     })
   })
@@ -190,6 +192,43 @@ describe('Model library', () => {
           originalModel.occurences[i]
         )
       }
+    })
+  })
+
+  describe('small tree', () => {
+    it('should convert from one to the other without error', () => {
+      const nbContributors = 5
+      const contributorsModel = Array(nbContributors)
+        .fill()
+        .map(() => Model.fromDocs(mockDocs))
+
+      const nbShares = 3
+      const contributorShares = contributorsModel.map(model =>
+        model.getCompressedShares(nbShares)
+      )
+
+      const aggregatorShares = []
+      for(let j=0; j<nbShares; j++) {
+        let shares = []
+        for(let i=0; i<nbContributors; i++) {
+          shares.push(contributorShares[i][j])
+        }
+        aggregatorShares.push(shares)
+      }
+
+      const aggregates = aggregatorShares.map(shares =>
+        Model.fromCompressedShares(shares).getCompressedAggregate()
+      )
+      const finalModel = Model.fromCompressedShares(aggregates, {
+        shouldFinalize: true
+      })
+
+      expect(finalModel.occurences[0][1]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[1][1]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[2][1]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[3][2]).toEqual(2 * nbContributors)
+      expect(finalModel.occurences[4][2]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[5][2]).toEqual(3 * nbContributors)
     })
   })
 })

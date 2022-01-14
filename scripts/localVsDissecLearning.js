@@ -1,10 +1,6 @@
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
-const {
-  default: CozyClient,
-  createClientInteractive,
-  Q
-} = require('cozy-client')
+const { createClientInteractive, Q } = require('cozy-client')
 
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
@@ -60,6 +56,8 @@ const runExperiment = async uri => {
       .indexFields(['date'])
   )
 
+  console.log(`Local instance has ${sortedOperations.length} data`)
+
   // Filter and update data
   const allCategories = sortedOperations.map(e => getCategory(e))
   const uniqueCategories = []
@@ -72,6 +70,11 @@ const runExperiment = async uri => {
   )
   const cutoffDate = new Date(validationSet[0].date)
   const validationIds = validationSet.map(e => e.id)
+
+  console.log(
+    `Training on ${sortedOperations.length -
+      validationSet.length} data, validating on ${validationSet.length}`
+  )
 
   /** ===== LOCAL TRAINING ===== **/
   const { data: localTrainingJob } = await client
@@ -100,6 +103,7 @@ const runExperiment = async uri => {
     Q(BANK_DOCTYPE)
       .getByIds(validationIds)
       .sortBy([{ date: 'asc' }])
+      .indexFields(['date'])
   )
 
   // Both array are sorted and contain the same elements
@@ -116,7 +120,7 @@ const runExperiment = async uri => {
   console.log('Local accuracy', localAccuracy)
 
   /** ===== DISSEC TRAINING ===== **/
-  // Create the tree
+  // Create the tree, exclude the querier from contributors and aggregators
   const querierWebhooks = aggregationNodes.filter(e => e.label === uri)[0]
   const aggregatorsWebhooks = aggregationNodes.filter(e => e.label !== uri)
   const contributorsWebhooks = aggregatorsWebhooks
@@ -138,10 +142,7 @@ const runExperiment = async uri => {
       executionId,
       pretrained: false,
       nbShares: 3,
-      parents: contributor.parents,
-      filters: {
-        minOperationDate: cutoffDate
-      }
+      parents: contributor.parents
     }
     await new Promise(resolve => {
       setTimeout(resolve, 1000)

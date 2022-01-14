@@ -109,7 +109,7 @@ export const contribution = async () => {
       aggregatorId: parents[i].aggregatorId,
       nbChild: parents[i].nbChild
     })
-    log('Activated webhook', parents[i].webhook)
+    log(`Sent share ${Number(i) + 1} to aggregator ${parents[i].webhook}`)
   }
 }
 
