@@ -1,6 +1,11 @@
+global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
-const { createClientInteractive, Q } = require('cozy-client')
+const {
+  default: CozyClient,
+  createClientInteractive,
+  Q
+} = require('cozy-client')
 
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
@@ -21,9 +26,10 @@ const createTree = require('./helpers/createTree')
  * Both result can then be meaningfully compared, as they result from predictions on the same validation set.
  *
  * @param {string} uri The URI of the local instance
+ * @param {string} token Optionnal token used to connect to the instance
  */
 
-const runExperiment = async uri => {
+const runExperiment = async (uri, token, noSplit) => {
   if (!uri)
     throw new Error('Expected the URI of the executing instance as parameter')
 
@@ -33,20 +39,36 @@ const runExperiment = async uri => {
   }
 
   // Connect to the instance
-  const client = await createClientInteractive({
-    scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
-    uri: uri,
-    schema: {
-      operations: {
-        doctype: BANK_DOCTYPE,
-        attributes: {},
-        relationships: {}
-      }
-    },
-    oauth: {
-      softwareID: 'io.cozy.client.cli'
+  const client = await (async () => {
+    if (token) {
+      return new CozyClient({
+        uri: uri,
+        schema: {
+          operations: {
+            doctype: BANK_DOCTYPE,
+            attributes: {},
+            relationships: {}
+          }
+        },
+        token: token
+      })
+    } else {
+      return await createClientInteractive({
+        scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
+        uri: uri,
+        schema: {
+          operations: {
+            doctype: BANK_DOCTYPE,
+            attributes: {},
+            relationships: {}
+          }
+        },
+        oauth: {
+          softwareID: 'io.cozy.client.cli'
+        }
+      })
     }
-  })
+  })()
 
   // Download all bank operations
   const sortedOperations = await client.queryAll(
@@ -65,10 +87,12 @@ const runExperiment = async uri => {
     e => !uniqueCategories.includes(e) && uniqueCategories.push(e)
   )
 
-  const validationSet = sortedOperations.slice(
-    Math.round(sortedOperations.length / 2)
-  )
-  const cutoffDate = new Date(validationSet[0].date)
+  const validationSet = noSplit
+    ? sortedOperations.slice()
+    : sortedOperations.slice(Math.round(sortedOperations.length / 2))
+  const cutoffDate = noSplit
+    ? new Date(validationSet[validationSet.length - 1].date)
+    : new Date(validationSet[0].date)
   const validationIds = validationSet.map(e => e.id)
 
   console.log(
@@ -203,7 +227,7 @@ const runExperiment = async uri => {
   })
 }
 
-runExperiment(process.argv[2])
+runExperiment(process.argv[2], process.argv[3], process.argv[4])
 
 module.exports = {
   runExperiment

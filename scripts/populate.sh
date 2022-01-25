@@ -27,8 +27,11 @@ do
     # Generate token first
     ACH_token=$(cozy-stack instances token-cli ${domain} io.cozy.bank.operations)
     # Populate the instance with data using ACH. Helper will randomly select samples
+    # Using the domain as a random seed
     echo "Importing operations of the following classes: ${classes[$i - 1]}"
-    ACH -u http://${domain} -y script banking/importFilteredOperations ${fixture_file} ${classes[$i - 1]} ${operations_per_instances} -x -t ${ACH_token}
+    ACH -u http://${domain} -y script banking/importFilteredOperations \
+        ${fixture_file} ${classes[$i - 1]} ${operations_per_instances} ${domain}\
+        -x -t ${ACH_token}
     # Generate a token
     token=$(cozy-stack instances token-app ${domain} dissecozy)
     # Install the app

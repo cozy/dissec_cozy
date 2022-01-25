@@ -25,7 +25,7 @@ export const contribution = async () => {
 
   const selector = filters.minOperationDate
     ? {
-        date: { $gt: filters.minOperationDate }
+        date: { $lte: filters.minOperationDate }
       }
     : {}
 
