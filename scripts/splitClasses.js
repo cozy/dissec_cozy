@@ -9,7 +9,7 @@ const classes = JSON.parse(
  *
  * If there more instances than categories, categories are cyclically reused.
  */
-const splitClasses = (nInstances, nClassesPerInstance) => {
+const splitClasses = (nInstances = 1, nClassesPerInstance = 1) => {
   let keys = Object.keys(classes)
 
   const result = []
@@ -23,10 +23,12 @@ const splitClasses = (nInstances, nClassesPerInstance) => {
     result.push(instanceResult.join(','))
   }
 
-  console.log(result.join(' '))
+  console.log(result.join(" "))
+
+  return result
 }
 
-splitClasses(process.argv[2] || 1, process.argv[3] || 1)
+splitClasses(process.argv[2], process.argv[3])
 
 module.exports = {
   splitClasses

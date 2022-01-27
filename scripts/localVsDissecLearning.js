@@ -26,12 +26,21 @@ const createTree = require('./helpers/createTree')
  * Both result can then be meaningfully compared, as they result from predictions on the same validation set.
  *
  * @param {string} uri The URI of the local instance
- * @param {string} token Optionnal token used to connect to the instance
+ * @param {boolean} noSplit - True will create exclusive test and validation datasets
  */
 
-const runExperiment = async (uri, token, noSplit) => {
+const runExperiment = async (
+  uri = 'http://test1.localhost:8080',
+  noSplit = false
+) => {
   if (!uri)
     throw new Error('Expected the URI of the executing instance as parameter')
+
+  const token = execSync(
+    `cozy-stack instances token-app ${uri.replace('http://', '')} dissecozy`
+  )
+    .toString()
+    .replace('\n', '')
 
   // Helper
   const getCategory = doc => {
