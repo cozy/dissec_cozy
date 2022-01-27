@@ -1,3 +1,5 @@
+/// TODO: Merge this script with `populateCentralized` once the centralized population is more flexible
+
 const { execSync } = require('child_process')
 
 const { splitClasses } = require('./splitClasses')

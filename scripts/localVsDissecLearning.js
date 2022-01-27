@@ -49,29 +49,24 @@ const runExperiment = async (
 
   // Connect to the instance
   const client = await (async () => {
+    const schema = {
+      operations: {
+        doctype: BANK_DOCTYPE,
+        attributes: {},
+        relationships: {}
+      }
+    }
     if (token) {
       return new CozyClient({
-        uri: uri,
-        schema: {
-          operations: {
-            doctype: BANK_DOCTYPE,
-            attributes: {},
-            relationships: {}
-          }
-        },
+        uri,
+        schema,
         token: token
       })
     } else {
       return await createClientInteractive({
         scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
-        uri: uri,
-        schema: {
-          operations: {
-            doctype: BANK_DOCTYPE,
-            attributes: {},
-            relationships: {}
-          }
-        },
+        uri,
+        schema,
         oauth: {
           softwareID: 'io.cozy.client.cli'
         }
@@ -96,8 +91,9 @@ const runExperiment = async (
     e => !uniqueCategories.includes(e) && uniqueCategories.push(e)
   )
 
+  // Since data in the set are not modified during the execution, the validation set is just a reference to the training set
   const validationSet = noSplit
-    ? sortedOperations.slice()
+    ? sortedOperations
     : sortedOperations.slice(Math.round(sortedOperations.length / 2))
   const cutoffDate = noSplit
     ? new Date(validationSet[validationSet.length - 1].date)

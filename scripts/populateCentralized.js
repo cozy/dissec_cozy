@@ -1,9 +1,16 @@
+/// TODO: Merge this script with `populate` once the centralized population is more flexible
+
 const { execSync } = require('child_process')
 
 const { splitClasses } = require('./splitClasses')
 const { updateWebhook } = require('./webhooks')
 const { loadWebhooks } = require('./loadWebhooks')
 
+/**
+ * This script only work with 10 instances.
+ * It creates a set of 9 distinct categories set.
+ * The first instance receives all the data while other 9 instances only get one set per instance.
+ */
 const populateCentralized = async (
   operationsPerInstance = 10,
   fixtureFile = './assets/fixtures-l.json'
