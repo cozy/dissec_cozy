@@ -1,13 +1,13 @@
 global.fetch = require('node-fetch').default
+const fs = require('fs')
 const { default: CozyClient, Q } = require('cozy-client')
 
 const { NODES_DOCTYPE } = require('../src/doctypes/nodes')
-const newWebhooks = require('../assets/webhooks.json')
 
-const main = async () => {
+const loadWebhooks = async (uri, token, outputFile) => {
   // Connect to the instance
   const client = new CozyClient({
-    uri: process.argv[2],
+    uri: uri,
     schema: {
       nodes: {
         doctype: NODES_DOCTYPE,
@@ -15,7 +15,7 @@ const main = async () => {
         relationships: {}
       }
     },
-    token: process.argv[3]
+    token: token
   })
 
   // Fetch old nodes
@@ -26,7 +26,12 @@ const main = async () => {
 
   // Create a new doc for each instance
   // Using collection to force the doctype
+  const newWebhooks = JSON.parse(
+    fs.readFileSync(outputFile).toString()
+  )
   await client.collection(NODES_DOCTYPE).updateAll(newWebhooks)
 }
 
-main()
+module.exports = {
+  loadWebhooks
+}

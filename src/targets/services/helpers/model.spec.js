@@ -2,7 +2,7 @@
 
 /* eslint-env jest */
 
-import { Model, vocabulary } from '../../src/targets/services/helpers'
+import { Model, vocabulary } from '.'
 
 describe('Model library', () => {
   const mockDocs = [

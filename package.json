@@ -22,8 +22,10 @@
     "dissecozy:aggregation": "yarn run cozy-konnector-dev -m manifest.webapp build/services/aggregation/dissecozy.js",
     "dissecozy:categorize": "yarn run cozy-konnector-dev -m manifest.webapp build/services/categorize/dissecozy.js",
     "dissecozy:contribution": "yarn run cozy-konnector-dev -m manifest.webapp build/services/contribution/dissecozy.js",
-    "populate": "bash ./scripts/populate.sh",
-    "measure:local-dissec": "node ./scripts/localVsDissecLearning.js"
+    "test:centralized-vs-dissec": "bash ./scripts/testCentralizedVsDissec.sh",
+    "populate": "node ./scripts/populate.js",
+    "populate:centralized": "node ./scripts/populateCentralized.js",
+    "measure": "node ./scripts/localVsDissecLearning.js"
   },
   "repository": {
     "type": "git",

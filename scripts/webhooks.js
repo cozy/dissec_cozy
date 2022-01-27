@@ -2,10 +2,10 @@ global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { default: CozyClient, Q } = require('cozy-client')
 
-const main = async () => {
+const updateWebhook = async (uri, token, outputFile) => {
   // Connect to the instance
   const client = new CozyClient({
-    uri: process.argv[2],
+    uri: uri,
     schema: {
       nodes: {
         doctype: 'io.cozy.triggers',
@@ -13,22 +13,21 @@ const main = async () => {
         relationships: {}
       }
     },
-    token: process.argv[3]
+    token: token
   })
 
   // Fetch triggers
   const data = await client.queryAll(Q('io.cozy.triggers'))
 
   // Filter for webhooks
-  let webhooks = data
-    .filter(hook => hook.attributes.type === '@webhook')
+  let webhooks = data.filter(hook => hook.attributes.type === '@webhook')
 
   // Save DISSEC webhooks
-  let entry = { label: process.argv[2] }
+  let entry = { label: uri }
   for (let webhook of webhooks) {
-    if (webhook.attributes.message.name === "contribution") {
+    if (webhook.attributes.message.name === 'contribution') {
       entry.contributionWebhook = webhook.links.webhook
-    } else if (webhook.attributes.message.name === "receiveShares") {
+    } else if (webhook.attributes.message.name === 'receiveShares') {
       entry.aggregationWebhook = webhook.links.webhook
     }
   }
@@ -36,7 +35,7 @@ const main = async () => {
   // Read the result
   let result
   try {
-    result = JSON.parse(fs.readFileSync(process.argv[4]))
+    result = JSON.parse(fs.readFileSync(outputFile))
   } catch (err) {
     result = []
   }
@@ -45,10 +44,9 @@ const main = async () => {
   result.push(entry)
 
   // Write the new result
-  fs.writeFileSync(
-    process.argv[4],
-    JSON.stringify(result, null, 2)
-  )
+  fs.writeFileSync(outputFile, JSON.stringify(result, null, 2))
 }
 
-main()
+module.exports = {
+  updateWebhook
+}

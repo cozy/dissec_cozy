@@ -1,6 +1,11 @@
+global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
-const { createClientInteractive, Q } = require('cozy-client')
+const {
+  default: CozyClient,
+  createClientInteractive,
+  Q
+} = require('cozy-client')
 
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
@@ -21,11 +26,21 @@ const createTree = require('./helpers/createTree')
  * Both result can then be meaningfully compared, as they result from predictions on the same validation set.
  *
  * @param {string} uri The URI of the local instance
+ * @param {boolean} noSplit - True will create exclusive test and validation datasets
  */
 
-const runExperiment = async uri => {
+const runExperiment = async (
+  uri = 'http://test1.localhost:8080',
+  noSplit = false
+) => {
   if (!uri)
     throw new Error('Expected the URI of the executing instance as parameter')
+
+  const token = execSync(
+    `cozy-stack instances token-app ${uri.replace('http://', '')} dissecozy`
+  )
+    .toString()
+    .replace('\n', '')
 
   // Helper
   const getCategory = doc => {
@@ -33,20 +48,31 @@ const runExperiment = async uri => {
   }
 
   // Connect to the instance
-  const client = await createClientInteractive({
-    scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
-    uri: uri,
-    schema: {
+  const client = await (async () => {
+    const schema = {
       operations: {
         doctype: BANK_DOCTYPE,
         attributes: {},
         relationships: {}
       }
-    },
-    oauth: {
-      softwareID: 'io.cozy.client.cli'
     }
-  })
+    if (token) {
+      return new CozyClient({
+        uri,
+        schema,
+        token: token
+      })
+    } else {
+      return await createClientInteractive({
+        scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
+        uri,
+        schema,
+        oauth: {
+          softwareID: 'io.cozy.client.cli'
+        }
+      })
+    }
+  })()
 
   // Download all bank operations
   const sortedOperations = await client.queryAll(
@@ -65,10 +91,13 @@ const runExperiment = async uri => {
     e => !uniqueCategories.includes(e) && uniqueCategories.push(e)
   )
 
-  const validationSet = sortedOperations.slice(
-    Math.round(sortedOperations.length / 2)
-  )
-  const cutoffDate = new Date(validationSet[0].date)
+  // Since data in the set are not modified during the execution, the validation set is just a reference to the training set
+  const validationSet = noSplit
+    ? sortedOperations
+    : sortedOperations.slice(Math.round(sortedOperations.length / 2))
+  const cutoffDate = noSplit
+    ? new Date(validationSet[validationSet.length - 1].date)
+    : new Date(validationSet[0].date)
   const validationIds = validationSet.map(e => e.id)
 
   console.log(
@@ -203,7 +232,7 @@ const runExperiment = async uri => {
   })
 }
 
-runExperiment(process.argv[2])
+runExperiment(process.argv[2], process.argv[3], process.argv[4])
 
 module.exports = {
   runExperiment

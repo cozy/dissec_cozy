@@ -39,7 +39,7 @@ export const categorize = async () => {
     let filteredOperations = filters.minOperationDate
       ? operations.filter(
           e =>
-            new Date(e.date).valueOf() <
+            new Date(e.date).valueOf() <=
             new Date(filters.minOperationDate).valueOf()
         )
       : operations
