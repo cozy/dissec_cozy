@@ -11,7 +11,7 @@ const { loadWebhooks } = require('./loadWebhooks')
  * It creates a set of 9 distinct categories set.
  * The first instance receives all the data while other 9 instances only get one set per instance.
  */
-const populateCentralized = async (
+export const populateCentralized = async (
   operationsPerInstance = 10,
   fixtureFile = './assets/fixtures-l.json'
 ) => {
@@ -88,4 +88,4 @@ const populateCentralized = async (
   )
 }
 
-populateCentralized(process.argv[2], process.argv[3])
+// populateCentralized(process.argv[2], process.argv[3])
