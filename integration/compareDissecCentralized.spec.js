@@ -1,18 +1,14 @@
 const { execSync } = require('child_process')
-const {
-  default: CozyClient,
-  createClientInteractive,
-  Q
-} = require('cozy-client')
+const { Q } = require('cozy-client')
 
-const { populateCentralized } = require('../scripts/populateCentralized')
-const { dissecLearning } = require('./helpers/dissecLearning')
-const { localLearning } = require('./helpers/localLearning')
+const populateCentralized = require('../scripts/populateCentralized')
+const dissecLearning = require('./learning/dissecLearning')
+const localLearning = require('./learning/localLearning')
+const getClient = require('../src/lib/getClient')
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
-const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
 
 describe('Compares the performance of a centralized learning vs the DISSEC one', () => {
-  const defaultTimeout = 150000
+  const defaultTimeout = 300000
 
   const uri = 'http://test1.localhost:8080'
   let client
@@ -37,31 +33,15 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
     }
 
     // Connect to the instance
-    client = await (async () => {
-      const schema = {
-        operations: {
-          doctype: BANK_DOCTYPE,
-          attributes: {},
-          relationships: {}
-        }
+    const schema = {
+      operations: {
+        doctype: BANK_DOCTYPE,
+        attributes: {},
+        relationships: {}
       }
-      if (token) {
-        return new CozyClient({
-          uri,
-          schema,
-          token: token
-        })
-      } else {
-        return await createClientInteractive({
-          scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
-          uri,
-          schema,
-          oauth: {
-            softwareID: 'io.cozy.client.cli'
-          }
-        })
-      }
-    })()
+    }
+    client = await getClient(uri, schema, { token })
+    console.log(client)
 
     // Download all bank operations
     operations = await client.queryAll(

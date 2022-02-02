@@ -2,7 +2,7 @@
 
 const { execSync } = require('child_process')
 
-const { splitClasses } = require('./splitClasses')
+const splitClasses = require('../src/lib/splitClasses')
 const { updateWebhook } = require('./webhooks')
 const { loadWebhooks } = require('./loadWebhooks')
 
@@ -11,7 +11,7 @@ const { loadWebhooks } = require('./loadWebhooks')
  * It creates a set of 9 distinct categories set.
  * The first instance receives all the data while other 9 instances only get one set per instance.
  */
-export const populateCentralized = async (
+const populateCentralized = async (
   operationsPerInstance = 10,
   fixtureFile = './assets/fixtures-l.json'
 ) => {
@@ -88,4 +88,4 @@ export const populateCentralized = async (
   )
 }
 
-// populateCentralized(process.argv[2], process.argv[3])
+module.exports = populateCentralized

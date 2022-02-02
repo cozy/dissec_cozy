@@ -2,14 +2,12 @@ global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
 const { Q } = require('cozy-client')
-const { exit } = require('process')
 
+const createTree = require('../../src/lib/createTree')
+const getCategory = require('../../src/lib/getCategory')
 const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
 const dissecConfig = require('../../dissec.config.json')
-
-const createTree = require('./createTree')
-const { getCategory } = require('./getCategory')
 
 /**
  * This script measures performances of DISSEC vs local learning.
@@ -119,6 +117,4 @@ const dissecLearning = async (
   })
 }
 
-module.exports = {
-  dissecLearning
-}
+module.exports = dissecLearning

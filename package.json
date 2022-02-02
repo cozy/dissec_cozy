@@ -15,7 +15,7 @@
     "start": "cs start --browser",
     "deploy": "git-directory-deploy --directory build/ --branch ${DEPLOY_BRANCH:-build} --repo=${DEPLOY_REPOSITORY:-https://$GITHUB_TOKEN@github.com/JulienMirval/dissec_cozy.git}",
     "test": "cs test --verbose --coverage --testPathIgnorePatterns integration",
-    "test:integration": "cs test --coverage --testPathPattern integration",
+    "test:integration": "cs test --verbose --coverage --testPathPattern integration",
     "cozyPublish": "git fetch origin ${DEPLOY_BRANCH:-build}:${DEPLOY_BRANCH:-build} && cs publish --token $REGISTRY_TOKEN --build-commit $(git rev-parse ${DEPLOY_BRANCH:-build})",
     "stack:docker:dev": "cs stackDocker",
     "stack:docker:prod": "cs stackDocker --prod",

@@ -2,7 +2,7 @@
 
 const { execSync } = require('child_process')
 
-const { splitClasses } = require('./splitClasses')
+const splitClasses = require('../src/lib/splitClasses')
 const { updateWebhook } = require('./webhooks')
 const { loadWebhooks } = require('./loadWebhooks')
 
