@@ -7,7 +7,7 @@
 
 ## What's DISSEC-COZY?
 
-DISSEC-COZY is a proof-of-concept implementation of DISSEC-ML, the academic work done by Cozy and PETRUS. 
+DISSEC-COZY is a proof-of-concept implementation of DISSEC-ML, the academic work done by Cozy and PETRUS.
 
 It is a decentralized aggregation protocol designed to be used for privacy-preserving machine learning. Nodes locally learn a model and then use a simple additively homomorphic secret-sharing scheme to send data to aggregators. Aggregators form a tree to maximize efficiency.
 
@@ -33,7 +33,7 @@ Cozy's apps use a standard set of _npm scripts_ to run common tasks, like watch,
 
 ### Configuration
 
-In order to allow continuous enhancement of performances, nodes in the protocol can start training from a pretrained model, which is the result of the last training. 
+In order to allow continuous enhancement of performances, nodes in the protocol can start training from a pretrained model, which is the result of the last training.
 
 Currently, this model is stored on the local file system and the path needs to be defined for the execution to work. In the file `dissec.config.json`, set the `localModelPath` value to a path where you want this shared model to be stored.
 
@@ -59,12 +59,24 @@ yarn link cozy-ui
 
 ### Tests
 
-Tests are run by [jest] under the hood. You can easily run the tests suite with:
+Tests are run by [jest] under the hood. You can easily run the unit tests suite with:
 
 ```sh
 $ cd dissec_cozy
 $ yarn test
 ```
+
+There are also integration tests that verify that the trainings and predictions work as expected.
+The Cozy-stack needs to be running for integration tests to work.
+They can be ran with:
+
+```sh
+$ yarn test:integration
+```
+
+It currently tests the following properties:
+
+- A distributed training where the union of individuals dataset is equal to the dataset used by a single participant to train a local model give the same accuracy.
 
 :pushpin: Don't forget to update / create new tests when you contribute to code to keep the app the consistent.
 
@@ -77,18 +89,16 @@ The steps to to execute the demonstration are as follows:
 
 1. Have a `build` folder in the in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
 2. Launch `cozy-stack serve --disable-csp` to start the stack with the dissecozy app loaded.
-3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provide the contributing ones (instances 4-10) with a single, hand craft banking operation. It will also output a JSON file containing all these instances' webhooks, to be used by the querier for creating the tree. The file is located in `assets/webhooks.json`.
+3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provides 10 banking operations of 10 different categories by default. It will also output a JSON file containing all these instances' webhooks, and uploads these webhooks to the querier to use them to construct the aggregation tree. The file is located in `assets/webhooks.json`.
 4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.tools:8080/`)
 5. In the *Nodes* section, click the 'Choose a file' button and select the JSON file containing webhooks. Then, click upload to register all the test instances to the querier.
 6. Go to the *Execution* section and, in the *Full Aggregation* sub section, first click the 'Generate new tree' button, then 'Launch execution' button.
 
 Congratulations, you launched the execution. After a few seconds, you should see new file created at the location indicated by `localModelPath` value of `dissec.config.json` file.
 
-To verify the correctness of the execution, you can test the following sentences:
-
-- "fruits frais" should be classified as "Supermarket"
-- "lait de vach" should be classified as "Supermarket"
-- "carte de metro" should be classified as "Transportation"
+The script located at `scripts/localVsDissecLearning.js` can be used to demonstrate the efficiency of distributed learning.
+It runs both type of learning and measures the accuracy on a single validation dataset.
+This script implies that `populateInstances` has been run before.
 
 ## Models
 
@@ -144,8 +154,6 @@ You can reach the Cozy Community by:
 ## License
 
 DISSEC-COZY is developed by Julien Mirval and distributed under the [AGPL v3 license][agpl-3.0].
-
-
 
 [cozy]: https://cozy.io "Cozy Cloud"
 [setup]: https://dev.cozy.io/#set-up-the-development-environment "Cozy dev docs: Set up the Development Environment"

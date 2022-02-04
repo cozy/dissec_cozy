@@ -2,11 +2,11 @@
 
 const { execSync } = require('child_process')
 
-const { splitClasses } = require('./splitClasses')
+const splitClasses = require('../src/lib/splitClasses')
 const { updateWebhook } = require('./webhooks')
 const { loadWebhooks } = require('./loadWebhooks')
 
-const populate = async (
+const populateInstances = async (
   nInstances = 10,
   nClasses = 10,
   operationsPerInstance = 30,
@@ -65,4 +65,4 @@ const populate = async (
   )
 }
 
-populate(process.argv[2], process.argv[3], process.argv[4], process.argv[5])
+populateInstances(process.argv[2], process.argv[3], process.argv[4], process.argv[5])

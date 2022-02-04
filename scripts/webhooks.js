@@ -7,7 +7,7 @@ const updateWebhook = async (uri, token, outputFile) => {
   const client = new CozyClient({
     uri: uri,
     schema: {
-      nodes: {
+      triggers: {
         doctype: 'io.cozy.triggers',
         attributes: {},
         relationships: {}

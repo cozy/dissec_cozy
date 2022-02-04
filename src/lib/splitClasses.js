@@ -23,13 +23,9 @@ const splitClasses = (nInstances = 1, nClassesPerInstance = 1) => {
     result.push(instanceResult.join(','))
   }
 
-  console.log(result.join(" "))
+  console.log(result.join(' '))
 
   return result
 }
 
-splitClasses(process.argv[2], process.argv[3])
-
-module.exports = {
-  splitClasses
-}
+module.exports = splitClasses

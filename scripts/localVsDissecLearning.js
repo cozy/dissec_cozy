@@ -1,19 +1,15 @@
 global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
-const {
-  default: CozyClient,
-  createClientInteractive,
-  Q
-} = require('cozy-client')
+const { Q } = require('cozy-client')
 
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
 const dissecConfig = require('../dissec.config.json')
 
 const aggregationNodes = require('../assets/webhooks.json')
-const { exit } = require('process')
-const createTree = require('./helpers/createTree')
+const createTree = require('../src/lib/createTree')
+const getClient = require('../src/lib/getClient')
 
 /**
  * This script measures performances of DISSEC vs local learning.
@@ -48,31 +44,14 @@ const runExperiment = async (
   }
 
   // Connect to the instance
-  const client = await (async () => {
-    const schema = {
-      operations: {
-        doctype: BANK_DOCTYPE,
-        attributes: {},
-        relationships: {}
-      }
+  const schema = {
+    operations: {
+      doctype: BANK_DOCTYPE,
+      attributes: {},
+      relationships: {}
     }
-    if (token) {
-      return new CozyClient({
-        uri,
-        schema,
-        token: token
-      })
-    } else {
-      return await createClientInteractive({
-        scope: [BANK_DOCTYPE, JOBS_DOCTYPE],
-        uri,
-        schema,
-        oauth: {
-          softwareID: 'io.cozy.client.cli'
-        }
-      })
-    }
-  })()
+  }
+  const client = await getClient(uri, schema, { token })
 
   // Download all bank operations
   const sortedOperations = await client.queryAll(
@@ -228,7 +207,7 @@ const runExperiment = async (
     let localAccuracy = correct / validationSet.length
 
     console.log('DISSEC accuracy', localAccuracy)
-    exit(0)
+    fs.unwatchFile(dissecConfig.localModelPath)
   })
 }
 
