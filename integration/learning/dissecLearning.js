@@ -10,19 +10,14 @@ const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
 const dissecConfig = require('../../dissec.config.json')
 
 /**
- * This script measures performances of DISSEC vs local learning.
+ * Measures performance on the validation set with a model trained on all data earlier than cutoffDate.
+ * All the instances populated (have their webhooks in the asset folder) are contributing.
  *
- * The local instance's dataset is split into a training set and a validation set.
- * First, a prediction model is trained using only the training set.
- * The script makes prediction on the validation set and accuracy is then computed.
- * Then, a model is trained using the training set plus datasets of other instance using a DISSEC training.
- * The resulting model is used to generate predictions on the validation set.
- * Both result can then be meaningfully compared, as they result from predictions on the same validation set.
- *
- * @param {string} uri The URI of the local instance
- * @param {boolean} noSplit - True will create exclusive test and validation datasets
+ * @param {CozyClient} client - The CozyClient connected to the instance
+ * @param {Date} cutoffDate - Data older than this will be used to learn
+ * @param {Object[]} validationSet - The dataset used for measuring performances
+ * @returns The accuracy of the model on the validation set
  */
-
 const dissecLearning = async (
   client,
   cutoffDate,

@@ -1,7 +1,7 @@
 const { execSync } = require('child_process')
 const { Q } = require('cozy-client')
 
-const populateCentralized = require('../scripts/populateCentralized')
+const populateInstancesCentralized = require('../scripts/populateInstancesCentralized')
 const dissecLearning = require('./learning/dissecLearning')
 const localLearning = require('./learning/localLearning')
 const getClient = require('../src/lib/getClient')
@@ -19,7 +19,7 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
   let cutoffDate
 
   beforeAll(async () => {
-    await populateCentralized()
+    await populateInstancesCentralized()
 
     token = execSync(
       `cozy-stack instances token-app ${uri.replace('http://', '')} dissecozy`

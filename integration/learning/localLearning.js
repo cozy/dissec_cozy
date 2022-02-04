@@ -6,9 +6,9 @@ const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
 
 /**
- *
+ * Measures performance on the validation set with a model trained on all data earlier than cutoffDate
  * @param {CozyClient} client - The CozyClient connected to the instance
- * @param {Date} cutoffDate - Data older than this will be used to learn
+ * @param {Date} cutoffDate - Data earlier than this date are used to train the model
  * @param {Object[]} validationSet - The dataset used for measuring performances
  * @returns The accuracy of the model on the validation set
  */
