@@ -1,4 +1,12 @@
-import TreeNode from './node'
+import TreeNode from './treeNode'
+import createGenerator from './random'
+
+// Declare a global seeded RNG
+declare global {
+  var rng: () => number
+}
+
+globalThis.rng = createGenerator("42")
 
 const depth = 3
 const fanout = 4

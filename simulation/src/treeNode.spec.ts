@@ -1,4 +1,4 @@
-import TreeNode from './node'
+import TreeNode from './treeNode'
 
 describe('Tree of groups', () => {
   test('Creating a tree', () => {
