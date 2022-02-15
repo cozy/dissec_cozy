@@ -18,7 +18,7 @@ class TreeNode {
    * @param fanout The number of children each parent has
    * @param groupSize The number of members in each group
    * @param id The id of the first member of the root
-   * @returns {nextId, node} The number of node created and the root of the tree
+   * @returns The number of node created and the root of the tree
    */
   static createTree(
     depth: number,
@@ -79,6 +79,14 @@ class TreeNode {
         }
       }
       return
+    }
+  }
+
+  selectNodesByDepth(depth: number): TreeNode[] {
+    if(depth === 0) {
+      return [this]
+    } else {
+      return this.children.flatMap(child => child.selectNodesByDepth(depth-1))
     }
   }
 

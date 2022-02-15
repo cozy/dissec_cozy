@@ -5,13 +5,19 @@ import TreeNode from './treeNode'
 
 const FAILURE_RATE = 0.0
 
+export const AVERAGE_LATENCY = 100 // Average time between emission and reception of a message
+export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
+export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
+
 class NodesManager {
   nodes: Node[]
   messages: Message[]
+  private generator: () => number
 
   constructor() {
     this.nodes = []
     this.messages = []
+    this.generator = Generator.get()
   }
 
   static createFromTree(root: TreeNode): NodesManager {
@@ -41,10 +47,13 @@ class NodesManager {
   }
 
   transmitMessage(unsentMessage: Message) {
+    // Messages wtihout arrival date are added a standard latency
+    if (unsentMessage.receptionTime === 0)
+      unsentMessage.receptionTime =
+        unsentMessage.emissionTime + this.standardLatency()
+
     if (this.nodes[unsentMessage.emitterId].alive) {
-      this.messages.push(
-        ...this.nodes[unsentMessage.receiverId].emitMessage(unsentMessage)
-      )
+      this.messages.push(unsentMessage)
     }
   }
 
@@ -65,10 +74,22 @@ class NodesManager {
   }
 
   log() {
-    console.log(`Managing ${this.nodes.length} nodes; ${this.messages.length} pending messages:`)
-    for(const message of this.messages) {
-      console.log(`\t-Message ID${message.id} sent from node #${message.emitterId} to node #${message.receiverId}`)
+    console.log(
+      `Managing ${this.nodes.length} nodes; ${
+        this.messages.length
+      } pending messages:`
+    )
+    for (const message of this.messages) {
+      console.log(
+        `\t-Message ID${message.id} sent from node #${
+          message.emitterId
+        } to node #${message.receiverId}`
+      )
     }
+  }
+
+  private standardLatency(): number {
+    return 2 * AVERAGE_LATENCY * this.generator()
   }
 }
 

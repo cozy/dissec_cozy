@@ -1,10 +1,15 @@
+import { Generator } from "./random"
+
 export enum MessageType {
   RequestContribution,
   SendContribution,
   ContributionTimeout
 }
 
-interface MessageContent {}
+interface MessageContent {
+  parents?: number[]
+  share?: number
+}
 
 export class Message {
   id: number
@@ -16,7 +21,6 @@ export class Message {
   content: MessageContent
 
   constructor(
-    id: number,
     type: MessageType,
     emissionTime: number,
     receptionTime: number,
@@ -24,7 +28,7 @@ export class Message {
     receiverId: number,
     content: MessageContent
   ) {
-    this.id = id
+    this.id = Generator.get()()
     this.type = type
     this.emissionTime = emissionTime
     this.receptionTime = receptionTime
