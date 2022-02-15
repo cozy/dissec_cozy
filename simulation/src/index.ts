@@ -2,14 +2,22 @@ import NodesManager, { MAX_LATENCY } from './manager'
 import { Message, MessageType } from './message'
 import TreeNode from './treeNode'
 
-const depth = 1
+const depth = 5
 const fanout = 4
 const groupSize = 3
 
-const { node: root } = TreeNode.createTree(depth, fanout, groupSize, 0)
+const { nextId, node: root } = TreeNode.createTree(depth, fanout, groupSize, 0)
 root.log()
 
+// Adding the querier group
+const querierGroup = new TreeNode(nextId)
+querierGroup.children.push(root)
+querierGroup.members = Array(groupSize).fill(nextId)
+root.parents = querierGroup.members
+
 const manager = NodesManager.createFromTree(root)
+const n = manager.addNode(querierGroup)
+n.isQuerier = true
 
 // All leaves aggregator request data from contributors
 const leavesAggregators = root.selectNodesByDepth(depth - 1)

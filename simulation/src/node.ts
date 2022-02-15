@@ -13,6 +13,8 @@ class Node {
   shares: number[]
   contributorsList: number[][]
   contributions: { [contributor: string]: number }
+  aggregates: { counter: number; data: number }[]
+  isQuerier: boolean
 
   constructor(node: TreeNode) {
     this.id = node.id
@@ -21,6 +23,8 @@ class Node {
     this.alive = true
     this.contributorsList = [[]]
     this.contributions = {}
+    this.aggregates = []
+    this.isQuerier = false
   }
 
   receiveMessage(receivedMessage: Message): Message[] {
@@ -98,6 +102,7 @@ class Node {
               finalContributors.push(contributor)
             }
           }
+          this.contributorsList[0] = finalContributors
 
           for (const member of this.node.members.filter(e => e !== this.id)) {
             messages.push(
@@ -112,10 +117,22 @@ class Node {
             )
           }
 
-          console.log(
-            `Node #${this.id} (time=${
-              this.localTime
-            }) can start sending aggregates to its parents!`
+          messages.push(
+            new Message(
+              MessageType.SendAggregate,
+              this.localTime,
+              0, // Don't specify time to let the manager add the latency
+              this.id,
+              this.node.parents[this.node.members.indexOf(this.id)],
+              {
+                aggregate: {
+                  counter: this.contributorsList[0].length,
+                  data: Object.values(this.contributions).reduce(
+                    (prev, curr) => prev + curr
+                  )
+                }
+              }
+            )
           )
         } else {
           // Group members send their contributors list to the first member
@@ -170,11 +187,77 @@ class Node {
 
         this.contributorsList[0] = receivedMessage.content.contributors
 
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) can start sending aggregates to its parents!`
+        messages.push(
+          new Message(
+            MessageType.SendAggregate,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            this.node.parents[this.node.members.indexOf(this.id)],
+            {
+              aggregate: {
+                counter: this.contributorsList[0].length,
+                data: Object.values(this.contributions).reduce(
+                  (prev, curr) => prev + curr
+                )
+              }
+            }
+          )
         )
+        break
+      case MessageType.SendAggregate:
+        console.log(
+          `${this.isQuerier ? 'Querier' : 'Node'} #${this.id} (time=${
+            this.localTime
+          }) received an aggregate from child #${receivedMessage.emitterId}`
+        )
+
+        if (this.isQuerier) {
+          if (!receivedMessage.content.aggregate)
+            throw new Error('Received an empty aggregate')
+
+          this.aggregates.push(receivedMessage.content.aggregate)
+
+          if (this.aggregates.length === this.node.members.length) {
+            // Received all shares
+            const result = this.aggregates.reduce((prev, curr) => ({
+              counter: prev.counter + curr.counter,
+              data: prev.data + curr.data
+            }))
+            console.log(
+              `Final aggregation result: ${
+                result.counter
+              } contributions -> ${(result.data / result.counter) *
+                this.aggregates.length}`
+            )
+          }
+        } else {
+          if (!receivedMessage.content.aggregate)
+            throw new Error('Received an empty aggregate')
+
+          this.aggregates.push(receivedMessage.content.aggregate)
+
+          if (this.aggregates.length === this.node.children.length) {
+            // Forwarding the result to the parent
+            const aggregate = this.aggregates.reduce((prev, curr) => ({
+              counter: prev.counter + curr.counter,
+              data: prev.data + curr.data
+            }))
+
+            messages.push(
+              new Message(
+                MessageType.SendAggregate,
+                this.localTime,
+                0, // Don't specify time to let the manager add the latency
+                this.id,
+                this.node.parents[this.node.members.indexOf(this.id)],
+                {
+                  aggregate
+                }
+              )
+            )
+          }
+        }
         break
       default:
         throw new Error('Receiving unknown message type')

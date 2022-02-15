@@ -1,17 +1,19 @@
-import { Generator } from "./random"
+import { Generator } from './random'
 
 export enum MessageType {
   RequestContribution,
   SendContribution,
   ContributionTimeout,
   ShareContributors,
-  ConfirmContributors
+  ConfirmContributors,
+  SendAggregate
 }
 
 interface MessageContent {
   parents?: number[]
   share?: number
   contributors?: number[]
+  aggregate?: { counter: number; data: number }
 }
 
 export class Message {
