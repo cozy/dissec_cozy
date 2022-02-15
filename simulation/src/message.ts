@@ -3,12 +3,15 @@ import { Generator } from "./random"
 export enum MessageType {
   RequestContribution,
   SendContribution,
-  ContributionTimeout
+  ContributionTimeout,
+  ShareContributors,
+  ConfirmContributors
 }
 
 interface MessageContent {
   parents?: number[]
   share?: number
+  contributors?: number[]
 }
 
 export class Message {
