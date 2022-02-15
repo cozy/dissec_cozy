@@ -21,9 +21,21 @@ function mulberry32(a: number) {
   }
 }
 
-function createGenerator(str: string) {
-  let seed = xmur3(str)
-  return mulberry32(seed())
+export function createGenerator(seed: string) {
+  let seedFunction = xmur3(seed || '42')
+  return mulberry32(seedFunction())
 }
 
-export default createGenerator
+export class Generator {
+  private static instance: () => number
+
+  private constructor() {}
+
+  static get(seed?: string): () => number {
+    if (!this.instance) {
+      let seedFunction = xmur3(seed || '42')
+      this.instance = mulberry32(seedFunction())
+    }
+    return this.instance
+  }
+}

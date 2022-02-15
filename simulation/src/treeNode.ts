@@ -4,10 +4,10 @@ class TreeNode {
   members: number[]
   children: TreeNode[]
 
-  constructor(id: number, groupSize: number) {
+  constructor(id: number) {
     this.id = id
     this.parents = []
-    this.members = new Array(groupSize).fill(id).map((e, i) => e + i)
+    this.members = []
     this.children = []
   }
 
@@ -26,7 +26,10 @@ class TreeNode {
     groupSize: number,
     id: number
   ): { nextId: number; node: TreeNode } {
-    const node = new TreeNode(id, groupSize)
+    const node = new TreeNode(id)
+    node.members = Array(groupSize)
+      .fill(id)
+      .map((e, i) => e + i)
     if (depth > 0) {
       let currentId = id + groupSize
       for (let i = 0; i < fanout; i++) {
@@ -46,30 +49,46 @@ class TreeNode {
     }
   }
 
+  static fromCopy(source: TreeNode, id: number): TreeNode {
+    const node = new TreeNode(id)
+    node.parents = source.parents
+    node.members = source.members
+    node.children = source.children
+    return node
+  }
+
   /**
    * Finds the node with the given ID below the current node.
    *
    * @param id The id of the searched node
    * @returns The searched node and its position in its group
    */
-  findNode(id: number): { node?: TreeNode; position?: number } {
+  findNode(id: number): TreeNode | undefined {
     let index: number
     if (id === this.id) {
-      return { node: this, position: 0 }
+      return this
     } else if ((index = this.members.indexOf(id)) >= 0) {
-      return { node: this, position: index }
+      return TreeNode.fromCopy(this, this.members[index])
     } else if ((index = this.children.map(e => e.id).indexOf(id)) >= 0) {
-      // Finding an index means the child is safe to use
-      return { node: this.children[index], position: index }
+      return this.children[index]
     } else {
       for (const child of this.children) {
-        const { node, position } = child.findNode(id)
+        const node = child.findNode(id)
         if (node) {
-          return { node, position }
+          return node
         }
       }
-      return {}
+      return
     }
+  }
+
+  log(depth: number = 1) {
+    console.log(`Node #${this.id} (members=${this.members}) has ${this.children.length} children:`)
+    for (let i = 0; i < this.children.length; i++) {
+      console.group()
+      this.children[i].log(depth + 1)
+    }
+    console.groupEnd()
   }
 }
 

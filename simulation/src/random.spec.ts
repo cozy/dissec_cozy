@@ -1,5 +1,4 @@
-import createGenerator from "./random"
-
+import { createGenerator } from './random'
 
 describe('Random number generator', () => {
   it('should create different sequence of numbers', async () => {
