@@ -7,17 +7,20 @@ const FAILURE_RATE = 0.0
 
 export const AVERAGE_LATENCY = 100 // Average time between emission and reception of a message
 export const MAX_LATENCY = 10 * AVERAGE_LATENCY // The maximum latency for a message
+export const HEALTH_CHECK_PERIOD = 3 * MAX_LATENCY // Needs to be greater than 2*MAX_LATENCY to avoid confusing new requests with previous answers
 export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
 export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
 
 class NodesManager {
   nodes: Node[]
   messages: Message[]
+  messageCounter: number
   private generator: () => number
 
   constructor() {
     this.nodes = []
     this.messages = []
+    this.messageCounter = 0
     this.generator = Generator.get()
   }
 
@@ -55,6 +58,7 @@ class NodesManager {
 
     if (this.nodes[unsentMessage.emitterId].alive) {
       this.messages.push(unsentMessage)
+      this.messageCounter++
     }
   }
 

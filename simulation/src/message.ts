@@ -4,9 +4,20 @@ export enum MessageType {
   RequestContribution,
   SendContribution,
   ContributionTimeout,
+  // Synchronization
   ShareContributors,
   ConfirmContributors,
-  SendAggregate
+  SendAggregate,
+  // Error handling
+  RequestHealthChecks,
+  CheckHealth,
+  ConfirmHealth,
+  HealthCheckTimeout,
+  ContactBackup,
+  BackupResponse,
+  ConfirmBackup,
+  QueryGroup,
+  SendGroup,
 }
 
 interface MessageContent {
@@ -14,6 +25,7 @@ interface MessageContent {
   share?: number
   contributors?: number[]
   aggregate?: { counter: number; data: number }
+  checkId?: number
 }
 
 export class Message {

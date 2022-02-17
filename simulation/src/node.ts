@@ -1,4 +1,9 @@
-import { AVERAGE_COMPUTE, AVERAGE_CRYPTO } from './manager'
+import {
+  AVERAGE_COMPUTE,
+  AVERAGE_CRYPTO,
+  HEALTH_CHECK_PERIOD,
+  MAX_LATENCY
+} from './manager'
 import { Message, MessageType } from './message'
 import { Generator } from './random'
 import TreeNode from './treeNode'
@@ -10,6 +15,8 @@ class Node {
   node: TreeNode
   localTime: number
   alive: boolean
+  ongoingHealthChecks: number[]
+  finishedWorking: boolean
   shares: number[]
   contributorsList: number[][]
   contributions: { [contributor: string]: number }
@@ -21,6 +28,8 @@ class Node {
     this.node = node
     this.localTime = 0
     this.alive = true
+    this.ongoingHealthChecks = []
+    this.finishedWorking = false
     this.contributorsList = [[]]
     this.contributions = {}
     this.aggregates = []
@@ -29,6 +38,8 @@ class Node {
 
   receiveMessage(receivedMessage: Message): Message[] {
     const messages: Message[] = []
+    const position = this.node.members.indexOf(this.id)
+
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
     switch (receivedMessage.type) {
@@ -244,6 +255,9 @@ class Node {
               data: prev.data + curr.data
             }))
 
+            // Stop regularly checking children's health
+            this.finishedWorking = true
+
             messages.push(
               new Message(
                 MessageType.SendAggregate,
@@ -257,6 +271,102 @@ class Node {
               )
             )
           }
+        }
+        break
+      case MessageType.RequestHealthChecks:
+        console.log(
+          `Node #${this.id} (time=${
+            this.localTime
+          }) is requesting health checks from his children`
+        )
+
+        // Check children's health
+        for (const child of this.node.children) {
+          const msg = new Message(
+            MessageType.CheckHealth,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            child.members[position],
+            {
+              checkId: receivedMessage.id
+            }
+          )
+          messages.push(msg)
+          this.ongoingHealthChecks.push(msg.receiverId)
+        }
+
+        // Set a timeout to trigger the recovery procedure for not responding nodes
+        messages.push(
+          new Message(
+            MessageType.HealthCheckTimeout,
+            this.localTime,
+            this.localTime + 2 * MAX_LATENCY,
+            this.id,
+            this.id,
+            {}
+          )
+        )
+
+        // Reschedule health checks
+        if (!this.finishedWorking) {
+          console.log(`Node #${this.id} is rescheduling a health check`)
+          messages.push(
+            new Message(
+              MessageType.RequestHealthChecks,
+              this.localTime,
+              this.localTime + HEALTH_CHECK_PERIOD,
+              this.id,
+              this.id,
+              {}
+            )
+          )
+        }
+        break
+      case MessageType.CheckHealth:
+        console.log(
+          `Node #${this.id} (time=${
+            this.localTime
+          }) received a health check request.`
+        )
+
+        messages.push(
+          new Message(
+            MessageType.ConfirmHealth,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            this.node.parents[position],
+            {
+              checkId: receivedMessage.id
+            }
+          )
+        )
+        break
+      case MessageType.ConfirmHealth:
+        console.log(
+          `Node #${this.id} (time=${
+            this.localTime
+          }) received a health confirmation from node #${
+            receivedMessage.emitterId
+          } ([${this.ongoingHealthChecks}]).`
+        )
+
+        this.ongoingHealthChecks = this.ongoingHealthChecks.filter(
+          e => e !== receivedMessage.emitterId
+        )
+        break
+      case MessageType.HealthCheckTimeout:
+        console.log(
+          `Node #${this.id} (time=${this.localTime}) timed out health checks. ${
+            this.ongoingHealthChecks.length
+          } ongoing health checks are unanswered.`
+        )
+
+        for (const unansweredHealthCheck of this.ongoingHealthChecks) {
+          console.log(
+            `Node #${unansweredHealthCheck} did not answer the health check, triggering recovery procedure...`
+          )
         }
         break
       default:
