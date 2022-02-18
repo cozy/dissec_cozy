@@ -1,23 +1,28 @@
+import { NodeRole } from './node'
 import { Generator } from './random'
+import TreeNode from './treeNode'
 
 export enum MessageType {
-  RequestContribution,
-  SendContribution,
-  ContributionTimeout,
+  RequestContribution = "RequestContribution",
+  SendContribution = "SendContribution",
+  ContributionTimeout = "ContributionTimeout",
   // Synchronization
-  ShareContributors,
-  ConfirmContributors,
-  SendAggregate,
-  // Error handling
-  RequestHealthChecks,
-  CheckHealth,
-  ConfirmHealth,
-  HealthCheckTimeout,
-  ContactBackup,
-  BackupResponse,
-  ConfirmBackup,
-  QueryGroup,
-  SendGroup,
+  ShareContributors = "ShareContributors",
+  ConfirmContributors = "ConfirmContributors",
+  SendAggregate = "SendAggregate",
+  // Failure detection
+  RequestHealthChecks = "RequestHealthChecks",
+  CheckHealth = "CheckHealth",
+  ConfirmHealth = "ConfirmHealth",
+  HealthCheckTimeout = "HealthCheckTimeout",
+  // Failure handling
+  ContinueMulticast = "ContinueMulticast",
+  ContactBackup = "ContactBackup",
+  BackupResponse = "BackupResponse",
+  ConfirmBackup = "ConfirmBackup",
+  NotifyGroup = "NotifyGroup",
+  SendChildren = "SendChildren",
+  RequestData = "RequestData"
 }
 
 interface MessageContent {
@@ -25,7 +30,14 @@ interface MessageContent {
   share?: number
   contributors?: number[]
   aggregate?: { counter: number; data: number }
-  checkId?: number
+  failedNode?: number
+  targetGroup?: TreeNode
+  remainingBackups?: number[]
+  backupIsAvailable?: boolean
+  usedAsBackup?: boolean
+  newMembers?: number[]
+  role?: NodeRole
+  children?: TreeNode[]
 }
 
 export class Message {
