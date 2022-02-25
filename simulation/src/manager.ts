@@ -3,21 +3,26 @@ import Node from './node'
 import { Generator } from './random'
 import TreeNode from './treeNode'
 
-const FAILURE_RATE = 0.0
-
 export const AVERAGE_LATENCY = 100 // Average time between emission and reception of a message
 export const MAX_LATENCY = 10 * AVERAGE_LATENCY // The maximum latency for a message
+export const HEALTH_CHECK_PERIOD = 3 * MAX_LATENCY // Needs to be greater than 2*MAX_LATENCY to avoid confusing new requests with previous answers
 export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
 export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
+export const MULTICAST_SIZE = 5 // Number of nodes contacted simulatneously when looking for a backup
+
+const FAILURE_RATE = 0.0
+const DEADLINE = 50 * MAX_LATENCY
 
 class NodesManager {
   nodes: Node[]
   messages: Message[]
+  messageCounter: number
   private generator: () => number
 
   constructor() {
     this.nodes = []
     this.messages = []
+    this.messageCounter = 0
     this.generator = Generator.get()
   }
 
@@ -36,14 +41,14 @@ class NodesManager {
   }
 
   addNode(node: TreeNode): Node {
-    this.nodes.push(new Node(node))
+    this.nodes.push(new Node({ node }))
     return this.nodes[this.nodes.length - 1]
   }
 
   updateFailures() {
     const generator = Generator.get()
     for (const node of this.nodes) {
-      node.alive = generator() > FAILURE_RATE
+      node.alive &&= generator() > FAILURE_RATE
     }
   }
 
@@ -55,6 +60,7 @@ class NodesManager {
 
     if (this.nodes[unsentMessage.emitterId].alive) {
       this.messages.push(unsentMessage)
+      this.messageCounter++
     }
   }
 
@@ -63,7 +69,7 @@ class NodesManager {
     this.messages.sort((a, b) => b.receptionTime - a.receptionTime)
 
     const message = this.messages.pop()
-    if (message && this.nodes[message.receiverId].alive) {
+    if (message && this.nodes[message.receiverId].alive && this.nodes[message.receiverId].localTime < DEADLINE) {
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId].receiveMessage(
         message
