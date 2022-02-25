@@ -105,7 +105,7 @@ console.log(
     manager.nodes.length
   } (${(manager.nodes.filter(node => node.alive).length /
     manager.nodes.length) *
-    100}%) des noeuds sont encore en vie`
+    100}%) of nodes are still alive`
 )
 
 console.log(`A total of ${manager.messageCounter} have been sent`)
