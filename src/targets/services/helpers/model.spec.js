@@ -8,15 +8,15 @@ describe('Model library', () => {
   const mockDocs = [
     {
       label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(' '),
-      cozyCategoryId: '100'
+      manualCategoryId: '100'
     },
     {
       label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(' '),
-      cozyCategoryId: '200'
+      manualCategoryId: '200'
     },
     {
       label: [vocabulary[3], vocabulary[5], vocabulary[5]].join(' '),
-      cozyCategoryId: '200'
+      manualCategoryId: '200'
     },
     {
       label: [vocabulary[3], vocabulary[1], vocabulary[2]].join(' ')
@@ -26,24 +26,24 @@ describe('Model library', () => {
     },
     {
       label: 'bgsdhgisuh bghebgo gjnpjrgpgnjezjn vnsdflkjnio',
-      cozyCategoryId: '200'
+      manualCategoryId: '200'
     }
   ]
 
   const mockDocs2 = [
     {
       label: [vocabulary[0], vocabulary[1], vocabulary[2]].join(' '),
-      cozyCategoryId: '200'
+      manualCategoryId: '200'
     },
     {
       label: [vocabulary[3], vocabulary[4], vocabulary[5]].join(' '),
-      cozyCategoryId: '200'
+      manualCategoryId: '200'
     }
   ]
 
   describe('fromDocs', () => {
-    it('should increment the correct occurences', () => {
-      const model = Model.fromDocs(mockDocs)
+    it('should increment the correct occurences', async () => {
+      const model = await Model.fromDocs(mockDocs)
       expect(model.occurences[0][1]).toEqual(1)
       expect(model.occurences[1][1]).toEqual(1)
       expect(model.occurences[2][1]).toEqual(1)
@@ -54,9 +54,9 @@ describe('Model library', () => {
   })
 
   describe('fromShares', () => {
-    it('should increment the correct occurences', () => {
+    it('should increment the correct occurences', async () => {
       const nbShares = 2
-      const firstModel = Model.fromDocs(mockDocs)
+      const firstModel = await Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
       expect(model.occurences[0][1]).toEqual(1)
@@ -67,10 +67,10 @@ describe('Model library', () => {
       expect(model.occurences[5][2]).toEqual(3)
     })
 
-    it('should gives the same result as a centralized dataset', () => {
+    it('should gives the same result as a centralized dataset', async () => {
       const nbShares = 2
-      const firstModel = Model.fromDocs(mockDocs)
-      const secondModel = Model.fromDocs(mockDocs2)
+      const firstModel = await Model.fromDocs(mockDocs)
+      const secondModel = await Model.fromDocs(mockDocs2)
       const shares1 = firstModel.getShares(nbShares)
       const shares2 = secondModel.getShares(nbShares)
       const agg1 = Model.fromShares([shares1[0], shares2[0]])
@@ -79,7 +79,7 @@ describe('Model library', () => {
         [agg1.getAggregate(), agg2.getAggregate()],
         { shouldFinalize: true }
       )
-      const model = Model.fromDocs(mockDocs.concat(mockDocs2))
+      const model = await Model.fromDocs(mockDocs.concat(mockDocs2))
 
       for (let i = 0; i < 5; i++) {
         expect(modelRecomposed.occurences[i]).toEqual(model.occurences[i])
@@ -88,8 +88,8 @@ describe('Model library', () => {
   })
 
   describe('fromAggregate & getAggregate', () => {
-    it('should preserve the correct occurences', () => {
-      const firstModel = Model.fromDocs(mockDocs)
+    it('should preserve the correct occurences', async () => {
+      const firstModel = await Model.fromDocs(mockDocs)
       const aggregate = firstModel.getAggregate()
       const model = Model.fromAggregate(aggregate, { shouldFinalize: true })
       expect(model.occurences[0][1]).toEqual(1)
@@ -102,8 +102,8 @@ describe('Model library', () => {
   })
 
   describe('fromCompressedAggregate & getCompressedAggregate', () => {
-    it('should preserve the correct occurences', () => {
-      const firstModel = Model.fromDocs(mockDocs)
+    it('should preserve the correct occurences', async () => {
+      const firstModel = await Model.fromDocs(mockDocs)
       const aggregate = firstModel.getCompressedAggregate()
       const model = Model.fromCompressedAggregate(aggregate, {
         shouldFinalize: true
@@ -118,30 +118,30 @@ describe('Model library', () => {
   })
 
   describe('predict', () => {
-    it('should classify labels', () => {
-      const model = Model.fromDocs(mockDocs)
+    it('should classify labels', async () => {
+      const model = await Model.fromDocs(mockDocs)
       expect(model.predict(mockDocs[3].label)).toEqual('100')
       expect(model.predict(mockDocs[4].label)).toEqual('200')
     })
 
-    it('should send uncategorized when only unknown tokens', () => {
-      const model = Model.fromDocs(mockDocs)
+    it('should send uncategorized when only unknown tokens', async () => {
+      const model = await Model.fromDocs(mockDocs)
       expect(model.predict('bloubliblou')).toEqual('0')
     })
   })
 
   describe('getShares', () => {
-    it('should generate different shares', () => {
+    it('should generate different shares', async () => {
       const nbShares = 3
-      const firstModel = Model.fromDocs(mockDocs)
+      const firstModel = await Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       expect(shares[0]).not.toEqual(shares[1])
       expect(shares[0]).not.toEqual(shares[2])
     })
 
-    it('should generate coherent shares', () => {
+    it('should generate coherent shares', async () => {
       const nbShares = 3
-      const firstModel = Model.fromDocs(mockDocs)
+      const firstModel = await Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
 
@@ -150,9 +150,9 @@ describe('Model library', () => {
       }
     })
 
-    it('should fail when mixing different shares', () => {
+    it('should fail when mixing different shares', async () => {
       const nbShares = 3
-      const model = Model.fromDocs(mockDocs)
+      const model = await Model.fromDocs(mockDocs)
       const firstShares = model.getShares(nbShares)
       const firstModel = Model.fromShares(firstShares, { shouldFinalize: true })
       const secondShares = model.getShares(nbShares)
@@ -170,9 +170,9 @@ describe('Model library', () => {
   })
 
   describe('share to/from compressed binary', () => {
-    it('should convert from one to the other without error', () => {
+    it('should convert from one to the other without error', async () => {
       const nbShares = 3
-      const originalModel = Model.fromDocs(mockDocs)
+      const originalModel = await Model.fromDocs(mockDocs)
       const shares = originalModel.getShares(nbShares)
       const compressedShares = originalModel.getCompressedShares(nbShares)
 
@@ -196,11 +196,13 @@ describe('Model library', () => {
   })
 
   describe('small tree', () => {
-    it('should convert from one to the other without error', () => {
+    it('should convert from one to the other without error', async () => {
       const nbContributors = 5
-      const contributorsModel = Array(nbContributors)
-        .fill()
-        .map(() => Model.fromDocs(mockDocs))
+      const contributorsModel = Promise.all(
+        Array(nbContributors)
+          .fill()
+          .map(async () => await Model.fromDocs(mockDocs))
+      )
 
       const nbShares = 3
       const contributorShares = contributorsModel.map(model =>
@@ -208,9 +210,9 @@ describe('Model library', () => {
       )
 
       const aggregatorShares = []
-      for(let j=0; j<nbShares; j++) {
+      for (let j = 0; j < nbShares; j++) {
         let shares = []
-        for(let i=0; i<nbContributors; i++) {
+        for (let i = 0; i < nbContributors; i++) {
           shares.push(contributorShares[i][j])
         }
         aggregatorShares.push(shares)

@@ -1,4 +1,5 @@
 import LZUTF8 from 'lzutf8'
+import { createCategorizer } from 'cozy-konnector-libs'
 
 import { classes, vocabulary } from './index'
 
@@ -10,6 +11,7 @@ export class Model {
   constructor() {
     this.uniqueY = Object.keys(classes)
     this.priors = Array(classes.length).fill(1)
+    this.classifiers = []
 
     // Using map to allocate a new array for each line
     this.occurences = Array(vocabulary.length)
@@ -98,13 +100,18 @@ export class Model {
   /**
    * Returns a new model trained with the given documents
    *
-   * @param {Object[]} docs An array of documents
-   * @return {Model} The new model
+   * @param {object[]} docs An array of documents
+   * @param {{useGlobalModel: boolean}} options Use the global model as well
+   * @return {Promise<Model>} The new model
    */
-  static fromDocs(docs) {
-    let model = new Model()
-
-    model.train(docs)
+  static async fromDocs(docs, options = { useGlobalModel: false }) {
+    const model = new Model()
+    const { categorize, classifiers } = await createCategorizer({
+      useGlobalModel: options.useGlobalModel,
+      customTransactionFetcher: () => docs.filter(tx => tx.manualCategoryId)
+    })
+    model.classifiers = classifiers
+    model.categorize = categorize
 
     return model
   }
@@ -155,26 +162,13 @@ export class Model {
   /**
    * Predicts the class of a given text sample
    *
-   * @param {string} text The text on which the prediction will be done
+   * @param {string} label The text on which the prediction will be done
    * @return {string} The predicted label
    */
-  predict(text) {
-    let probability = Array(this.uniqueY.length).fill(0)
-    const tokens = Model.normalizeTokens(text.split(' '))
-
-    for (const token of tokens) {
-      const index = vocabulary.indexOf(token)
-      if (index >= 0) {
-        for (const i in this.uniqueY) {
-          probability[i] += this.logProbabilities[index][i]
-        }
-      }
-    }
-
-    const best = Math.max(...probability)
-    const result = probability.indexOf(best) // this defaults to 0 -> uncategorized
-
-    return this.uniqueY[result]
+  predict(label) {
+    const result = this.categorize([{ label }])
+    console.log(label, result)
+    return result[0].localCategoryId
   }
 
   /**
