@@ -6,16 +6,21 @@ import {
   MULTICAST_SIZE
 } from './manager'
 import { Message, MessageType } from './message'
-import { Generator } from './random'
+import { createGenerator, Generator } from './random'
 import TreeNode from './treeNode'
 
 const BASE_NOISE = 10000000
 
+export const arrayEquals = (a: number[], b: number[]): boolean => {
+  return JSON.stringify(a.sort()) === JSON.stringify(b.sort())
+}
+
 export enum NodeRole {
-  Querier,
-  Aggregator,
-  LeafAggregator,
-  Contributor
+  Querier = "Querier",
+  Aggregator = "Aggregator",
+  LeafAggregator = "LeafAggregator",
+  Contributor = "Contributor",
+  Backup = "Backup"
 }
 
 class Node {
@@ -23,6 +28,7 @@ class Node {
   node?: TreeNode
   localTime: number
   alive: boolean
+  deathTime: number
   role: NodeRole
   ongoingHealthChecks: number[]
   finishedWorking: boolean
@@ -32,15 +38,17 @@ class Node {
   shares: number[]
   contributorsList: number[][]
   contributions: { [contributor: string]: number }
-  aggregates: { counter: number; data: number }[]
+  expectedContributors: number[]
+  aggregates: { [nodeId: number]: { counter: number; data: number } }
 
-  constructor({node, id}: { node?: TreeNode, id?: number }) {
-    if(!node && !id) return //throw new Error("Initializing a node without id")
+  constructor({ node, id }: { node?: TreeNode, id?: number }) {
+    if (!node && !id) return //throw new Error("Initializing a node without id")
 
     this.id = (node ? node.id : id)!
     this.node = node
     this.localTime = 0
     this.alive = true
+    this.deathTime = 0
     this.role = NodeRole.Aggregator
     this.ongoingHealthChecks = []
     this.finishedWorking = false
@@ -49,7 +57,8 @@ class Node {
     this.contactedAsABackup = false
     this.contributorsList = [[]]
     this.contributions = {}
-    this.aggregates = []
+    this.expectedContributors = []
+    this.aggregates = {}
   }
 
   receiveMessage(receivedMessage: Message): Message[] {
@@ -59,15 +68,13 @@ class Node {
 
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
+    const nodeOfInterest: number[] = [2, 5, 20, 35, 50]
+    if (nodeOfInterest.includes(this.id) || nodeOfInterest.includes(receivedMessage.emitterId) || nodeOfInterest.length === 0)
+      receivedMessage.log(this, [MessageType.CheckHealth, MessageType.ConfirmHealth, MessageType.HealthCheckTimeout])
+
     switch (receivedMessage.type) {
       case MessageType.RequestContribution:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) received a request for contribution`
-        )
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
         // TODO: Set contributors during initialization
         this.role = NodeRole.Contributor
@@ -101,27 +108,42 @@ class Node {
         }
         break
       case MessageType.SendContribution:
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) received a contribution (${
-            receivedMessage.content.share
-          })`
-        )
-
-        if (!receivedMessage.content.share)
-          throw new Error('Received a contribution without a share')
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+        if (!receivedMessage.content.share) throw new Error('Received a contribution without a share')
 
         this.contributorsList[0].push(receivedMessage.emitterId) // The first item is the local list
-        this.contributions[receivedMessage.emitterId] =
-          receivedMessage.content.share
+        this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
+
+        if (arrayEquals(this.expectedContributors, this.contributorsList[0])) {
+          // The node received all expected contributions and can continue the protocole
+          // No need to tell the members because they have the same contributors
+          console.log("received all contributions, sending to", this.node.parents[this.node.members.indexOf(this.id)])
+          messages.push(
+            new Message(
+              MessageType.SendAggregate,
+              this.localTime,
+              0, // Don't specify time to let the manager add the latency
+              this.id,
+              this.node.parents[this.node.members.indexOf(this.id)],
+              {
+                aggregate: {
+                  counter: this.contributorsList[0].length,
+                  data: Object.values(this.contributions).reduce(
+                    (prev, curr) => prev + curr
+                  )
+                }
+              }
+            )
+          )
+        }
         break
       case MessageType.ContributionTimeout:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) timed out waiting for contributions`
-        )
+        if (this.expectedContributors.length !== 0 && arrayEquals(this.expectedContributors, this.contributorsList[0])) {
+          // No need to synchronize because all contributors answered
+          break
+        }
 
         if (this.id === this.node.members[0]) {
           // The leader aggregates the received contributors lists and confirms them to the group
@@ -180,17 +202,21 @@ class Node {
               { contributors: this.contributorsList[0] }
             )
           )
+
+          // Also send themselves a message to confirm contributors even if the first member is down
+          messages.push(
+            new Message(
+              MessageType.ConfirmContributors,
+              this.localTime,
+              this.localTime + 2 * MAX_LATENCY, // wait for a back and forth with the first member
+              this.id,
+              this.id,
+              { contributors: this.contributorsList[0] }
+            )
+          )
         }
         break
       case MessageType.ShareContributors:
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) received contributors from member node #${
-            receivedMessage.emitterId
-          }:\n${receivedMessage.content.contributors}`
-        )
-
         if (
           !receivedMessage.content.contributors ||
           receivedMessage.content.contributors.length === 0
@@ -203,16 +229,7 @@ class Node {
         this.contributorsList.push(receivedMessage.content.contributors)
         break
       case MessageType.ConfirmContributors:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) received a confirmation of the final contributors list from member node #${
-            receivedMessage.emitterId
-          }`
-        )
-
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
         if (
           !receivedMessage.content.contributors ||
           receivedMessage.content.contributors.length === 0
@@ -234,7 +251,8 @@ class Node {
               aggregate: {
                 counter: this.contributorsList[0].length,
                 data: Object.values(this.contributions).reduce(
-                  (prev, curr) => prev + curr
+                  (prev, curr) => prev + curr,
+                  0
                 )
               }
             }
@@ -242,44 +260,30 @@ class Node {
         )
         break
       case MessageType.SendAggregate:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+        if (!receivedMessage.content.aggregate) throw new Error('Received an empty aggregate')
 
-        console.log(
-          `${this.role === NodeRole.Querier ? 'Querier' : 'Node'} #${this.id} (time=${
-            this.localTime
-          }) received an aggregate from child #${receivedMessage.emitterId}`
-        )
+        this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
 
         if (this.role === NodeRole.Querier) {
-          if (!receivedMessage.content.aggregate)
-            throw new Error('Received an empty aggregate')
-
-          this.aggregates.push(receivedMessage.content.aggregate)
-
-          this.finishedWorking = true
-
-          if (this.aggregates.length === this.node.members.length) {
+          if (Object.values(this.aggregates).length === this.node.members.length) {
             // Received all shares
-            const result = this.aggregates.reduce((prev, curr) => ({
+            const result = Object.values(this.aggregates).reduce((prev, curr) => ({
               counter: prev.counter + curr.counter,
               data: prev.data + curr.data
             }))
+            this.finishedWorking = true
             console.log(
-              `Final aggregation result: ${
-                result.counter
+              `Final aggregation result: ${result.counter
               } contributions -> ${(result.data / result.counter) *
-                this.aggregates.length}\n\n\n`
+              Object.values(this.aggregates).length}\n\n\n`
             )
+            messages.push(new Message(MessageType.StopSimulator, 0, 0, 0, 0, {}))
           }
         } else {
-          if (!receivedMessage.content.aggregate)
-            throw new Error('Received an empty aggregate')
-
-          this.aggregates.push(receivedMessage.content.aggregate)
-
-          if (this.aggregates.length === this.node.children.length) {
+          if (Object.values(this.aggregates).length === this.node.children.length) {
             // Forwarding the result to the parent
-            const aggregate = this.aggregates.reduce((prev, curr) => ({
+            const aggregate = Object.values(this.aggregates).reduce((prev, curr) => ({
               counter: prev.counter + curr.counter,
               data: prev.data + curr.data
             }))
@@ -303,26 +307,40 @@ class Node {
         }
         break
       case MessageType.RequestHealthChecks:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) is requesting health checks from his children [${this.node.children.map(e => '#' + e.members[position!])}]`
-        )
-
-        // Check children's health
-        for (const child of this.node.children) {
-          const msg = new Message(
-            MessageType.CheckHealth,
-            this.localTime,
-            0, // Don't specify time to let the manager add the latency
-            this.id,
-            child.members[position!],
-            {}
-          )
-          messages.push(msg)
-          this.ongoingHealthChecks.push(msg.receiverId)
+        if (this.role === NodeRole.Querier) {
+          // Check the health of all node in the children group who haven't sent data
+          const childrenWhoSent = Object.entries(this.aggregates).map(Number)
+          const childrenHaveNotSent = this.node.children[0].members.filter(e => !childrenWhoSent.includes(e))
+          for (const member of childrenHaveNotSent) {
+            const msg = new Message(
+              MessageType.CheckHealth,
+              this.localTime,
+              0, // Don't specify time to let the manager add the latency
+              this.id,
+              member,
+              {}
+            )
+            messages.push(msg)
+            this.ongoingHealthChecks.push(msg.receiverId)
+          }
+        } else if (this.role === NodeRole.Aggregator) {
+          // Check the health of the node in the same position in each child
+          const childrenWhoSent = Object.entries(this.aggregates).map(Number)
+          const childrenHaveNotSent = this.node.children.map(e => e.members[position!]).filter(e => !childrenWhoSent.includes(e))
+          for (const child of childrenHaveNotSent) {
+            const msg = new Message(
+              MessageType.CheckHealth,
+              this.localTime,
+              0, // Don't specify time to let the manager add the latency
+              this.id,
+              child,
+              {}
+            )
+            messages.push(msg)
+            this.ongoingHealthChecks.push(msg.receiverId)
+          }
         }
 
         // Set a timeout to trigger the recovery procedure for not responding nodes
@@ -339,7 +357,7 @@ class Node {
 
         // Reschedule health checks
         if (!this.finishedWorking) {
-          console.log(`Node #${this.id} is rescheduling a health check`)
+          console.log(`Node #${this.id} is rescheduling a health check for child`)
           messages.push(
             new Message(
               MessageType.RequestHealthChecks,
@@ -353,12 +371,6 @@ class Node {
         }
         break
       case MessageType.CheckHealth:
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) received a health check request from parent node #${receivedMessage.emitterId}.`
-        )
-
         messages.push(
           new Message(
             MessageType.ConfirmHealth,
@@ -371,34 +383,24 @@ class Node {
         )
         break
       case MessageType.ConfirmHealth:
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) received a health confirmation from child node #${
-            receivedMessage.emitterId
-          } ([${this.ongoingHealthChecks}]).`
-        )
-
         this.ongoingHealthChecks.splice(this.ongoingHealthChecks.indexOf(receivedMessage.emitterId), 1)
         break
       case MessageType.HealthCheckTimeout:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) timed out health checks. ${
-            this.ongoingHealthChecks.length
-          } ongoing health checks are unanswered.`
-        )
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
         for (const unansweredHealthCheck of this.ongoingHealthChecks) {
-          console.log(
-            `Node #${unansweredHealthCheck} did not answer the health check, triggering recovery procedure...`
-          )
           // Multicasting to a group of the backup list
+          const sorterGenerator = createGenerator(this.id.toString())
           const multicastTargets = this.backupList
-            .sort(() => generator() - 0.5)
+            .sort(() => sorterGenerator() - 0.5)
             .slice(0, MULTICAST_SIZE)
           for (const backup of multicastTargets) {
+            const targetGroup = this.node.children.filter(e =>
+              e.members.includes(unansweredHealthCheck)
+            )[0]
+            if (!targetGroup) {
+              throw new Error(`The failed node (#${unansweredHealthCheck}) is not one of the child (${this.node.children}) of this node...`)
+            }
             messages.push(
               new Message(
                 MessageType.ContactBackup,
@@ -408,16 +410,14 @@ class Node {
                 backup,
                 {
                   failedNode: unansweredHealthCheck,
-                  targetGroup: this.node.children.filter(e =>
-                    e.members.includes(unansweredHealthCheck)
-                  )[0]
+                  targetGroup
                 }
               )
             )
           }
 
           const remainingBackups = this.backupList.filter(e =>
-            multicastTargets.includes(e)
+            !multicastTargets.includes(e)
           )
           if (remainingBackups.length > 0) {
             // Reschedule a multicast if there are other backups available and the previously contacted ones didn't answer
@@ -434,26 +434,18 @@ class Node {
                 }
               )
             )
+          } else {
+            throw new Error("Ran out of backups...")
           }
         }
 
         this.ongoingHealthChecks = [] // All children have been handled
         break
       case MessageType.ContinueMulticast:
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) tries to continue multicasting to backup`
-        )
+        // TODO: Implement other rounds of multicasting
         break
       case MessageType.ContactBackup:
-        console.log(
-          `Node #${this.id} (time=${
-            this.localTime
-          }) has been contacted to become a backup by node #${receivedMessage.emitterId}`
-        )
-
-        if (this.node || this.contactedAsABackup) {
+        if (this.contactedAsABackup || this.role !== NodeRole.Backup) {
           messages.push(
             new Message(
               MessageType.BackupResponse,
@@ -469,7 +461,6 @@ class Node {
         } else {
           // The backup is available
           this.contactedAsABackup = true
-          this.node = receivedMessage.content.targetGroup
           messages.push(
             new Message(
               MessageType.BackupResponse,
@@ -491,28 +482,25 @@ class Node {
         }
         break
       case MessageType.BackupResponse:
-        if(!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) received a ${
-            receivedMessage.content.backupIsAvailable ? 'positive' : 'negative'
-          } response from backup ${receivedMessage.emitterId}`
-        )
+        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
         if (receivedMessage.content.backupIsAvailable && this.continueMulticast) {
+          // The parent received a response and is still looking for a backup
+          // Accept this one, reject future ones
           this.continueMulticast = false
 
           const child = this.node.children.filter(e =>
             e.members.includes(receivedMessage.content.failedNode!)
-          )[0]
+          )[0] // The group that the backup will join
           const failedPosition = child.members.indexOf(
             receivedMessage.content.failedNode!
           )
 
           // Update child group
           child.members[failedPosition] = receivedMessage.emitterId
-          child.id = child.members[0]
+          child.parents = this.node.members!
 
+          // The backup needs to receive a confirmation before continue the protocole
           messages.push(
             new Message(
               MessageType.ConfirmBackup,
@@ -521,7 +509,7 @@ class Node {
               this.id,
               receivedMessage.emitterId,
               {
-                usedAsBackup: true,
+                useAsBackup: true,
                 targetGroup: child
               }
             )
@@ -536,25 +524,22 @@ class Node {
               this.id,
               receivedMessage.emitterId,
               {
-                usedAsBackup: false
+                useAsBackup: false
               }
             )
           )
         }
         break
       case MessageType.ConfirmBackup:
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) received a ${
-            receivedMessage.content.usedAsBackup ? 'positive' : 'negative'
-          } response from the parent`
-        )
-
-        if(receivedMessage.content.usedAsBackup) {
-          this.node = receivedMessage.content.targetGroup
-          this.node!.children = []
+        // The node received a confirmation from one of the parent that contacted it
+        if (receivedMessage.content.useAsBackup && this.role === NodeRole.Backup) {
+          // The node is still available and the parent wants it as a child
+          this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup!, this.id)
+          this.node.children = [] // The backup receives children later
+          this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup
 
           // Contact its members to know the children
-          for(const member of this.node!.members.filter(m => m !== this.id)) {
+          for (const member of this.node!.members.filter(m => m !== this.id)) {
             messages.push(
               new Message(
                 MessageType.NotifyGroup,
@@ -563,21 +548,17 @@ class Node {
                 this.id,
                 member,
                 {
-                  newMembers: this.node?.members
+                  newMembers: this.node?.members // Send an update of the members
                 }
               )
             )
           }
         } else {
           this.contactedAsABackup = false
-          delete this.node
         }
         break
       case MessageType.NotifyGroup:
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) has been contacted by a member to know its children`
-        )
-
+        // The node has been notified by a backup that it is joining the group
         this.node!.members = receivedMessage.content.newMembers!
         messages.push(
           new Message(
@@ -588,26 +569,28 @@ class Node {
             receivedMessage.emitterId,
             {
               children: this.node?.children,
-              role: this.role
+              role: this.role,
+              backupList: this.backupList,
+              contributors: this.contributorsList[0]
             }
           )
         )
         break
       case MessageType.SendChildren:
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) has been notified of new children`
-        )
-
-        if(receivedMessage.content.children !== this.node?.children) {
-          this.node!.children = receivedMessage.content.children!
+        // The node has received its children from its members
+        // Fetch data from them if its the first time the backup receives them
+        if (!this.node?.children || this.node.children.length === 0) {
+          this.node!.children = receivedMessage.content.children!.map(e => TreeNode.fromCopy(e, e.id)) // Copy children
           this.role = receivedMessage.content.role!
+          this.backupList = receivedMessage.content.backupList!
+          this.expectedContributors = receivedMessage.content.contributors || []
 
-          // Resume the aggregation by asking for data and checking health
-          for(const child of this.node!.children) {
-            if(this.role === NodeRole.LeafAggregator) {
-              // Query all contributors
+          if (this.role === NodeRole.LeafAggregator) {
+            // Query all contributors
+            // Resume the aggregation by asking for data and checking health
+            for (const child of this.node!.children) {
               // TODO: Children should not be in the tree
-              for(const member of child.members) {
+              for (const member of child.members) {
                 messages.push(
                   new Message(
                     MessageType.RequestData,
@@ -615,11 +598,28 @@ class Node {
                     0, // ASAP
                     this.id,
                     member,
-                    {}
+                    { parents: this.node!.members }
                   )
                 )
               }
-            } else {
+            }
+
+            // TODO: This should not wait for a timeout since it knows how many contributions are expected
+            // Wait for all contributions
+            messages.push(
+              new Message(
+                MessageType.ContributionTimeout,
+                this.localTime,
+                this.localTime + 2 * MAX_LATENCY,
+                this.id,
+                this.id,
+                {}
+              )
+            )
+          } else {
+            // Resume the aggregation by asking for data and checking health
+            for (const child of this.node!.children) {
+              // Contact the matching member in each child to update new parents and send data
               messages.push(
                 new Message(
                   MessageType.RequestData,
@@ -627,18 +627,29 @@ class Node {
                   0, // ASAP
                   this.id,
                   child.members[position!],
-                  {}
+                  { parents: this.node!.members }
                 )
               )
             }
+
+            // Start monitoring children's health
+            messages.push(
+              new Message(
+                MessageType.RequestHealthChecks,
+                this.localTime,
+                this.localTime + 2 * MAX_LATENCY,
+                this.id,
+                this.id,
+                {}
+              )
+            )
           }
         }
         break
       case MessageType.RequestData:
-        console.log(
-          `Node #${this.id} (time=${this.localTime}) has been requested data by a backup joining the tree`
-        )
-        if(this.role === NodeRole.Contributor) {
+        // The child updates his parents
+        this.node!.parents = receivedMessage.content.parents!
+        if (this.role === NodeRole.Contributor) {
           messages.push(
             new Message(
               MessageType.SendContribution,
@@ -649,7 +660,7 @@ class Node {
               { share: this.shares[this.node!.parents.indexOf(receivedMessage.emitterId)] }
             )
           )
-        } else if(this.role === NodeRole.LeafAggregator) {
+        } else if (this.role === NodeRole.LeafAggregator) {
           messages.push(
             new Message(
               MessageType.SendAggregate,
@@ -676,7 +687,7 @@ class Node {
               this.id,
               receivedMessage.emitterId,
               {
-                aggregate: this.aggregates.reduce((prev, curr) => ({
+                aggregate: Object.values(this.aggregates).reduce((prev, curr) => ({
                   counter: prev.counter + curr.counter,
                   data: prev.data + curr.data
                 }))
