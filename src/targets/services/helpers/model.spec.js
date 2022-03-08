@@ -44,12 +44,24 @@ describe('Model library', () => {
   describe('fromDocs', () => {
     it('should increment the correct occurences', async () => {
       const model = await Model.fromDocs(mockDocs)
-      expect(model.occurences[0][1]).toEqual(1)
-      expect(model.occurences[1][1]).toEqual(1)
-      expect(model.occurences[2][1]).toEqual(1)
-      expect(model.occurences[3][2]).toEqual(2)
-      expect(model.occurences[4][2]).toEqual(1)
-      expect(model.occurences[5][2]).toEqual(3)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
+      ).toEqual(2)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
+      ).toEqual(3)
     })
   })
 
@@ -59,12 +71,26 @@ describe('Model library', () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
-      expect(model.occurences[0][1]).toEqual(1)
-      expect(model.occurences[1][1]).toEqual(1)
-      expect(model.occurences[2][1]).toEqual(1)
-      expect(model.occurences[3][2]).toEqual(2)
-      expect(model.occurences[4][2]).toEqual(1)
-      expect(model.occurences[5][2]).toEqual(3)
+      console.log(model.classifiers[0].wordFrequencyCount['100'])
+      console.log(model.classifiers[0].wordFrequencyCount['200'])
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
+      ).toEqual(2)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
+      ).toEqual(3)
     })
 
     it('should gives the same result as a centralized dataset', async () => {
@@ -81,8 +107,12 @@ describe('Model library', () => {
       )
       const model = await Model.fromDocs(mockDocs.concat(mockDocs2))
 
-      for (let i = 0; i < 5; i++) {
-        expect(modelRecomposed.occurences[i]).toEqual(model.occurences[i])
+      for (const key of ['100', '200']) {
+        for (const word of vocabulary) {
+          expect(
+            modelRecomposed.classifiers[0].wordFrequencyCount[key][word]
+          ).toEqual(model.classifiers[0].wordFrequencyCount[key][word])
+        }
       }
     })
   })
@@ -92,12 +122,24 @@ describe('Model library', () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const aggregate = firstModel.getAggregate()
       const model = Model.fromAggregate(aggregate, { shouldFinalize: true })
-      expect(model.occurences[0][1]).toEqual(1)
-      expect(model.occurences[1][1]).toEqual(1)
-      expect(model.occurences[2][1]).toEqual(1)
-      expect(model.occurences[3][2]).toEqual(2)
-      expect(model.occurences[4][2]).toEqual(1)
-      expect(model.occurences[5][2]).toEqual(3)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
+      ).toEqual(2)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
+      ).toEqual(3)
     })
   })
 
@@ -108,12 +150,25 @@ describe('Model library', () => {
       const model = Model.fromCompressedAggregate(aggregate, {
         shouldFinalize: true
       })
-      expect(model.occurences[0][1]).toEqual(1)
-      expect(model.occurences[1][1]).toEqual(1)
-      expect(model.occurences[2][1]).toEqual(1)
-      expect(model.occurences[3][2]).toEqual(2)
-      expect(model.occurences[4][2]).toEqual(1)
-      expect(model.occurences[5][2]).toEqual(3)
+      console.log(model.classifiers[0].wordFrequencyCount)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
+      ).toEqual(2)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
+      ).toEqual(1)
+      expect(
+        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
+      ).toEqual(3)
     })
   })
 
@@ -198,10 +253,10 @@ describe('Model library', () => {
   describe('small tree', () => {
     it('should convert from one to the other without error', async () => {
       const nbContributors = 5
-      const contributorsModel = Promise.all(
+      const contributorsModel = await Promise.all(
         Array(nbContributors)
-          .fill()
-          .map(async () => await Model.fromDocs(mockDocs))
+          .fill(0)
+          .map(async () => Model.fromDocs(mockDocs))
       )
 
       const nbShares = 3
@@ -225,12 +280,12 @@ describe('Model library', () => {
         shouldFinalize: true
       })
 
-      expect(finalModel.occurences[0][1]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[1][0]).toEqual(1 * nbContributors)
       expect(finalModel.occurences[1][1]).toEqual(1 * nbContributors)
-      expect(finalModel.occurences[2][1]).toEqual(1 * nbContributors)
-      expect(finalModel.occurences[3][2]).toEqual(2 * nbContributors)
-      expect(finalModel.occurences[4][2]).toEqual(1 * nbContributors)
-      expect(finalModel.occurences[5][2]).toEqual(3 * nbContributors)
+      expect(finalModel.occurences[1][2]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[2][3]).toEqual(2 * nbContributors)
+      expect(finalModel.occurences[2][4]).toEqual(1 * nbContributors)
+      expect(finalModel.occurences[2][5]).toEqual(3 * nbContributors)
     })
   })
 })
