@@ -2,7 +2,8 @@
 
 /* eslint-env jest */
 
-import { Model, vocabulary } from '.'
+import { vocabulary } from '.'
+import { Model } from '../model'
 
 describe('Model library', () => {
   const mockDocs = [
@@ -71,8 +72,6 @@ describe('Model library', () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
-      console.log(model.classifiers[0].wordFrequencyCount['100'])
-      console.log(model.classifiers[0].wordFrequencyCount['200'])
       expect(
         model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
       ).toEqual(1)
@@ -121,7 +120,7 @@ describe('Model library', () => {
     it('should preserve the correct occurences', async () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const aggregate = firstModel.getAggregate()
-      const model = Model.fromAggregate(aggregate, { shouldFinalize: true })
+      const model = await Model.fromAggregate(aggregate, { shouldFinalize: true })
       expect(
         model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
       ).toEqual(1)
@@ -147,10 +146,9 @@ describe('Model library', () => {
     it('should preserve the correct occurences', async () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const aggregate = firstModel.getCompressedAggregate()
-      const model = Model.fromCompressedAggregate(aggregate, {
+      const model = await Model.fromCompressedAggregate(aggregate, {
         shouldFinalize: true
       })
-      console.log(model.classifiers[0].wordFrequencyCount)
       expect(
         model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
       ).toEqual(1)

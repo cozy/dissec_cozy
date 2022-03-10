@@ -12,16 +12,12 @@ export const OperationsDeleteAll = props => {
   const handleDelete = useCallback(
     async () => {
       setIsWorking(true)
-      
+
       await client.collection(BANK_DOCTYPE).destroyAll(operations)
 
       setIsWorking(false)
     },
-    [
-      client,
-      operations,
-      setIsWorking
-    ]
+    [client, operations, setIsWorking]
   )
 
   if (!operations || !operations.length) return null

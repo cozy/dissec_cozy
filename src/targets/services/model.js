@@ -1,10 +1,11 @@
 import LZUTF8 from 'lzutf8'
+import NaiveBayes from 'classificator'
+import { classes, vocabulary } from './helpers'
+
+// TODO: Temporary workaround, cozy-konnector-libs uses another token format
 import { createCategorizer } from 'cozy-konnector-libs'
 import { getClassifierOptions } from 'cozy-konnector-libs/src/libs/categorization/localModel/classifier'
 import { tokenizer } from 'cozy-konnector-libs/src/libs/categorization/helpers'
-import NaiveBayes from 'classificator'
-
-import { classes, vocabulary } from './index'
 
 // This constant defines the amplitude of the noise added to shares
 // It needs to be small enough to sum all shares without overflows
@@ -31,7 +32,7 @@ export class Model {
    *
    * @private
    */
-   initializeLogProbabilities() {
+  initializeLogProbabilities() {
     for (const j in this.uniqueY) {
       const total = 1 + this.occurences[j].reduce((a, b) => a + b)
       for (const i in vocabulary) {
@@ -109,14 +110,20 @@ export class Model {
    * Returns a new model created using a model representation
    *
    * @param {Object} doc The aggregate
-   * @return {Model} The new model
+   * @param {{useGlobalModel: boolean}} options Use the global model as well
+   * @return {Promise<Model>} The new model
    */
-  static fromAggregate(doc) {
+  static async fromAggregate(doc, options = { useGlobalModel: false }) {
     let model = new Model()
     model.occurences = doc.occurences
     model.contributions = doc.contributions
     model.initializeClassifier()
     model.initializeLogProbabilities()
+    const { categorize } = await createCategorizer({
+      useGlobalModel: options.useGlobalModel,
+      pretrainedClassifier: model.classifiers[0]
+    })
+    model.categorize = categorize
     return model
   }
 
@@ -124,11 +131,11 @@ export class Model {
    * Returns a new model created using a compressed model representation
    *
    * @param {string} compressedAggregate The compressed aggregate
-   * @return {Model} The new model
+   * @return {Promise<Model>} The new model
    */
-  static fromCompressedAggregate(compressedAggregate) {
+  static async fromCompressedAggregate(compressedAggregate) {
     const doc = Model.compressedBinaryToShare(compressedAggregate)
-    return Model.fromAggregate(doc)
+    return await Model.fromAggregate(doc)
   }
 
   /**

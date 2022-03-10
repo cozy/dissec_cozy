@@ -42,7 +42,7 @@ export const Webhook = ({ hook, onUpdate }) => {
 
       setIsWorking(false)
     },
-    [hook, name, pretrained, setIsWorking, client.stackClient]
+    [client, hook, name, pretrained, setIsWorking, client.stackClient]
   )
 
   const handleRemoveWebhook = useCallback(
