@@ -2,7 +2,8 @@ import LZUTF8 from 'lzutf8'
 import NaiveBayes from 'classificator'
 import { classes, vocabulary } from './helpers'
 
-// TODO: Temporary workaround, cozy-konnector-libs uses another token format
+// FIXME: Importing cozy-konnector-libs requires the COZY_CREDENTIALS env var to be in a specific format
+// .. To make this work, libs must include this PR: https://github.com/konnectors/libs/pull/851
 import { createCategorizer } from 'cozy-konnector-libs'
 import { getClassifierOptions } from 'cozy-konnector-libs/src/libs/categorization/localModel/classifier'
 import { tokenizer } from 'cozy-konnector-libs/src/libs/categorization/helpers'
@@ -221,6 +222,27 @@ export class Model {
   predict(label) {
     const result = this.categorize([{ label }])
     return result[0].localCategoryId
+  }
+
+  /**
+   * Continue training on more data.
+   *
+   * @param {object[]} operations Cozy banks operations
+   */
+  train(operations) {
+    for (const operation of operations) {
+      const tokens = tokenizer(operation.label)
+      const catIndex = this.uniqueY.indexOf(operation.manualCategoryId)
+      if (catIndex === -1) continue
+      for (const token of tokens) {
+        const tokenIndex = vocabulary.indexOf(token)
+        if (tokenIndex === -1) continue
+        this.occurences[catIndex][tokenIndex] += 1
+      }
+    }
+
+    this.initializeClassifier()
+    this.initializeLogProbabilities()
   }
 
   /**

@@ -44,7 +44,6 @@ export const contribution = async () => {
       let backup = fs.readFileSync(dissecConfig.localModelPath)
       model = Model.fromBackup(backup)
 
-      // TODO: Train does not work with the new Model
       model.train(operations)
     } catch (e) {
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
