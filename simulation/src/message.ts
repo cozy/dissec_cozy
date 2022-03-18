@@ -28,7 +28,7 @@ export enum MessageType {
   RequestData = "RequestData"
 }
 
-interface MessageContent {
+export interface MessageContent {
   parents?: number[]
   share?: number
   contributors?: number[]
@@ -39,7 +39,6 @@ interface MessageContent {
   backupIsAvailable?: boolean
   backupList?: number[]
   useAsBackup?: boolean
-  newMembers?: number[]
   role?: NodeRole
   children?: TreeNode[]
 }
@@ -162,7 +161,7 @@ export class Message {
         break
       case MessageType.NotifyGroup:
         console.log(
-          `${tag} has been contacted by the new member #${this.emitterId} to know its children. The group is now [${this.content.newMembers}]`
+          `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing ${this.content.failedNode} in group [${receiver.node?.members}]`
         )
         break
       case MessageType.SendChildren:
@@ -180,3 +179,5 @@ export class Message {
     }
   }
 }
+
+export default Message

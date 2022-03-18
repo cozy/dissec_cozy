@@ -9,8 +9,9 @@ export const HEALTH_CHECK_PERIOD = 4 * MAX_LATENCY // Needs to be greater than 2
 export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
 export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
 export const MULTICAST_SIZE = 5 // Number of nodes contacted simulatneously when looking for a backup
+export const BASE_NOISE = 10000000 // The amplitude of noise
 
-const FAILURE_RATE = 0.0002
+const FAILURE_RATE = 0.00025
 const DEADLINE = 50 * MAX_LATENCY
 
 class NodesManager {

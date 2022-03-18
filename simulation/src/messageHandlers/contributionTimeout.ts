@@ -1,0 +1,88 @@
+import { Node, arrayEquals } from "../node"
+import { Message, MessageType } from "../message"
+import { MAX_LATENCY } from "../manager"
+
+export function handleContributionTimeout(this: Node, receivedMessage: Message): Message[] {
+  const messages: Message[] = []
+
+  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+
+  if (this.expectedContributors.length !== 0 && arrayEquals(this.expectedContributors, this.contributorsList[this.id])) {
+    // No need to synchronize because all contributors answered
+    return []
+  }
+
+  if (this.id === this.node.members[0]) {
+    // The leader aggregates the received contributors lists and confirms them to the group
+    const finalContributors = []
+    for (const contributor of this.contributorsList[this.id]) {
+      // Checking that a given contributor is in every contributors lists
+      // It only looks at contributors list received, preventing that a failed members stops this process
+      if (
+        this.node.members
+          .map(member => this.contributorsList[member] ? this.contributorsList[member].includes(contributor) : true)
+          .every(Boolean)
+      ) {
+        finalContributors.push(contributor)
+      }
+    }
+    this.contributorsList[this.id] = finalContributors
+
+    for (const member of this.node.members.filter(e => e !== this.id)) {
+      messages.push(
+        new Message(
+          MessageType.ConfirmContributors,
+          this.localTime,
+          0, // Don't specify time to let the manager add the latency
+          this.id,
+          member,
+          { contributors: finalContributors }
+        )
+      )
+    }
+
+    messages.push(
+      new Message(
+        MessageType.SendAggregate,
+        this.localTime,
+        0, // Don't specify time to let the manager add the latency
+        this.id,
+        this.node.parents[this.node.members.indexOf(this.id)],
+        {
+          aggregate: {
+            counter: this.contributorsList[this.id].length,
+            data: this.contributorsList[this.id].map(contributor => this.contributions[contributor]).reduce(
+              (prev, curr) => prev + curr
+            )
+          }
+        }
+      )
+    )
+  } else {
+    // Group members send their contributors list to the first member
+    messages.push(
+      new Message(
+        MessageType.ShareContributors,
+        this.localTime,
+        0, // Don't specify time to let the manager add the latency
+        this.id,
+        this.node.members[0],
+        { contributors: this.contributorsList[this.id] }
+      )
+    )
+
+    // Also send themselves a message to confirm contributors even if the first member is down
+    messages.push(
+      new Message(
+        MessageType.ConfirmContributors,
+        this.localTime,
+        this.localTime + 2 * MAX_LATENCY, // wait for a back and forth with the first member
+        this.id,
+        this.id,
+        { contributors: this.contributorsList[this.id] }
+      )
+    )
+  }
+
+  return messages
+}
