@@ -72,7 +72,26 @@ export class Message {
   log(receiver: Node, filter: MessageType[] = []) {
     if (filter.includes(this.type)) return
 
-    const tag = `[@${receiver.localTime}] ${receiver.role === NodeRole.Querier ? "(Q)" : ""} Node #${receiver.id}`
+    const tag = `[@${receiver.localTime}] (${receiver.role}) Node #${receiver.id}`
+    const position = receiver.node?.members.indexOf(receiver.id)
+    let children: number[] = receiver.role === NodeRole.Querier ?
+      receiver.node?.children[0].members :
+      (receiver.node?.children.map(e => position ? e.members[position] : undefined).filter(e => e !== undefined) as any)
+
+    switch (receiver.role) {
+      case NodeRole.Querier:
+        children = receiver.node!.children[0].members
+        break
+      case NodeRole.LeafAggregator:
+        children = receiver.node!.children.flatMap(e => e.members)
+        break
+      case NodeRole.Backup:
+        children = []
+        break
+      default:
+        children = receiver.node!.children.map(e => e.members[position!])
+        break
+    }
 
     switch (this.type) {
       case MessageType.RequestContribution:
@@ -104,15 +123,15 @@ export class Message {
         break
       case MessageType.SendAggregate:
         console.log(
-          `${tag} received an aggregate from child #${this.emitterId}. ${receiver.aggregates[this.emitterId] ?
-            "Replacing the old aggregate sent by this child" : "First time this child sends an aggregate"}.`
+          `${tag} received an aggregate from child #${this.emitterId}. [${children
+            ?.filter(child => Boolean(receiver.aggregates[child]))
+            .map(e => "#" + e)
+          }] out of [${children.map(e => "#" + e)}]`
         )
         break
       case MessageType.RequestHealthChecks:
-        const position = receiver.node!.members.indexOf(receiver.id)
-        const children = receiver.role === NodeRole.Querier ? receiver.node!.children[0].members : receiver.node!.children.map(e => '#' + e.members[position])
         console.log(
-          `${tag} is requesting health checks from his children [${children}]`
+          `${tag} is requesting health checks from his children [${children.map(e => "#" + e)}]`
         )
         break
       case MessageType.CheckHealth:
@@ -123,15 +142,15 @@ export class Message {
       case MessageType.ConfirmHealth:
         console.log(
           `${tag} received a health confirmation from child node #${this.emitterId
-          } ([${receiver.ongoingHealthChecks}]).`
+          } ([${Object.keys(receiver.ongoingHealthChecks)}]).`
         )
         break
       case MessageType.HealthCheckTimeout:
         console.log(
-          `${tag} timed out health checks. ${receiver.ongoingHealthChecks.length
+          `${tag} timed out health checks. ${Object.keys(receiver.ongoingHealthChecks).length
           } ongoing health checks are unanswered:`
         )
-        for (const unansweredHealthCheck of receiver.ongoingHealthChecks) {
+        for (const unansweredHealthCheck of Object.keys(receiver.ongoingHealthChecks)) {
           console.log(
             `\t- Node #${unansweredHealthCheck} did not answer the health check, triggering recovery procedure...`
           )
@@ -156,7 +175,7 @@ export class Message {
       case MessageType.ConfirmBackup:
         console.log(
           `${tag} received a ${this.content.useAsBackup ? 'positive' : 'negative'
-          } response from the parent #${this.emitterId} to join group [${this.content.targetGroup?.members}]`
+          } response from the parent #${this.emitterId} to join group [${this.content.targetGroup?.members}] to replace #${this.content.failedNode}`
         )
         break
       case MessageType.NotifyGroup:
@@ -173,7 +192,7 @@ export class Message {
         break
       case MessageType.RequestData:
         console.log(
-          `${tag} is a ${receiver.role} and has been requested data by backup #${this.emitterId} joining the tree`
+          `${tag} has been requested data by backup #${this.emitterId} joining the tree`
         )
         break
     }

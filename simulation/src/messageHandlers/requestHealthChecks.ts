@@ -13,11 +13,13 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
   if (this.role === NodeRole.Querier) {
     // Check the health of all node in the children group who haven't sent data
     const children = this.node.children[0].members
-    childrenHaveNotSent = children.filter(child => !this.aggregates[child])
+    // childrenHaveNotSent = children.filter(child => !this.aggregates[child])
+    childrenHaveNotSent = children
   } else if (this.role === NodeRole.Aggregator) {
     // Check the health of the node in the same position in each child
     const children = this.node.children.map(child => child.members[position])
-    childrenHaveNotSent = children.filter(child => !this.aggregates[child])
+    // childrenHaveNotSent = children.filter(child => !this.aggregates[child])
+    childrenHaveNotSent = children
   }
 
   for (const child of childrenHaveNotSent) {
@@ -30,7 +32,7 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
       {}
     )
     messages.push(msg)
-    this.ongoingHealthChecks.push(msg.receiverId)
+    this.ongoingHealthChecks[msg.receiverId] = true
   }
 
   // Set a timeout to trigger the recovery procedure for not responding nodes

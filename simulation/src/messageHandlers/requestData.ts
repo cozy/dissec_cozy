@@ -45,7 +45,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
 
     // Do not send data if they have not yet been received
     // Occurs when the node is a backup that has not yet received data from its children
-    if (children.map(child => this.aggregates[child]).some(e => !e))
+    if (children.length === 0 || children.map(child => this.aggregates[child]).some(e => !e))
       return messages
 
     messages.push(

@@ -5,13 +5,13 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
   const messages: Message[] = []
 
   if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  if (!receivedMessage.content.failedNode)
-    throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced`)
+  if (receivedMessage.content.failedNode === undefined)
+    throw new Error(`Parent ${this.id} did not receive the group member to needs to be replaced`)
 
-  if (receivedMessage.content.backupIsAvailable && this.continueMulticast) {
+  if (receivedMessage.content.backupIsAvailable && this.lookingForBackup[receivedMessage.content.failedNode]) {
     // The parent received a response and is still looking for a backup
     // Accept this one, reject future ones
-    this.continueMulticast = false
+    this.lookingForBackup[receivedMessage.content.failedNode] = false
 
     const child = this.node.children.filter(e =>
       e.members.includes(receivedMessage.content.failedNode!)

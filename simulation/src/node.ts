@@ -35,9 +35,10 @@ export class Node {
   alive: boolean
   deathTime: number
   role: NodeRole
-  ongoingHealthChecks: number[]
+  ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
   backupList: number[]
+  lookingForBackup: { [nodeId: number]: boolean }
   continueMulticast: boolean
   contactedAsABackup: boolean
   secretValue: number
@@ -71,9 +72,10 @@ export class Node {
     this.deathTime = 0
     this.role = NodeRole.Aggregator
     this.secretValue = 50 // TODO: Better value, not always 50
-    this.ongoingHealthChecks = []
+    this.ongoingHealthChecks = {}
     this.finishedWorking = false
     this.backupList = []
+    this.lookingForBackup = {}
     this.continueMulticast = false
     this.contactedAsABackup = false
     this.contributorsList = { [this.id]: [] }
@@ -87,8 +89,12 @@ export class Node {
 
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
-    const nodeOfInterest: number[] = [0, 1, 2, 240, 241]
-    const filters: MessageType[] = [MessageType.CheckHealth, MessageType.ConfirmHealth, MessageType.HealthCheckTimeout]
+    const nodeOfInterest: number[] = [0, 1, 2, 255, 495, 498, 282]
+    const filters: MessageType[] = [
+      // MessageType.CheckHealth,
+      // MessageType.ConfirmHealth,
+      // MessageType.HealthCheckTimeout
+    ]
     if (nodeOfInterest.includes(this.id) || nodeOfInterest.includes(receivedMessage.emitterId) || nodeOfInterest.length === 0)
       receivedMessage.log(this, filters)
 
@@ -120,7 +126,7 @@ export class Node {
         )
         break
       case MessageType.ConfirmHealth:
-        this.ongoingHealthChecks.splice(this.ongoingHealthChecks.indexOf(receivedMessage.emitterId), 1)
+        delete this.ongoingHealthChecks[receivedMessage.emitterId]
         break
       case MessageType.HealthCheckTimeout:
         return this.handleHealthCheckTimeout(receivedMessage)
@@ -134,25 +140,27 @@ export class Node {
       case MessageType.ConfirmBackup:
         return this.handleConfirmBackup(receivedMessage)
       case MessageType.NotifyGroup:
-        if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-
-        // The node has been notified by a backup that it is joining the group
-        this.node.members = this.node.members.map(member => member === receivedMessage.content.failedNode ? receivedMessage.emitterId : member)
-        messages.push(
-          new Message(
-            MessageType.SendChildren,
-            this.localTime,
-            0, // ASAP
-            this.id,
-            receivedMessage.emitterId,
-            {
-              children: this.node.children,
-              role: this.role,
-              backupList: this.backupList,
-              contributors: this.contributorsList[this.id]
-            }
+        // NotifyGroup messages are ignored if the node does not know its part of the tree.
+        // This occurs when 2 nodes are being replaced concurrently in the same group.
+        if (this.node) {
+          // The node has been notified by a backup that it is joining the group
+          this.node.members = this.node.members.map(member => member === receivedMessage.content.failedNode ? receivedMessage.emitterId : member)
+          messages.push(
+            new Message(
+              MessageType.SendChildren,
+              this.localTime,
+              0, // ASAP
+              this.id,
+              receivedMessage.emitterId,
+              {
+                children: this.node.children,
+                role: this.role,
+                backupList: this.backupList,
+                contributors: this.contributorsList[this.id]
+              }
+            )
           )
-        )
+        }
         break
       case MessageType.SendChildren:
         return this.handleSendChildren(receivedMessage)

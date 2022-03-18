@@ -11,8 +11,8 @@ export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data sp
 export const MULTICAST_SIZE = 5 // Number of nodes contacted simulatneously when looking for a backup
 export const BASE_NOISE = 10000000 // The amplitude of noise
 
-const FAILURE_RATE = 0.00025
-const DEADLINE = 50 * MAX_LATENCY
+const FAILURE_RATE = 0.0002
+const DEADLINE = 100 * MAX_LATENCY
 
 class NodesManager {
   nodes: Node[]
@@ -21,12 +21,12 @@ class NodesManager {
   globalTime: number
   generator: () => number
 
-  constructor() {
+  constructor(seed: string = "42") {
     this.nodes = []
     this.messages = []
     this.messageCounter = 0
     this.globalTime = 0
-    this.generator = Generator.get("18")
+    this.generator = Generator.get(seed)
   }
 
   static createFromTree(root: TreeNode): NodesManager {

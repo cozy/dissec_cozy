@@ -4,7 +4,11 @@ import { Message, MessageType } from "../message"
 export function handleContactBackup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
+  if (receivedMessage.content.failedNode === undefined)
+    throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced from ${receivedMessage.emitterId}`)
+
   if (this.contactedAsABackup || this.role !== NodeRole.Backup) {
+    // The backup is not available
     messages.push(
       new Message(
         MessageType.BackupResponse,
@@ -13,7 +17,8 @@ export function handleContactBackup(this: Node, receivedMessage: Message): Messa
         this.id,
         receivedMessage.emitterId,
         {
-          backupIsAvailable: false
+          backupIsAvailable: false,
+          failedNode: receivedMessage.content.failedNode
         }
       )
     )

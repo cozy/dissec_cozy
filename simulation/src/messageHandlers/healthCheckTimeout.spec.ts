@@ -22,7 +22,7 @@ describe('Health check timeout', () => {
     const node = manager.nodes[treenode.id]
     node.backupList = Array(20).fill(0).map((_, i) => i)
 
-    const toCheck = [10, 20]
+    const toCheck = { 10: true, 20: true }
     node.ongoingHealthChecks = toCheck
 
     const messages = node.receiveMessage(new Message(
@@ -34,7 +34,7 @@ describe('Health check timeout', () => {
       {}
     ))
 
-    expect(messages.length).toBe(toCheck.length * (MULTICAST_SIZE + 1))
+    expect(messages.length).toBe(Object.keys(toCheck).length * (MULTICAST_SIZE + 1))
   })
 
   it('should do nothing if the node has no ongoing checks', async () => {

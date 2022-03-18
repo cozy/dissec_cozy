@@ -9,7 +9,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
   if (receivedMessage.content.useAsBackup && this.role === NodeRole.Backup) {
     if (!receivedMessage.content.targetGroup)
       throw new Error(`Backup ${this.id} did not receive the target group in the confirmation`)
-    if (!receivedMessage.content.failedNode)
+    if (receivedMessage.content.failedNode === undefined)
       throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced`)
 
     // The node is still available and the parent wants it as a child
@@ -18,7 +18,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup
 
     // Contact its members to know the children
-    for (const member of this.node.members.map(e => e === receivedMessage.content.failedNode ? this.id : e).filter(m => m !== this.id)) {
+    for (const member of this.node.members.filter(e => e !== this.id)) {
       messages.push(
         new Message(
           MessageType.NotifyGroup,

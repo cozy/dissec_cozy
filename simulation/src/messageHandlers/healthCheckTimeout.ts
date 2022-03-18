@@ -8,16 +8,22 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
 
   if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
-  for (const unansweredHealthCheck of this.ongoingHealthChecks) {
+  const ongoingChecks = Object.keys(this.ongoingHealthChecks).map(Number)
+  for (const unansweredHealthCheck of ongoingChecks) {
+    // Adding the node to the list of nodes looking for backup
+    this.lookingForBackup[unansweredHealthCheck] = true
+
     // Multicasting to a group of the backup list
     const sorterGenerator = createGenerator(this.id.toString())
     const multicastTargets = this.backupList
       .sort(() => sorterGenerator() - 0.5)
       .slice(0, MULTICAST_SIZE)
+
     for (const backup of multicastTargets) {
       const targetGroup = this.node.children.filter(e =>
         e.members.includes(unansweredHealthCheck)
       )[0]
+
       messages.push(
         new Message(
           MessageType.ContactBackup,
@@ -56,7 +62,8 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
     }
   }
 
-  this.ongoingHealthChecks = [] // All children have been handled
+  // Remove handled checks
+  ongoingChecks.forEach(node => delete this.ongoingHealthChecks[node])
 
   return messages
 }
