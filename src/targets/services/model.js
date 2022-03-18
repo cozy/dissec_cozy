@@ -22,26 +22,7 @@ export class Model {
     this.occurences = Array(this.uniqueY.length)
       .fill(0)
       .map(() => Array(vocabulary.length).fill(0))
-    this.logProbabilities = Array(this.uniqueY.length)
-      .fill(0)
-      .map(() => Array(vocabulary.length).fill(0))
     this.contributions = 1
-  }
-
-  /**
-   * Internal function used to initialize the model given occurences
-   *
-   * @private
-   */
-  initializeLogProbabilities() {
-    for (const j in this.uniqueY) {
-      const total = 1 + this.occurences[j].reduce((a, b) => a + b)
-      for (const i in vocabulary) {
-        this.logProbabilities[j][i] = Math.log(
-          (1 + this.occurences[j][i]) / total
-        )
-      }
-    }
   }
 
   /**
@@ -81,7 +62,6 @@ export class Model {
       tokenizer,
       ...getClassifierOptions(this.uniqueY.length).initialization
     })
-    classifier.vocabulary
     for (let j = 0; j < this.uniqueY.length; j++) {
       for (let i = 0; i < vocabulary.length; i++) {
         // Keep the matrix sparse by skiping zeroes
@@ -119,7 +99,6 @@ export class Model {
     model.occurences = doc.occurences
     model.contributions = doc.contributions
     model.initializeClassifier()
-    model.initializeLogProbabilities()
     const { categorize } = await createCategorizer({
       useGlobalModel: options.useGlobalModel,
       pretrainedClassifier: model.classifiers[0]
@@ -168,8 +147,6 @@ export class Model {
           model.occurences[j][i] /= shares.length
         }
       }
-
-      model.initializeLogProbabilities()
     }
 
     model.initializeClassifier()
@@ -208,7 +185,6 @@ export class Model {
     model.categorize = categorize
 
     model.initializeOccurences()
-    model.initializeLogProbabilities()
 
     return model
   }
@@ -242,7 +218,6 @@ export class Model {
     }
 
     this.initializeClassifier()
-    this.initializeLogProbabilities()
   }
 
   /**
