@@ -12,6 +12,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
     // The parent received a response and is still looking for a backup
     // Accept this one, reject future ones
     this.lookingForBackup[receivedMessage.content.failedNode] = false
+    this.continueMulticast = false
 
     const child = this.node.children.filter(e =>
       e.members.includes(receivedMessage.content.failedNode!)

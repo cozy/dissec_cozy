@@ -30,7 +30,7 @@ describe('Contact backup', () => {
       receptionTime,
       node.id,
       node.id,
-      {}
+      { failedNode: 42 }
     ))
 
     expect(messages.length).toBe(1)
@@ -50,7 +50,7 @@ describe('Contact backup', () => {
       receptionTime,
       node.id,
       node.id,
-      {}
+      { failedNode: 42 }
     ))
 
     expect(messages.length).toBe(1)
@@ -70,7 +70,7 @@ describe('Contact backup', () => {
       receptionTime,
       node.id,
       node.id,
-      {}
+      { failedNode: 42 }
     ))
 
     expect(messages.length).toBe(1)

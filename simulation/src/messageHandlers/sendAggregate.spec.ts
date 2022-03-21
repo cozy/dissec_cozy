@@ -34,30 +34,32 @@ describe('Send aggregate', () => {
     ))
 
     expect(node.aggregates[treenode.id]).toStrictEqual(agg1)
+    expect(node.finishedWorking).toBeFalsy()
     expect(messages.length).toBe(0)
 
     messages = node.receiveMessage(new Message(
       MessageType.SendAggregate,
       0,
       receptionTime,
-      root.children[1].members[0],
+      root.children[0].members[1],
       root.id,
       { aggregate: agg1 }
     ))
 
-    expect(node.aggregates[root.children[1].members[0]]).toStrictEqual(agg1)
+    expect(node.aggregates[root.children[0].members[1]]).toStrictEqual(agg1)
+    expect(node.finishedWorking).toBeFalsy()
     expect(messages.length).toBe(0)
 
     messages = node.receiveMessage(new Message(
       MessageType.SendAggregate,
       0,
       receptionTime,
-      root.children[2].members[0],
+      root.children[0].members[2],
       root.id,
       { aggregate: agg1 }
     ))
 
-    expect(node.aggregates[root.children[2].members[0]]).toStrictEqual(agg1)
+    expect(node.aggregates[root.children[0].members[2]]).toStrictEqual(agg1)
     expect(node.finishedWorking).toBeTruthy()
     expect(messages.length).toBe(1)
   })

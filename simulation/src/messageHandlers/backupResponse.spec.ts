@@ -21,8 +21,10 @@ describe('Backup response', () => {
     const receptionTime = 10
     const treenode = root.children[0]
     const node = manager.nodes[treenode.id]
+    const failedNode = node.node?.children[0].members[0]
     node.role = NodeRole.Backup
     node.continueMulticast = true
+    node.lookingForBackup[failedNode!] = true
 
     const messages = node.receiveMessage(new Message(
       MessageType.BackupResponse,
@@ -32,10 +34,11 @@ describe('Backup response', () => {
       root.id,
       {
         backupIsAvailable: true,
-        failedNode: node.node?.children[0].members[0]
+        failedNode
       }
     ))
 
+    expect(node.lookingForBackup[failedNode!]).toBe(false)
     expect(node.continueMulticast).toBe(false)
     expect(messages.length).toBe(1)
     expect(messages[0].content.useAsBackup).toBe(true)

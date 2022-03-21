@@ -23,7 +23,7 @@ describe('Health check timeout', () => {
     node.backupList = Array(20).fill(0).map((_, i) => i)
 
     const toCheck = { 10: true, 20: true }
-    node.ongoingHealthChecks = toCheck
+    node.ongoingHealthChecks = JSON.parse(JSON.stringify(toCheck))
 
     const messages = node.receiveMessage(new Message(
       MessageType.HealthCheckTimeout,
@@ -34,7 +34,7 @@ describe('Health check timeout', () => {
       {}
     ))
 
-    expect(messages.length).toBe(Object.keys(toCheck).length * (MULTICAST_SIZE + 1))
+    expect(messages.length).toBe(Object.values(toCheck).length * (MULTICAST_SIZE + 1))
   })
 
   it('should do nothing if the node has no ongoing checks', async () => {

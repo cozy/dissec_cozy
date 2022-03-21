@@ -34,10 +34,10 @@ describe('Request health check', () => {
     ))
 
     expect(messages.length).toBe(groupSize + 2) // Timeout + reschedule
-    expect(node.ongoingHealthChecks).toStrictEqual(children)
+    expect(Object.keys(node.ongoingHealthChecks).map(Number)).toStrictEqual(children)
   })
 
-  it('should not request health check from children who sent data', async () => {
+  it('should request health check from children who sent data', async () => {
     const receptionTime = 10
     const treenode = root.children[0]
     const node = manager.nodes[root.id]
@@ -54,8 +54,8 @@ describe('Request health check', () => {
       {}
     ))
 
-    expect(messages.length).toBe(groupSize + 1)
-    expect(node.ongoingHealthChecks).toStrictEqual(children.filter(e => e !== children[0]))
+    expect(messages.length).toBe(groupSize + 2)
+    expect(Object.keys(node.ongoingHealthChecks).map(Number)).toStrictEqual(children)
   })
 
   it('should fail when the node does not know the tree', async () => {
