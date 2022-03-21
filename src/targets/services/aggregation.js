@@ -3,7 +3,8 @@ global.fetch = require('node-fetch').default
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 
-import { Model, createLogger } from './helpers'
+import { createLogger } from './helpers'
+import { Model } from './model'
 import dissecConfig from '../../../dissec.config.json'
 
 export const aggregation = async () => {
@@ -62,6 +63,7 @@ export const aggregation = async () => {
       dissecConfig.localModelPath,
       model.getCompressedAggregate()
     )
+    log('Model has been written to the disk')
   } else {
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {

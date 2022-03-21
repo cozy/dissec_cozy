@@ -3249,6 +3249,13 @@ classificator@^0.3.3:
   dependencies:
     decimal.js "^10.0.0"
 
+classificator@^0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/classificator/-/classificator-0.3.4.tgz#b9ff7733bdc074877de13da51ed6a607c544e2e5"
+  integrity sha512-H0ZCdZj1oEKr7jx//k8laegv8njniDWDPRE72HQ3250ow9I1g0ueO6n/RjzZPC9AMwfs3IoOCXfyMOLSonqkmg==
+  dependencies:
+    decimal.js "^10.0.0"
+
 classnames@^2.2.5:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/classnames/-/classnames-2.3.1.tgz#dfcfa3891e306ec1dad105d0e88f4417b8535e8e"

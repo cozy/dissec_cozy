@@ -1,4 +1,4 @@
-const splitClasses = require('./splitClasses').splitClasses
+const splitClasses = require('./splitClasses')
 
 test('Returns a list of list of classes', () => {
   jest.spyOn(console, 'log').mockImplementation(() => jest.fn())

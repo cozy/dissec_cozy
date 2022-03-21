@@ -3,7 +3,7 @@ global.fetch = require('node-fetch').default
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
-import { Model } from './helpers'
+import { Model } from './model'
 import dissecConfig from '../../../dissec.config.json'
 import { JOBS_DOCTYPE } from '../../doctypes/jobs'
 
@@ -28,7 +28,7 @@ export const categorize = async () => {
       const compressedAggregate = fs
         .readFileSync(dissecConfig.localModelPath)
         .toString()
-      model = Model.fromCompressedAggregate(compressedAggregate)
+      model = await Model.fromCompressedAggregate(compressedAggregate)
     } catch (err) {
       throw `Model does not exist at path ${
         dissecConfig.localModelPath
@@ -44,7 +44,7 @@ export const categorize = async () => {
         )
       : operations
 
-    model = Model.fromDocs(filteredOperations)
+    model = await Model.fromDocs(filteredOperations)
   }
 
   // Categorize each doc and update it

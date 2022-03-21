@@ -3,7 +3,8 @@ global.fetch = require('node-fetch').default
 import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
 import { BANK_DOCTYPE } from '../../doctypes'
-import { Model, createLogger, getAppDirectory } from './helpers'
+import { createLogger, getAppDirectory } from './helpers'
+import { Model } from './model'
 import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
@@ -48,7 +49,7 @@ export const contribution = async () => {
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
-    model = Model.fromDocs(operations)
+    model = await Model.fromDocs(operations)
   }
 
   const appDirectory = await getAppDirectory(client)
