@@ -87,6 +87,7 @@ export class Node {
   receiveMessage(receivedMessage: Message): Message[] {
     const messages: Message[] = []
 
+    receivedMessage.delivered = true
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
     const nodeOfInterest: number[] = [0, 1, 2, 255, 495, 498, 282]

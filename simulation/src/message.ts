@@ -29,6 +29,7 @@ export enum MessageType {
 }
 
 export interface MessageContent {
+  success?: boolean
   parents?: number[]
   share?: number
   contributors?: number[]
@@ -51,6 +52,7 @@ export class Message {
   emitterId: number
   receiverId: number
   content: MessageContent
+  delivered: boolean
 
   constructor(
     type: MessageType,
@@ -67,6 +69,7 @@ export class Message {
     this.emitterId = emitterId
     this.receiverId = receiverId
     this.content = content
+    this.delivered = false
   }
 
   log(receiver: Node, filter: MessageType[] = []) {
