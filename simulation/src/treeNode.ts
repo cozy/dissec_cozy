@@ -11,6 +11,15 @@ class TreeNode {
     this.children = []
   }
 
+  static fromCopy(source: TreeNode, id: number): TreeNode {
+    const copy = JSON.parse(JSON.stringify(source))
+    const node = new TreeNode(id)
+    node.parents = copy.parents
+    node.members = copy.members
+    node.children = source.children.map(e => this.fromCopy(e, e.id))
+    return node
+  }
+
   /**
    * Creates a regular tree
    *
@@ -47,14 +56,6 @@ class TreeNode {
     } else {
       return { nextId: id + groupSize, node }
     }
-  }
-
-  static fromCopy(source: TreeNode, id: number): TreeNode {
-    const node = new TreeNode(id)
-    node.parents = source.parents
-    node.members = source.members
-    node.children = source.children
-    return node
   }
 
   /**
