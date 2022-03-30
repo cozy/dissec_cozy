@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash'
+import { cloneDeep, isEqual } from 'lodash'
 import { MAX_LATENCY, MULTICAST_SIZE } from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import {
@@ -20,13 +20,7 @@ import { createGenerator } from './random'
 import TreeNode from './treeNode'
 
 export const arrayEquals = (a: number[], b: number[]): boolean => {
-  return JSON.stringify(cloneDeep(a).sort()) === JSON.stringify(cloneDeep(b).sort())
-}
-
-export const arrayDiff = (a: number[], b: number[]): number => {
-  const sa = new Set(a)
-  const sb = new Set(b)
-  return Math.max(a.filter(e => sb.has(e)).length, b.filter(e => sa.has(e)).length)
+  return isEqual(cloneDeep(a).sort(), cloneDeep(b).sort())
 }
 
 export enum NodeRole {

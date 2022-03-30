@@ -25,7 +25,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
     child.members[failedPosition] = receivedMessage.emitterId
     child.parents = this.node.members
 
-    // The backup needs to receive a confirmation before continue the protocole
+    // The backup needs to receive a confirmation before continue the protocol
     messages.push(
       new Message(
         MessageType.ConfirmBackup,
