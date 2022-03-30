@@ -27,15 +27,15 @@ export function createGenerator(seed: string) {
 }
 
 export class Generator {
-  private static instance: () => number
+  private static instances: {[seed: string]: () => number} = {}
 
   private constructor() {}
 
-  static get(seed?: string): () => number {
-    if (!this.instance) {
-      let seedFunction = xmur3(seed || '42')
-      this.instance = mulberry32(seedFunction())
+  static get(seed: string = '42'): () => number {
+    if (!this.instances[seed]) {
+      let seedFunction = xmur3(seed)
+      this.instances[seed] = mulberry32(seedFunction())
     }
-    return this.instance
+    return this.instances[seed]
   }
 }

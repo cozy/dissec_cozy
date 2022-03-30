@@ -1,4 +1,4 @@
-import { Node, NodeRole } from "../node"
+import { arrayEquals, Node, NodeRole } from "../node"
 import { Message, MessageType } from "../message"
 
 export function handleRequestData(this: Node, receivedMessage: Message): Message[] {
@@ -8,7 +8,10 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
   if (!receivedMessage.content.parents) throw new Error(`${this.id} did not receive parents`)
 
   // The child updates his parents
-  this.node.parents = receivedMessage.content.parents
+  if(!arrayEquals(this.node.parents, receivedMessage.content.parents)) {
+    // The parent group has been updated since the last time
+    this.node.parents = receivedMessage.content.parents
+  }
 
   if (this.role === NodeRole.Contributor) {
     messages.push(

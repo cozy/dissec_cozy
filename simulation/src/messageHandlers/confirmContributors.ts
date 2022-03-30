@@ -13,26 +13,30 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       'Received an empty contributors list, the protocol should stop'
     )
 
+  // Storing the final list from the first member
   this.contributorsList[this.id] = receivedMessage.content.contributors
 
-  messages.push(
-    new Message(
-      MessageType.SendAggregate,
-      this.localTime,
-      0, // Don't specify time to let the manager add the latency
-      this.id,
-      this.node.parents[this.node.members.indexOf(this.id)],
-      {
-        aggregate: {
-          counter: this.contributorsList[this.id].length,
-          data: Object.values(this.contributions).reduce(
-            (prev, curr) => prev + curr,
-            0
-          )
+  if (!this.finishedWorking) {
+    this.finishedWorking = true
+    messages.push(
+      new Message(
+        MessageType.SendAggregate,
+        this.localTime,
+        0, // Don't specify time to let the manager add the latency
+        this.id,
+        this.node.parents[this.node.members.indexOf(this.id)],
+        {
+          aggregate: {
+            counter: this.contributorsList[this.id].length,
+            data: Object.values(this.contributions).reduce(
+              (prev, curr) => prev + curr,
+              0
+            )
+          }
         }
-      }
+      )
     )
-  )
+  }
 
   return messages
 }

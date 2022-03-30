@@ -1,5 +1,5 @@
 import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
+import { Message, MessageType, StopStatus } from "../message"
 
 export function handleSendAggregate(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -14,22 +14,22 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     const expectedAggregates = this.node.children[0].members.map(child => this.aggregates[child]).filter(Boolean)
     if (expectedAggregates.length === this.node.members.length) {
       // Received all shares
-      const result = expectedAggregates.reduce((prev, curr) => ({
-        counter: prev.counter + curr.counter,
-        data: prev.data + curr.data
-      }))
       this.finishedWorking = true
 
-      console.log(
-        `Final aggregation result: ${result.counter
-        } contributions -> ${result.data / result.counter}\n\n\n`
-      )
-      messages.push(new Message(MessageType.StopSimulator, 0, -1, 0, 0, { success: true }))
+      // const result = expectedAggregates.reduce((prev, curr) => ({
+      //   counter: prev.counter + curr.counter,
+      //   data: prev.data + curr.data
+      // }))
+      // console.log(
+      //   `Final aggregation result: ${result.counter
+      //   } contributions -> ${result.data / result.counter}\n\n\n`
+      // )
+      messages.push(new Message(MessageType.StopSimulator, 0, -1, this.id, this.id, { status: StopStatus.Success }))
     }
   } else {
     const position = this.node.members.indexOf(this.id)
     const aggregates = this.node.children.map(e => this.aggregates[e.members[position]])
-    if (aggregates.every(Boolean)) {
+    if (aggregates.every(Boolean) && !this.finishedWorking) {
       // Forwarding the result to the parent
       const aggregate = aggregates.reduce((prev, curr) => ({
         counter: prev.counter + curr.counter,

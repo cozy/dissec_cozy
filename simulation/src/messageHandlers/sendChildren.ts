@@ -10,11 +10,12 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
   if (!receivedMessage.content.role) throw new Error("The message did not contain a role")
   if (!receivedMessage.content.backupList) throw new Error("The message did not contain a backup list")
   if (!receivedMessage.content.children) throw new Error("The message did not contain children")
+  if (!receivedMessage.content.targetGroup) throw new Error("The message did not contain member version")
 
   // The node has received its children from its members
   // Fetch data from them if its the first time the backup receives them
-  if (!this.node?.children || this.node.children.length === 0) {
-    this.node.children = receivedMessage.content.children.map(e => TreeNode.fromCopy(e, e.id)) // Copy children
+  if (this.node.children.length === 0) {
+    this.node.children = receivedMessage.content.children.map(child => TreeNode.fromCopy(child, child.id)) // Copy children
     this.role = receivedMessage.content.role
     this.backupList = receivedMessage.content.backupList
 

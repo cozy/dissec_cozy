@@ -1,7 +1,7 @@
 import { Node } from "../node"
 import { Message, MessageType } from "../message"
-import { MAX_LATENCY, MULTICAST_SIZE } from "../manager"
 import { createGenerator } from "../random"
+import { MAX_LATENCY, MULTICAST_SIZE } from "../manager"
 
 export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -10,6 +10,8 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
 
   const ongoingChecks = Object.keys(this.ongoingHealthChecks).map(Number)
   for (const unansweredHealthCheck of ongoingChecks) {
+    // While replacing failed nodes, resume working
+    this.finishedWorking = false
     // Adding the node to the list of nodes looking for backup
     this.lookingForBackup[unansweredHealthCheck] = true
 
@@ -53,7 +55,8 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
           this.id,
           this.id,
           {
-            remainingBackups
+            remainingBackups,
+            failedNode: unansweredHealthCheck
           }
         )
       )

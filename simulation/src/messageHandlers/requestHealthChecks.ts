@@ -8,21 +8,19 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
   if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
 
   const position = this.node!.members.indexOf(this.id)
-  let childrenHaveNotSent: number[] = []
+  let children: number[] = []
 
   if (this.role === NodeRole.Querier) {
     // Check the health of all node in the children group who haven't sent data
-    const children = this.node.children[0].members
-    // childrenHaveNotSent = children.filter(child => !this.aggregates[child])
-    childrenHaveNotSent = children
+    // Do not request from nodes we're already trying to replace to avoid conflicting requests
+    children = this.node.children[0].members.filter(e => !this.lookingForBackup[e])
   } else if (this.role === NodeRole.Aggregator) {
     // Check the health of the node in the same position in each child
-    const children = this.node.children.map(child => child.members[position])
-    // childrenHaveNotSent = children.filter(child => !this.aggregates[child])
-    childrenHaveNotSent = children
+    // Do not request from nodes we're already trying to replace to avoid conflicting requests
+    children = this.node.children.map(child => child.members[position]).filter(e => !this.lookingForBackup[e])
   }
 
-  for (const child of childrenHaveNotSent) {
+  for (const child of children) {
     const msg = new Message(
       MessageType.CheckHealth,
       this.localTime,
@@ -47,20 +45,17 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
     )
   )
 
-  // Reschedule health checks
-  if (!this.finishedWorking) {
-    console.log(`Node #${this.id} is rescheduling a health check for child`)
-    messages.push(
-      new Message(
-        MessageType.RequestHealthChecks,
-        this.localTime,
-        this.localTime + HEALTH_CHECK_PERIOD,
-        this.id,
-        this.id,
-        {}
-      )
+  // Always reschedule health checks to keep child groups fresh
+  messages.push(
+    new Message(
+      MessageType.RequestHealthChecks,
+      this.localTime,
+      this.localTime + HEALTH_CHECK_PERIOD,
+      this.id,
+      this.id,
+      {}
     )
-  }
+  )
 
   return messages
 }

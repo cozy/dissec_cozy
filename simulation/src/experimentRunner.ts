@@ -1,48 +1,53 @@
 import fs from "fs"
 import NodesManager, { MAX_LATENCY } from './manager'
-import { Message, MessageType } from './message'
+import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
 
-interface RunConfig {
+export interface RunConfig {
+  failureRate: number
   depth: number
   fanout: number
   groupSize: number
-  seed?: string
+  seed: string
 }
 
-interface RunResult {
-  success: boolean
+export interface RunResult {
+  status: StopStatus
+  failureRate: number
+  observedFailureRate: number
   messages: Message[]
 }
 
 export class ExperimentRunner {
   runs: RunConfig[]
+  debug?: boolean = false
 
-  constructor(runs: RunConfig[]) {
+  constructor (runs: RunConfig[], options: { debug?: boolean } = {}) {
     this.runs = runs
+    this.debug = options.debug
   }
 
   run(outputPath: string) {
     const results: RunResult[] = []
     for (const run of this.runs) {
+      console.log(JSON.stringify(run))
       results.push(this.singleRun(run))
+      console.log()
     }
 
     if (!fs.existsSync(outputPath)) {
       const components = outputPath.split('/')
       fs.mkdirSync(outputPath.replace(components[components.length - 1], ''), { recursive: true })
     }
-    fs.writeFileSync(outputPath, JSON.stringify(results, null, 2))
+    fs.writeFileSync(outputPath, JSON.stringify(results))
   }
-
   singleRun(run: RunConfig): RunResult {
     const nodesInTree = (run.fanout ** run.depth) * run.groupSize
-    console.log(nodesInTree)
     const backupListSize = nodesInTree * 1
 
     const { nextId, node: root } = TreeNode.createTree(run.depth, run.fanout, run.groupSize, 0)
-    root.log()
+    // root.log()
 
     // Adding the querier group
     const querierGroup = new TreeNode(nextId)
@@ -50,8 +55,8 @@ export class ExperimentRunner {
     querierGroup.members = Array(run.groupSize).fill(nextId)
     root.parents = querierGroup.members
 
-    const manager = NodesManager.createFromTree(root, { seed: run.seed })
-    const n = manager.addNode(querierGroup)
+    const manager = NodesManager.createFromTree(root, { failureRate: run.failureRate, seed: run.seed, debug: this.debug })
+    const n = manager.addNode(querierGroup, querierGroup.id)
     n.role = NodeRole.Querier
     // Only the node with the lowest ID sends the message
     manager.transmitMessage(
@@ -135,8 +140,13 @@ export class ExperimentRunner {
       manager.handleNextMessage()
     }
 
+    console.log(`Simulation finished with status ${manager.status}`)
+    console.log(`${Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length * 100}% of nodes failed (${Object.values(manager.nodes).filter(e => !e.alive).length} / ${Object.values(manager.nodes).length})`)
+
     return {
-      success: manager.successfulExecution,
+      status: manager.status,
+      failureRate: manager.failureRate,
+      observedFailureRate: Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
       messages: manager.oldMessages
     }
   }

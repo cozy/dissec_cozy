@@ -1,6 +1,7 @@
 import { Node, NodeRole } from "../node"
 import { Message, MessageType } from "../message"
 import TreeNode from "../treeNode"
+import { MAX_LATENCY } from "../manager"
 
 export function handleConfirmBackup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -18,7 +19,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup
 
     // Contact its members to know the children
-    for (const member of this.node.members.filter(e => e !== receivedMessage.content.failedNode)) {
+    for (const member of this.node.members.filter(e => e !== this.id)) {
       messages.push(
         new Message(
           MessageType.NotifyGroup,
@@ -27,11 +28,24 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
           this.id,
           member,
           {
-            failedNode: receivedMessage.content.failedNode,
+            targetGroup: this.node,
+            failedNode: receivedMessage.content.failedNode
           }
         )
       )
     }
+
+    // Timeout to abort the protocol in case the group is dead
+    messages.push(
+      new Message(
+        MessageType.NotifyGroupTimeout,
+        this.localTime,
+        this.localTime + 2 * MAX_LATENCY,
+        this.id,
+        this.id,
+        {}
+      )
+    )
   } else {
     // Turn on availability
     this.contactedAsABackup = false

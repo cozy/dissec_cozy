@@ -5,6 +5,7 @@ scripts/.token.json
 # DISSECOZY
 /assets
 dissec.config.json
+simulation/outputs
 
 # NPM
 node_modules/
