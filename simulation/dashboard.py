@@ -6,15 +6,17 @@ import json
 
 
 def get_data():
-    with open('./outputs/raw.json') as f:
+    with open("./outputs/raw.json") as f:
         data = json.load(f)
 
     messages = {
         "run_id": [],
-        "successful_run": [],
+        "status": [],
+        "failure_rate": [],
+        "observed_failure_rate": [],
         "type": [],
-        "emission_time": [],
-        "reception_time": [],
+        "emitter_time": [],
+        "receiver_time": [],
         "emitter_id": [],
         "receiver_id": [],
         "delivered": [],
@@ -23,108 +25,266 @@ def get_data():
     for i, run in enumerate(data):
         for message in run["messages"]:
             messages["run_id"].append(i)
-            messages["successful_run"].append(run["success"])
+            messages["status"].append(run["status"])
+            messages["failure_rate"].append(run["failureRate"])
+            messages["observed_failure_rate"].append(run["observedFailureRate"])
             messages["type"].append(message["type"])
-            messages["emission_time"].append(message["emissionTime"])
-            messages["reception_time"].append(message["receptionTime"])
+            messages["emitter_time"].append(message["emissionTime"])
+            messages["receiver_time"].append(message["receptionTime"])
             messages["emitter_id"].append(message["emitterId"])
             messages["receiver_id"].append(message["receiverId"])
             messages["delivered"].append(message["delivered"])
 
     df = pd.DataFrame(messages)
-    df['latency'] = (df['reception_time'] - df['emission_time']
-                     ).apply(lambda x: max(0, x))
+    df["latency"] = (df["receiver_time"] - df["emitter_time"]).apply(
+        lambda x: max(0, x)
+    )
 
+    df["simulation_length"] = df["receiver_time"]
+
+    maxs = {}
+    ids = [i for i in pd.unique(df["run_id"])]
+    for i in ids:
+        maxs[i] = df[df["run_id"] == i]["receiver_time"].max()
+
+    def simlen(x):
+        x["simulation_length"] = maxs[x["run_id"]]
+        return x
+
+    df.apply(simlen, axis=1)
     return df
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     data = get_data()
-    run_ids = pd.unique(data['run_id'])
-    types = pd.unique(data['type'])
+    run_ids = pd.unique(data["run_id"])
+    status = pd.unique(data["status"])
+    types = pd.unique(data["type"])
+    failure_rates = np.sort(pd.unique(data["failure_rate"]))
+    observed_failure_rates = np.sort(pd.unique(data["observed_failure_rate"]))
 
     app = dash.Dash(__name__)
 
-    fig = px.scatter(data, x="reception_time", y="receiver_id",
-                     color="type",
-                     hover_name="type")
+    message_timeline_fig = px.scatter(
+        data, x="receiver_time", y="receiver_id", color="type", hover_name="type"
+    )
+    failure_rate_per_status_fig = px.box(
+        data, x="status", y="failure_rate", hover_name="type"
+    )
+    observed_failure_rate_per_status_fig = px.box(
+        data, x="status", y="observed_failure_rate", hover_name="type"
+    )
+    messages_histogram = px.histogram(data, x="receiver_time")
 
-    app.layout = html.Div(children=[
-        html.H1(children=f'Latency vs Reception time',
-                style={'textAlign': 'center', 'color': '#7FDBFF'}),
-        html.Div(style={'justifyContent': 'center'}, children=[
-            html.H3('Y = ?'),
-            dcc.Dropdown(
-                [{'label': 'Receiver', 'value': 'receiver_id'}, {
-                    'label': 'Emitter', 'value': 'emitter_id'}],
-                "receiver_id",
-                id="y-axis"
-            )
-        ]),
-        html.Div(style={'justifyContent': 'center'}, children=[
-            html.H3('Filtrer les run selon leur succès'),
-            dcc.Dropdown(
-                [{'label': 'Toutes', 'value': 'All'}, {
-                    'label': 'Réussies', 'value': 'True'}, {
-                    'label': 'Ratées', 'value': 'False'}],
-                "All",
-                id="runs-success"
-            )
-        ]),
-        html.Div(style={'justifyContent': 'center'}, children=[
-            html.H3('Exécutions du protocole:'),
-            dcc.Checklist(
-                id="runs-list",
-                options=run_ids,
-                value=run_ids,
-                style={'display': 'flex', 'flex-wrap': 'wrap',
-                       'flex-direction': 'row'},
-                labelStyle={'display': 'flex',
-                            'direction': 'row', 'margin': '5px'}
-            )
-        ]),
-        html.Div(style={'justifyContent': 'center'}, children=[
-            html.H3('Type de messages à montrer'),
-            dcc.Checklist(
-                id="types-list",
-                options=types,
-                value=types,
-                style={'display': 'flex', 'flex-wrap': 'wrap',
-                       'flex-direction': 'row'},
-                labelStyle={'display': 'flex',
-                            'direction': 'row', 'margin': '5px'}
-            )
-        ]),
-        dcc.Graph(
-            id='graph1',
-            figure=fig
-        ),
-        html.Div(children=[
-            f'''The graph above shows messages and their type'''
-        ]),
-    ])
-
-    @app.callback(
-        dash.Output(component_id='graph1', component_property='figure'),
-        [
-            dash.Input(component_id='y-axis', component_property='value'),
-            dash.Input(component_id='runs-success',
-                       component_property='value'),
-            dash.Input(component_id='runs-list', component_property='value'),
-            dash.Input(component_id='types-list', component_property='value')
+    app.layout = html.Div(
+        children=[
+            html.H1(
+                children=f"Latency vs Reception time",
+                style={"textAlign": "center", "color": "#7FDBFF"},
+            ),
+            html.Div(
+                style={"justifyContent": "center"},
+                children=[
+                    html.H3("Résumé:"),
+                    html.Ul(
+                        children=[
+                            html.Li(
+                                children=[
+                                    f"Il y a un total de {len(data.groupby('run_id'))} simulations. {len(data[data['status'] == 'Success'].groupby('run_id'))} succès, {len(data[data['status'] != 'Success'].groupby('run_id'))} échecs",
+                                    html.Ul(
+                                        children=[
+                                            html.Li(
+                                                children=f"""
+                            {len(pd.unique(data[data['status'] == i]['run_id']))} ont le status {i}.
+                            Taux de pannes théoriques (min={round(data[data['status'] == i]['failure_rate'].min() * 100, 2)}%;
+                            avg={round(data[data['status'] == i]['failure_rate'].mean() * 100, 2)}%;
+                            med={round(data[data['status'] == i]['failure_rate'].median() * 100, 2)}%;
+                            max={round(data[data['status'] == i]['failure_rate'].max() * 100, 2)}%).
+                            Taux de pannes observées (min={round(data[data['status'] == i]['observed_failure_rate'].min() * 100, 2)}%;
+                            avg={round(data[data['status'] == i]['observed_failure_rate'].mean() * 100, 2)}%;
+                            med={round(data[data['status'] == i]['observed_failure_rate'].median() * 100, 2)}%;
+                            max={round(data[data['status'] == i]['observed_failure_rate'].max() * 100, 2)}%)
+                            """
+                                            )
+                                            for i in status
+                                        ]
+                                    ),
+                                ]
+                            )
+                        ]
+                    ),
+                ],
+            ),
+            html.Div(
+                style={"justifyContent": "center"},
+                children=[
+                    html.H3("Y = ?"),
+                    dcc.Dropdown(
+                        [
+                            {"label": "Receiver", "value": "receiver"},
+                            {"label": "Emitter", "value": "emitter"},
+                        ],
+                        "receiver",
+                        id="y-axis",
+                    ),
+                ],
+            ),
+            html.Div(
+                style={"justifyContent": "center"},
+                children=[
+                    html.H3("Filtrer les run selon leur succès"),
+                    dcc.Dropdown(
+                        [{"label": "Toutes", "value": "All"}]
+                        + [{"label": i, "value": i} for i in status],
+                        "All",
+                        id="runs-success",
+                    ),
+                ],
+            ),
+            html.Div(
+                style={"justifyContent": "center"},
+                children=[
+                    html.H3("Exécutions du protocole:"),
+                    dcc.Checklist(
+                        id="runs-list",
+                        options=run_ids,
+                        value=run_ids,
+                        style={
+                            "display": "flex",
+                            "flex-wrap": "wrap",
+                            "flex-direction": "row",
+                        },
+                        labelStyle={
+                            "display": "flex",
+                            "direction": "row",
+                            "margin": "5px",
+                        },
+                    ),
+                ],
+            ),
+            html.Div(
+                style={"justifyContent": "center"},
+                children=[
+                    html.H3("Type de messages à montrer"),
+                    dcc.Checklist(
+                        id="types-list",
+                        options=types,
+                        value=types,
+                        style={
+                            "display": "flex",
+                            "flex-wrap": "wrap",
+                            "flex-direction": "row",
+                        },
+                        labelStyle={
+                            "display": "flex",
+                            "direction": "row",
+                            "margin": "5px",
+                        },
+                    ),
+                ],
+            ),
+            html.Div(
+                [
+                    html.H3("Taux de pannes théoriques"),
+                    dcc.RangeSlider(
+                        0,
+                        failure_rates[-1],
+                        failure_rates[1] - failure_rates[0],
+                        value=[0, failure_rates[-1]],
+                        id="failure-rates-range",
+                    ),
+                ]
+            ),
+            html.Div(
+                [
+                    html.H3("Taux de pannes observés"),
+                    dcc.RangeSlider(
+                        0,
+                        round(observed_failure_rates[-1], 1) + 0.1,
+                        round(observed_failure_rates[-1], 1) / 20,
+                        value=[0, round(observed_failure_rates[-1], 1) + 0.1],
+                        id="observed-failure-rates-range",
+                    ),
+                ]
+            ),
+            dcc.Graph(id="message_timeline", figure=message_timeline_fig),
+            dcc.Graph(id="message_histogram", figure=messages_histogram),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id="failure_rate_per_status", figure=failure_rate_per_status_fig
+                    ),
+                    dcc.Graph(
+                        id="observed_failure_rate_per_status",
+                        figure=observed_failure_rate_per_status_fig,
+                    ),
+                ],
+            ),
         ]
     )
-    def update_figure(selected_y_axis, selected_runs_success, selected_run_ids, selected_types):
-        print(selected_runs_success)
+
+    @app.callback(
+        [
+            dash.Output(component_id="message_timeline", component_property="figure"),
+            dash.Output(component_id="message_histogram", component_property="figure"),
+        ],
+        [
+            dash.Input(component_id="y-axis", component_property="value"),
+            dash.Input(component_id="runs-success", component_property="value"),
+            dash.Input(component_id="runs-list", component_property="value"),
+            dash.Input(component_id="types-list", component_property="value"),
+            dash.Input(component_id="failure-rates-range", component_property="value"),
+            dash.Input(
+                component_id="observed-failure-rates-range", component_property="value"
+            ),
+        ],
+    )
+    def update_figure(
+        selected_y_axis,
+        selected_runs_success,
+        selected_run_ids,
+        selected_types,
+        selected_failures,
+        selected_observed_failures,
+    ):
         df = data
-        df = df if selected_runs_success == 'All' else df[df['successful_run'] ==
-                                                              True] if selected_runs_success == 'True' else df[df['successful_run'] == False]
-        df = df[df['run_id'].isin(selected_run_ids)]
-        df = df[df['type'].isin(selected_types)]
-        return px.scatter(df,
-                          x="reception_time",
-                          y=selected_y_axis,
-                          color="type",
-                          hover_name="type")
+        if selected_runs_success != "All":
+            df = df[df["status"] == selected_runs_success]
+        df = df[
+            df["failure_rate"].isin(
+                [
+                    i
+                    for i in failure_rates
+                    if i <= selected_failures[1] and i >= selected_failures[0]
+                ]
+            )
+        ]
+        df = df[
+            df["observed_failure_rate"].isin(
+                [
+                    i
+                    for i in observed_failure_rates
+                    if i <= selected_observed_failures[1]
+                    and i >= selected_observed_failures[0]
+                ]
+            )
+        ]
+        df = df[df["run_id"].isin(selected_run_ids)]
+        df = df[df["type"].isin(selected_types)]
+
+        new_message_timeline = px.scatter(
+            df,
+            x=selected_y_axis + "_time",
+            y=selected_y_axis + "_id",
+            color="type",
+            hover_name="type",
+        )
+        new_message_histogram = px.histogram(df, x=selected_y_axis + "_time")
+        return new_message_timeline, new_message_histogram
 
     app.run_server(debug=True)
