@@ -1,16 +1,26 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
-import TreeNode from "../treeNode"
-import { MAX_LATENCY } from "../manager"
+import { MAX_LATENCY } from '../manager'
+import { Message, MessageType } from '../message'
+import { Node, NodeRole } from '../node'
+import TreeNode from '../treeNode'
 
 export function handleSendChildren(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  if (!receivedMessage.content.role) throw new Error("The message did not contain a role")
-  if (!receivedMessage.content.backupList) throw new Error("The message did not contain a backup list")
-  if (!receivedMessage.content.children) throw new Error("The message did not contain children")
-  if (!receivedMessage.content.targetGroup) throw new Error("The message did not contain member version")
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
+  if (!receivedMessage.content.role) {
+    throw new Error("The message did not contain a role")
+  }
+  if (!receivedMessage.content.backupList) {
+    throw new Error("The message did not contain a backup list")
+  }
+  if (!receivedMessage.content.children) {
+    throw new Error("The message did not contain children")
+  }
+  if (!receivedMessage.content.targetGroup) {
+    throw new Error("The message did not contain member version")
+  }
 
   // The node has received its children from its members
   // Fetch data from them if its the first time the backup receives them

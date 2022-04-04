@@ -1,11 +1,15 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType, StopStatus } from "../message"
+import { Message, MessageType, StopStatus } from '../message'
+import { Node, NodeRole } from '../node'
 
 export function handleSendAggregate(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  if (!receivedMessage.content.aggregate) throw new Error('Received an empty aggregate')
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
+  if (!receivedMessage.content.aggregate) {
+    throw new Error('Received an empty aggregate')
+  }
 
   this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
 

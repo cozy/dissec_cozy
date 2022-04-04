@@ -1,3 +1,4 @@
+import config from '../dissec.config.json'
 import { ExperimentRunner, RunConfig } from './experimentRunner'
 
 let configs: RunConfig[] = []
@@ -12,4 +13,4 @@ if (debug) {
 }
 
 const runner = new ExperimentRunner(configs, { debug })
-runner.run("./outputs/raw.json")
+runner.run(config.dataPath)

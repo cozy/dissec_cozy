@@ -1,11 +1,13 @@
-import { Node, arrayEquals } from "../node"
-import { Message, MessageType } from "../message"
-import { MAX_LATENCY } from "../manager"
+import { MAX_LATENCY } from '../manager'
+import { Message, MessageType } from '../message'
+import { arrayEquals, Node } from '../node'
 
 export function handleContributionTimeout(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
 
   if (this.expectedContributors.length !== 0 && arrayEquals(this.expectedContributors, this.contributorsList[this.id])) {
     // No need to synchronize because all contributors answered

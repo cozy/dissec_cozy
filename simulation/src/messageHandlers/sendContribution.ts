@@ -1,11 +1,15 @@
-import { Node, arrayEquals } from "../node"
-import { Message, MessageType } from "../message"
+import { Message, MessageType } from '../message'
+import { arrayEquals, Node } from '../node'
 
 export function handleSendContribution(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  if (!receivedMessage.content.share) throw new Error(`#${this.id} received a contribution without a share`)
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
+  if (!receivedMessage.content.share) {
+    throw new Error(`#${this.id} received a contribution without a share`)
+  }
 
   this.contributorsList[this.id].push(receivedMessage.emitterId) // The first item is the local list
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share

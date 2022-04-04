@@ -1,4 +1,5 @@
-import lodash from "lodash"
+import cloneDeep from 'lodash/cloneDeep'
+
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import { Generator } from './random'
@@ -96,7 +97,7 @@ export class NodesManager {
         unsentMessage.emissionTime + this.standardLatency()
 
     if (this.nodes[unsentMessage.emitterId].alive) {
-      this.messages.push(lodash.cloneDeep(unsentMessage))
+      this.messages.push(cloneDeep(unsentMessage))
       this.messageCounter++
     }
   }

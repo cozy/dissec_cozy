@@ -1,17 +1,20 @@
-import { Node } from "../node"
-import { Message, MessageType } from "../message"
+import { Message, MessageType } from '../message'
+import { Node } from '../node'
 
 export function handleConfirmContributors(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
   if (
     !receivedMessage.content.contributors ||
     receivedMessage.content.contributors.length === 0
-  )
+  ) {
     throw new Error(
       'Received an empty contributors list, the protocol should stop'
     )
+  }
 
   // Storing the final list from the first member
   this.contributorsList[this.id] = receivedMessage.content.contributors

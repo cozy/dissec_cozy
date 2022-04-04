@@ -1,12 +1,14 @@
-import { Node } from "../node"
-import { Message, MessageType } from "../message"
-import { createGenerator } from "../random"
-import { MAX_LATENCY, MULTICAST_SIZE } from "../manager"
+import { MAX_LATENCY, MULTICAST_SIZE } from '../manager'
+import { Message, MessageType } from '../message'
+import { Node } from '../node'
+import { createGenerator } from '../random'
 
 export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
 
   const ongoingChecks = Object.keys(this.ongoingHealthChecks).map(Number)
   for (const unansweredHealthCheck of ongoingChecks) {

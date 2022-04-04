@@ -1,20 +1,22 @@
-import { cloneDeep, isEqual } from 'lodash'
+import cloneDeep from 'lodash/cloneDeep'
+import isEqual from 'lodash/isEqual'
+
 import { MAX_LATENCY, MULTICAST_SIZE } from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import {
-  handleContributionTimeout,
-  handleRequestContribution,
-  handleSendContribution,
-  handleConfirmContributors,
-  handleShareContributors,
-  handleSendAggregate,
-  handleRequestHealthChecks,
-  handleHealthCheckTimeout,
-  handleContactBackup,
   handleBackupResponse,
   handleConfirmBackup,
+  handleConfirmContributors,
+  handleContactBackup,
+  handleContributionTimeout,
+  handleHealthCheckTimeout,
+  handleRequestContribution,
+  handleRequestData,
+  handleRequestHealthChecks,
+  handleSendAggregate,
   handleSendChildren,
-  handleRequestData
+  handleSendContribution,
+  handleShareContributors,
 } from './messageHandlers'
 import { createGenerator } from './random'
 import TreeNode from './treeNode'
@@ -153,8 +155,12 @@ export class Node {
         break
       case MessageType.ContinueMulticast:
         if (this.continueMulticast) {
-          if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-          if (receivedMessage.content.failedNode === undefined) throw new Error(`${this.id} did not receive failed node`)
+          if (!this.node) {
+            throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+          }
+          if (receivedMessage.content.failedNode === undefined) {
+            throw new Error(`${this.id} did not receive failed node`)
+          }
 
           // Multicasting to a group of the backup list
           const sorterGenerator = createGenerator(this.id.toString())
@@ -219,8 +225,12 @@ export class Node {
         // NotifyGroup messages are ignored if the node does not know its part of the tree.
         // This occurs when 2 nodes are being replaced concurrently in the same group.
         if (this.node && this.node.children.length > 0) {
-          if (!receivedMessage.content.targetGroup) throw new Error(`#${this.id} did not receive targetGroup`)
-          if (receivedMessage.content.failedNode === undefined) throw new Error(`#${this.id} did not receive failed node from #${receivedMessage.emitterId}`)
+          if (!receivedMessage.content.targetGroup) {
+            throw new Error(`#${this.id} did not receive targetGroup`)
+          }
+          if (receivedMessage.content.failedNode === undefined) {
+            throw new Error(`#${this.id} did not receive failed node from #${receivedMessage.emitterId}`)
+          }
           // The node has been notified by a backup that it is joining the group
           // Compare the local members with the received one, keep the newest version
           this.node.members = receivedMessage.content.targetGroup!.members
@@ -244,11 +254,19 @@ export class Node {
         }
         break
       case MessageType.NotifyGroupTimeout:
-        if (this.id === 415) console.log(`#${this.id} timed out notification ${this.node?.children.length}`)
         if (!this.node?.children.length) {
           // The node still hasn't received children
           // This occurs because others members don't know either, the protocol failed
-          messages.push(new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, { status: StopStatus.SimultaneousFailures, targetGroup: this.node }))
+          messages.push(
+            new Message(
+              MessageType.StopSimulator,
+              this.localTime,
+              this.localTime,
+              this.id,
+              this.id,
+              { status: StopStatus.SimultaneousFailures, targetGroup: this.node }
+            )
+          )
         }
         break
       case MessageType.SendChildren:

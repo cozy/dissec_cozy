@@ -1,17 +1,19 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
-import TreeNode from "../treeNode"
-import { MAX_LATENCY } from "../manager"
+import { MAX_LATENCY } from '../manager'
+import { Message, MessageType } from '../message'
+import { Node, NodeRole } from '../node'
+import TreeNode from '../treeNode'
 
 export function handleConfirmBackup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
   // The node received a confirmation from one of the parent that contacted it
   if (receivedMessage.content.useAsBackup && this.role === NodeRole.Backup) {
-    if (!receivedMessage.content.targetGroup)
+    if (!receivedMessage.content.targetGroup) {
       throw new Error(`Backup ${this.id} did not receive the target group in the confirmation`)
-    if (receivedMessage.content.failedNode === undefined)
+    }
+    if (receivedMessage.content.failedNode === undefined) {
       throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced`)
+    }
 
     // The node is still available and the parent wants it as a child
     this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup, this.id)

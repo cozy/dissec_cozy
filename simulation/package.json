@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "test": "jest"
+    "test": "jest",
+    "dashboard": "python3 dashboard/dashboard.py"
   },
   "devDependencies": {
     "@types/jest": "^27.4.0",
