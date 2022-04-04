@@ -1,16 +1,19 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
-import TreeNode from "../treeNode"
+import { MAX_LATENCY } from '../manager'
+import { Message, MessageType } from '../message'
+import { Node, NodeRole } from '../node'
+import TreeNode from '../treeNode'
 
 export function handleConfirmBackup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
   // The node received a confirmation from one of the parent that contacted it
   if (receivedMessage.content.useAsBackup && this.role === NodeRole.Backup) {
-    if (!receivedMessage.content.targetGroup)
+    if (!receivedMessage.content.targetGroup) {
       throw new Error(`Backup ${this.id} did not receive the target group in the confirmation`)
-    if (receivedMessage.content.failedNode === undefined)
+    }
+    if (receivedMessage.content.failedNode === undefined) {
       throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced`)
+    }
 
     // The node is still available and the parent wants it as a child
     this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup, this.id)
@@ -18,7 +21,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup
 
     // Contact its members to know the children
-    for (const member of this.node.members.filter(e => e !== receivedMessage.content.failedNode)) {
+    for (const member of this.node.members.filter(e => e !== this.id)) {
       messages.push(
         new Message(
           MessageType.NotifyGroup,
@@ -27,11 +30,24 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
           this.id,
           member,
           {
-            failedNode: receivedMessage.content.failedNode,
+            targetGroup: this.node,
+            failedNode: receivedMessage.content.failedNode
           }
         )
       )
     }
+
+    // Timeout to abort the protocol in case the group is dead
+    messages.push(
+      new Message(
+        MessageType.NotifyGroupTimeout,
+        this.localTime,
+        this.localTime + 2 * MAX_LATENCY,
+        this.id,
+        this.id,
+        {}
+      )
+    )
   } else {
     // Turn on availability
     this.contactedAsABackup = false

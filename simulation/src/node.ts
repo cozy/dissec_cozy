@@ -1,23 +1,28 @@
-import { Message, MessageType } from './message'
+import cloneDeep from 'lodash/cloneDeep'
+import isEqual from 'lodash/isEqual'
+
+import { MAX_LATENCY, MULTICAST_SIZE } from './manager'
+import { Message, MessageType, StopStatus } from './message'
 import {
-  handleContributionTimeout,
-  handleRequestContribution,
-  handleSendContribution,
-  handleConfirmContributors,
-  handleShareContributors,
-  handleSendAggregate,
-  handleRequestHealthChecks,
-  handleHealthCheckTimeout,
-  handleContactBackup,
   handleBackupResponse,
   handleConfirmBackup,
+  handleConfirmContributors,
+  handleContactBackup,
+  handleContributionTimeout,
+  handleHealthCheckTimeout,
+  handleRequestContribution,
+  handleRequestData,
+  handleRequestHealthChecks,
+  handleSendAggregate,
   handleSendChildren,
-  handleRequestData
+  handleSendContribution,
+  handleShareContributors,
 } from './messageHandlers'
+import { createGenerator } from './random'
 import TreeNode from './treeNode'
 
 export const arrayEquals = (a: number[], b: number[]): boolean => {
-  return JSON.stringify(a.sort()) === JSON.stringify(b.sort())
+  return isEqual(cloneDeep(a).sort(), cloneDeep(b).sort())
 }
 
 export enum NodeRole {
@@ -62,7 +67,7 @@ export class Node {
   handleSendChildren = handleSendChildren
   handleRequestData = handleRequestData
 
-  constructor({ node, id }: { node?: TreeNode, id?: number }) {
+  constructor ({ node, id }: { node?: TreeNode, id?: number }) {
     if (!node && !id) return //throw new Error("Initializing a node without id")
 
     this.id = (node ? node.id : id)!
@@ -84,35 +89,52 @@ export class Node {
     this.aggregates = {}
   }
 
-  receiveMessage(receivedMessage: Message): Message[] {
+  receiveMessage(receivedMessage: Message, debug?: boolean): Message[] {
     const messages: Message[] = []
 
+    receivedMessage.delivered = true
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
-    const nodeOfInterest: number[] = [0, 1, 2, 255, 495, 498, 282]
-    const filters: MessageType[] = [
-      // MessageType.CheckHealth,
-      // MessageType.ConfirmHealth,
-      // MessageType.HealthCheckTimeout
-    ]
-    if (nodeOfInterest.includes(this.id) || nodeOfInterest.includes(receivedMessage.emitterId) || nodeOfInterest.length === 0)
-      receivedMessage.log(this, filters)
+    if (debug) {
+      const nodeOfInterest: number[] = [
+        // 193, 226, 225, 420, 328, 192, 193, 194, 195,196,197
+        // 0, 1, 193, 240, 226, 241, 255
+        0, 1, 2, 5, 67, 114, 255, 3, 66, 129, 192, 415, 313, 373
+      ]
+      const filters: MessageType[] = [
+        // MessageType.CheckHealth,
+        // MessageType.ConfirmHealth,
+        // MessageType.HealthCheckTimeout
+        // MessageType.ContactBackup,
+        // MessageType.BackupResponse
+      ]
+      if (nodeOfInterest.includes(this.id) || nodeOfInterest.includes(receivedMessage.emitterId) || nodeOfInterest.length === 0) {
+        receivedMessage.log(this, filters)
+      }
+    }
 
     switch (receivedMessage.type) {
       case MessageType.RequestContribution:
-        return this.handleRequestContribution(receivedMessage)
+        messages.push(...this.handleRequestContribution(receivedMessage))
+        break
       case MessageType.SendContribution:
-        return this.handleSendContribution(receivedMessage)
+        messages.push(...this.handleSendContribution(receivedMessage))
+        break
       case MessageType.ContributionTimeout:
-        return this.handleContributionTimeout(receivedMessage)
+        messages.push(...this.handleContributionTimeout(receivedMessage))
+        break
       case MessageType.ShareContributors:
-        return this.handleShareContributors(receivedMessage)
+        messages.push(...this.handleShareContributors(receivedMessage))
+        break
       case MessageType.ConfirmContributors:
-        return this.handleConfirmContributors(receivedMessage)
+        messages.push(...this.handleConfirmContributors(receivedMessage))
+        break
       case MessageType.SendAggregate:
-        return this.handleSendAggregate(receivedMessage)
+        messages.push(...this.handleSendAggregate(receivedMessage))
+        break
       case MessageType.RequestHealthChecks:
-        return this.handleRequestHealthChecks(receivedMessage)
+        messages.push(...this.handleRequestHealthChecks(receivedMessage))
+        break
       case MessageType.CheckHealth:
         messages.push(
           new Message(
@@ -129,22 +151,90 @@ export class Node {
         delete this.ongoingHealthChecks[receivedMessage.emitterId]
         break
       case MessageType.HealthCheckTimeout:
-        return this.handleHealthCheckTimeout(receivedMessage)
+        messages.push(...this.handleHealthCheckTimeout(receivedMessage))
+        break
       case MessageType.ContinueMulticast:
-        // TODO: Implement other rounds of multicasting
+        if (this.continueMulticast) {
+          if (!this.node) {
+            throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+          }
+          if (receivedMessage.content.failedNode === undefined) {
+            throw new Error(`${this.id} did not receive failed node`)
+          }
+
+          // Multicasting to a group of the backup list
+          const sorterGenerator = createGenerator(this.id.toString())
+          const multicastTargets = receivedMessage.content.remainingBackups!
+            .sort(() => sorterGenerator() - 0.5)
+            .slice(0, MULTICAST_SIZE)
+
+          for (const backup of multicastTargets) {
+            const targetGroup = this.node.children.filter(e =>
+              e.members.includes(receivedMessage.content.failedNode!)
+            )[0]
+
+            messages.push(
+              new Message(
+                MessageType.ContactBackup,
+                this.localTime,
+                0, // ASAP
+                this.id,
+                backup,
+                {
+                  failedNode: receivedMessage.content.failedNode,
+                  targetGroup
+                }
+              )
+            )
+          }
+
+          const remainingBackups = this.backupList.filter(e =>
+            !multicastTargets.includes(e)
+          )
+          if (remainingBackups.length > 0) {
+            // Reschedule a multicast if there are other backups available and the previously contacted ones didn't answer
+            this.continueMulticast = true
+            messages.push(
+              new Message(
+                MessageType.ContinueMulticast,
+                this.localTime,
+                this.localTime + 2 * MAX_LATENCY,
+                this.id,
+                this.id,
+                {
+                  remainingBackups,
+                  failedNode: receivedMessage.content.failedNode
+                }
+              )
+            )
+          } else {
+            throw new Error("Ran out of backups...")
+          }
+        }
         break
       case MessageType.ContactBackup:
-        return this.handleContactBackup(receivedMessage)
+        messages.push(...this.handleContactBackup(receivedMessage))
+        break
       case MessageType.BackupResponse:
-        return this.handleBackupResponse(receivedMessage)
+        messages.push(...this.handleBackupResponse(receivedMessage))
+        break
       case MessageType.ConfirmBackup:
-        return this.handleConfirmBackup(receivedMessage)
+        messages.push(...this.handleConfirmBackup(receivedMessage))
+        break
       case MessageType.NotifyGroup:
         // NotifyGroup messages are ignored if the node does not know its part of the tree.
         // This occurs when 2 nodes are being replaced concurrently in the same group.
-        if (this.node) {
+        if (this.node && this.node.children.length > 0) {
+          if (!receivedMessage.content.targetGroup) {
+            throw new Error(`#${this.id} did not receive targetGroup`)
+          }
+          if (receivedMessage.content.failedNode === undefined) {
+            throw new Error(`#${this.id} did not receive failed node from #${receivedMessage.emitterId}`)
+          }
           // The node has been notified by a backup that it is joining the group
-          this.node.members = this.node.members.map(member => member === receivedMessage.content.failedNode ? receivedMessage.emitterId : member)
+          // Compare the local members with the received one, keep the newest version
+          this.node.members = receivedMessage.content.targetGroup!.members
+
           messages.push(
             new Message(
               MessageType.SendChildren,
@@ -153,6 +243,7 @@ export class Node {
               this.id,
               receivedMessage.emitterId,
               {
+                targetGroup: this.node,
                 children: this.node.children,
                 role: this.role,
                 backupList: this.backupList,
@@ -162,13 +253,35 @@ export class Node {
           )
         }
         break
+      case MessageType.NotifyGroupTimeout:
+        if (!this.node?.children.length) {
+          // The node still hasn't received children
+          // This occurs because others members don't know either, the protocol failed
+          messages.push(
+            new Message(
+              MessageType.StopSimulator,
+              this.localTime,
+              this.localTime,
+              this.id,
+              this.id,
+              { status: StopStatus.SimultaneousFailures, targetGroup: this.node }
+            )
+          )
+        }
+        break
       case MessageType.SendChildren:
-        return this.handleSendChildren(receivedMessage)
+        messages.push(...this.handleSendChildren(receivedMessage))
+        break
       case MessageType.RequestData:
-        return this.handleRequestData(receivedMessage)
+        messages.push(...this.handleRequestData(receivedMessage))
+        break
       default:
         throw new Error('Receiving unknown message type')
     }
+
+    // Invariant: the node is a member of its group
+    if (this.node && !this.node.members.includes(this.id))
+      throw new Error(`#${this.id} is not in its members ([${this.node.members}])`)
 
     return messages
   }

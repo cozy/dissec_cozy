@@ -24,11 +24,21 @@ export enum MessageType {
   BackupResponse = "BackupResponse",
   ConfirmBackup = "ConfirmBackup",
   NotifyGroup = "NotifyGroup",
+  NotifyGroupTimeout = "NotifyGroupTimeout",
   SendChildren = "SendChildren",
   RequestData = "RequestData"
 }
 
+export enum StopStatus {
+  Unfinished = "Unfinished",
+  Success = "Success",
+  GroupDead = "GroupDead",
+  SimultaneousFailures = "SimultaneousFailures",
+  ExceededDeadline = "ExceededDeadline",
+}
+
 export interface MessageContent {
+  status?: StopStatus
   parents?: number[]
   share?: number
   contributors?: number[]
@@ -51,6 +61,7 @@ export class Message {
   emitterId: number
   receiverId: number
   content: MessageContent
+  delivered: boolean
 
   constructor(
     type: MessageType,
@@ -67,6 +78,7 @@ export class Message {
     this.emitterId = emitterId
     this.receiverId = receiverId
     this.content = content
+    this.delivered = false
   }
 
   log(receiver: Node, filter: MessageType[] = []) {
@@ -101,12 +113,12 @@ export class Message {
         break
       case MessageType.SendContribution:
         console.log(
-          `${tag} received contribution #${Object.values(receiver.contributions).length + 1} (${this.content.share})`
+          `${tag} received contribution #${Object.values(receiver.contributions).length + 1} (${this.content.share}) from #${this.emitterId}`
         )
         break
       case MessageType.ContributionTimeout:
         console.log(
-          `${tag} timed out waiting for contributions, received ${Object.values(receiver.contributions).length}`
+          `${tag} timed out waiting for contributions, received ${Object.values(receiver.contributions).length} contributions, sending to #${position ? receiver.node?.parents[position] : "??"}`
         )
         break
       case MessageType.ShareContributors:
@@ -131,7 +143,7 @@ export class Message {
         break
       case MessageType.RequestHealthChecks:
         console.log(
-          `${tag} is requesting health checks from his children [${children.map(e => "#" + e)}]`
+          `${tag} is requesting health checks from his children [${children.map(e => "#" + e)}]. ${receiver.finishedWorking ? 'Not rescheduling' : 'Rescheduling'}`
         )
         break
       case MessageType.CheckHealth:
@@ -166,10 +178,15 @@ export class Message {
             `${tag} does not need top continue multicasting`
           )
         break
+      case MessageType.ContactBackup:
+        console.log(
+          `${tag} received a request from node #${this.emitterId} to replace #${this.content.failedNode}`
+        )
+        break
       case MessageType.BackupResponse:
         console.log(
           `${tag} received a ${this.content.backupIsAvailable ? 'positive' : 'negative'
-          } response from backup #${this.emitterId}`
+          } response from backup #${this.emitterId} to replace #${this.content.failedNode}`
         )
         break
       case MessageType.ConfirmBackup:
@@ -180,7 +197,12 @@ export class Message {
         break
       case MessageType.NotifyGroup:
         console.log(
-          `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing ${this.content.failedNode} in group [${receiver.node?.members}]`
+          `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing ${this.content.failedNode} in group [${this.content.targetGroup?.members}]${receiver.node?.children.length ? "." : ", but does not know child yet."}`
+        )
+        break
+      case MessageType.NotifyGroupTimeout:
+        console.log(
+          `${tag} has timed out on the group notification. New children are ${receiver.node?.children}`
         )
         break
       case MessageType.SendChildren:

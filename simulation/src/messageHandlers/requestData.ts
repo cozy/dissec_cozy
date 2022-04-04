@@ -1,14 +1,21 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
+import { Message, MessageType } from '../message'
+import { arrayEquals, Node, NodeRole } from '../node'
 
 export function handleRequestData(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  if (!receivedMessage.content.parents) throw new Error(`${this.id} did not receive parents`)
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
+  if (!receivedMessage.content.parents) {
+    throw new Error(`${this.id} did not receive parents`)
+  }
 
   // The child updates his parents
-  this.node.parents = receivedMessage.content.parents
+  if (!arrayEquals(this.node.parents, receivedMessage.content.parents)) {
+    // The parent group has been updated since the last time
+    this.node.parents = receivedMessage.content.parents
+  }
 
   if (this.role === NodeRole.Contributor) {
     messages.push(

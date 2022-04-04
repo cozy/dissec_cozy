@@ -5,33 +5,28 @@ scripts/.token.json
 # DISSECOZY
 /assets
 dissec.config.json
+/outputs
 
 # NPM
 node_modules/
 npm-debug.log
 yarn-error.log
 
-
 # Build
 build/
 
-
 # Coverage
 coverage/
-
 
 # Locales
 **/locales/*
 !**/locales/en.json
 
-
 # transifex
 .transifexrc
 
-
 # Coverage
 coverage/
-
 
 # OS generated files
 .DS_Store
@@ -42,7 +37,6 @@ coverage/
 ehthumbs.db
 Thumbs.db
 desktop.ini
-
 
 # Mobile
 targets/mobile/hooks
@@ -62,10 +56,12 @@ mobile/fastlane/Error*.png
 mobile/fastlane/Preview.html
 mobile/Preview.html
 
-
 # Default
 # /!\ KEEP THIS SECTION THE LAST ONE
 !.gitkeep
 
-# Cozy konnecto
+# Cozy konnector
 .token.json
+
+# Python
+.venv

@@ -1,11 +1,12 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
+import { Message, MessageType } from '../message'
+import { Node, NodeRole } from '../node'
 
 export function handleContactBackup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (receivedMessage.content.failedNode === undefined)
+  if (receivedMessage.content.failedNode === undefined) {
     throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced from ${receivedMessage.emitterId}`)
+  }
 
   if (this.contactedAsABackup || this.role !== NodeRole.Backup) {
     // The backup is not available

@@ -1,13 +1,17 @@
-import { Node, NodeRole } from "../node"
-import { Message, MessageType } from "../message"
-import { AVERAGE_COMPUTE, AVERAGE_CRYPTO, BASE_NOISE } from "../manager"
-import { Generator } from "../random"
+import { AVERAGE_COMPUTE, AVERAGE_CRYPTO, BASE_NOISE } from '../manager'
+import { Message, MessageType } from '../message'
+import { Node, NodeRole } from '../node'
+import { Generator } from '../random'
 
 const generator = Generator.get()
 
 export function handleRequestContribution(this: Node, receivedMessage: Message): Message[] {
-  if (!this.node) throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  if (!receivedMessage.content.parents) throw new Error(`Message is missing "parents" content`)
+  if (!this.node) {
+    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
+  if (!receivedMessage.content.parents) {
+    throw new Error(`Message is missing "parents" content`)
+  }
 
   const messages: Message[] = []
 
