@@ -1,7 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep'
 import isEqual from 'lodash/isEqual'
 
-import { MAX_LATENCY, MULTICAST_SIZE } from './manager'
+import { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType, StopStatus } from './message'
 import {
   handleBackupResponse,
@@ -36,6 +36,7 @@ export enum NodeRole {
 export class Node {
   id: number
   node?: TreeNode
+  config: ManagerArguments
   localTime: number
   alive: boolean
   deathTime: number
@@ -67,11 +68,12 @@ export class Node {
   handleSendChildren = handleSendChildren
   handleRequestData = handleRequestData
 
-  constructor ({ node, id }: { node?: TreeNode, id?: number }) {
+  constructor ({ node, id, config }: { node?: TreeNode, id?: number, config: ManagerArguments }) {
     if (!node && !id) return //throw new Error("Initializing a node without id")
 
     this.id = (node ? node.id : id)!
     this.node = node
+    this.config = config
     this.localTime = 0
     this.alive = true
     this.deathTime = 0
@@ -173,7 +175,7 @@ export class Node {
           const sorterGenerator = createGenerator(this.id.toString())
           const multicastTargets = receivedMessage.content.remainingBackups!
             .sort(() => sorterGenerator() - 0.5)
-            .slice(0, MULTICAST_SIZE)
+            .slice(0, this.config.multicastSize)
 
           for (const backup of multicastTargets) {
             const targetGroup = this.node.children.filter(e =>
@@ -205,7 +207,7 @@ export class Node {
               new Message(
                 MessageType.ContinueMulticast,
                 this.localTime,
-                this.localTime + 2 * MAX_LATENCY,
+                this.localTime + 2 * this.config.maxLatency,
                 this.id,
                 this.id,
                 {

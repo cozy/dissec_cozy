@@ -1,4 +1,3 @@
-import { MAX_LATENCY, MULTICAST_SIZE } from '../manager'
 import { Message, MessageType } from '../message'
 import { Node } from '../node'
 import { createGenerator } from '../random'
@@ -21,7 +20,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
     const sorterGenerator = createGenerator(this.id.toString())
     const multicastTargets = this.backupList
       .sort(() => sorterGenerator() - 0.5)
-      .slice(0, MULTICAST_SIZE)
+      .slice(0, this.config.multicastSize)
 
     for (const backup of multicastTargets) {
       const targetGroup = this.node.children.filter(e =>
@@ -53,7 +52,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
         new Message(
           MessageType.ContinueMulticast,
           this.localTime,
-          this.localTime + 2 * MAX_LATENCY,
+          this.localTime + 2 * this.config.maxLatency,
           this.id,
           this.id,
           {

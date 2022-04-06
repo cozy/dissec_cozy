@@ -1,11 +1,18 @@
 import fs from 'fs'
 
-import NodesManager, { MAX_LATENCY } from './manager'
+import NodesManager from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
 
 export interface RunConfig {
+  averageLatency: number;
+  maxLatency: number;
+  averageCrypto: number;
+  averageCompute: number;
+  healthCheckPeriod: number;
+  multicastSize: number;
+  deadline: number;
   failureRate: number;
   depth: number;
   fanout: number;
@@ -62,8 +69,7 @@ export class ExperimentRunner {
     root.parents = querierGroup.members;
 
     const manager = NodesManager.createFromTree(root, {
-      failureRate: run.failureRate,
-      seed: run.seed,
+      ...run,
       debug: this.debug
     });
     const n = manager.addNode(querierGroup, querierGroup.id);
@@ -77,7 +83,7 @@ export class ExperimentRunner {
     const backupListStart = Object.keys(manager.nodes).length;
     const backups = [];
     for (let i = 0; i < backupListSize; i++) {
-      const backup = new Node({ id: backupListStart + i });
+      const backup = new Node({ id: backupListStart + i, config: manager.config });
       backup.role = NodeRole.Backup;
       manager.nodes[backupListStart + i] = backup;
       backups.push(backup);
@@ -113,7 +119,7 @@ export class ExperimentRunner {
             new Message(
               MessageType.ContributionTimeout,
               0,
-              3 * MAX_LATENCY,
+              3 * run.maxLatency,
               aggregator.id,
               aggregator.id,
               {}
@@ -124,7 +130,7 @@ export class ExperimentRunner {
             new Message(
               MessageType.ContributionTimeout,
               0,
-              2 * MAX_LATENCY,
+              2 * run.maxLatency,
               member,
               member,
               {}

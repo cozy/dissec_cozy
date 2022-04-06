@@ -1,4 +1,3 @@
-import { HEALTH_CHECK_PERIOD, MAX_LATENCY } from '../manager'
 import { Message, MessageType } from '../message'
 import { Node, NodeRole } from '../node'
 
@@ -40,7 +39,7 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
     new Message(
       MessageType.HealthCheckTimeout,
       this.localTime,
-      this.localTime + 2 * MAX_LATENCY,
+      this.localTime + 2 * this.config.maxLatency,
       this.id,
       this.id,
       {}
@@ -52,7 +51,7 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
     new Message(
       MessageType.RequestHealthChecks,
       this.localTime,
-      this.localTime + HEALTH_CHECK_PERIOD,
+      this.localTime + this.config.healthCheckPeriod,
       this.id,
       this.id,
       {}

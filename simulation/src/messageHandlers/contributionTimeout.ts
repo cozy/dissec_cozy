@@ -1,4 +1,3 @@
-import { MAX_LATENCY } from '../manager'
 import { Message, MessageType } from '../message'
 import { arrayEquals, Node } from '../node'
 
@@ -117,7 +116,7 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
       new Message(
         MessageType.ConfirmContributors,
         this.localTime,
-        this.localTime + 2 * MAX_LATENCY, // wait for a back and forth with the first member
+        this.localTime + 2 * this.config.maxLatency, // wait for a back and forth with the first member
         this.id,
         this.id,
         { contributors: this.contributorsList[this.id] }

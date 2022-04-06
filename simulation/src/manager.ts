@@ -1,21 +1,24 @@
 import cloneDeep from 'lodash/cloneDeep'
 
+import { RunConfig } from './experimentRunner'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import { Generator } from './random'
 import TreeNode from './treeNode'
 
-export const AVERAGE_LATENCY = 100 // Average time between emission and reception of a message
-export const MAX_LATENCY = 8 * AVERAGE_LATENCY // The maximum latency for a message
-export const HEALTH_CHECK_PERIOD = 3 * MAX_LATENCY // Needs to be greater than 2*MAX_LATENCY to avoid confusing new requests with previous answers
-export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
-export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
-export const MULTICAST_SIZE = 5 // Number of nodes contacted simulatneously when looking for a backup
-export const BASE_NOISE = 10000000 // The amplitude of noise
+// export const AVERAGE_LATENCY = 100 // Average time between emission and reception of a message
+// export const MAX_LATENCY = 8 * AVERAGE_LATENCY // The maximum latency for a message
+// export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
+// export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
+// export const HEALTH_CHECK_PERIOD = 3 * MAX_LATENCY // Needs to be greater than 2*MAX_LATENCY to avoid confusing new requests with previous answers
+// export const MULTICAST_SIZE = 5 // Number of nodes contacted simulatneously when looking for a backup
+// export const BASE_NOISE = 10000000 // The amplitude of noise
 
-const DEADLINE = 100 * MAX_LATENCY
+// const DEADLINE = 100 * MAX_LATENCY
 
-export interface ManagerArguments { failureRate: number, seed: string, debug?: boolean }
+export interface ManagerArguments extends RunConfig {
+  debug?: boolean
+}
 
 export class NodesManager {
   debug?: boolean
@@ -25,12 +28,14 @@ export class NodesManager {
   oldMessages: Message[]
   messageCounter: number
   globalTime: number
+  config: ManagerArguments
+  multicastSize: number
   failureRate: number
   lastFailureUpdate: number
   status: StopStatus
   generator: () => number
 
-  constructor (options: ManagerArguments = { failureRate: 0.0002, seed: "42", debug: true }) {
+  constructor (options: ManagerArguments) {
     this.debug = options.debug
     this.nodes = []
     this.querier = 0
@@ -39,12 +44,14 @@ export class NodesManager {
     this.messageCounter = 0
     this.globalTime = 0
     this.lastFailureUpdate = 0
+    this.config = options
+    this.multicastSize = 5
     this.failureRate = options.failureRate
     this.status = StopStatus.Unfinished
     this.generator = Generator.get(options.seed)
   }
 
-  static createFromTree(root: TreeNode, options?: ManagerArguments): NodesManager {
+  static createFromTree(root: TreeNode, options: ManagerArguments): NodesManager {
     const manager = new NodesManager(options)
 
     let i = root.id
@@ -60,7 +67,7 @@ export class NodesManager {
 
   addNode(node: TreeNode, querier?: number): Node {
     if (querier) this.querier = querier
-    this.nodes[node.id] = new Node({ node })
+    this.nodes[node.id] = new Node({ node, config: this.config })
     return this.nodes[node.id]
   }
 
@@ -106,10 +113,10 @@ export class NodesManager {
     const message = this.messages.pop()!
     this.oldMessages.push(message)
 
-    while (this.lastFailureUpdate + AVERAGE_LATENCY <= message.receptionTime) {
+    while (this.lastFailureUpdate + this.config.averageLatency <= message.receptionTime) {
       this.updateFailures()
       // TODO: Find a smarter time step
-      this.lastFailureUpdate += AVERAGE_LATENCY
+      this.lastFailureUpdate += this.config.averageLatency
       this.globalTime = this.lastFailureUpdate
     }
     this.globalTime = message.receptionTime
@@ -124,7 +131,7 @@ export class NodesManager {
           console.log(`#${message.content.targetGroup?.id} did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(e => `#${e} (${this.nodes[e].alive})`)}]; children = [${message.content.targetGroup!.children}]`)
           break;
       }
-    } else if (this.nodes[message.receiverId].localTime > DEADLINE) {
+    } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
       this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
     } else if (this.nodes[message.receiverId].alive) {
       this.globalTime = message?.receptionTime
@@ -140,7 +147,7 @@ export class NodesManager {
   }
 
   private standardLatency(): number {
-    return 2 * AVERAGE_LATENCY * this.generator()
+    return 2 * this.config.averageLatency * this.generator()
   }
 }
 

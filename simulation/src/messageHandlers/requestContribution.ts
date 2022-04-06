@@ -1,4 +1,3 @@
-import { AVERAGE_COMPUTE, AVERAGE_CRYPTO, BASE_NOISE } from '../manager'
 import { Message, MessageType } from '../message'
 import { Node, NodeRole } from '../node'
 import { Generator } from '../random'
@@ -19,11 +18,12 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   this.role = NodeRole.Contributor
 
   // Prepare shares
-  this.localTime += AVERAGE_COMPUTE
+  this.localTime += this.config.averageCompute
   this.shares = Array(this.node.members.length).fill(0)
   let accumulator = 0
   for (let i = 0; i < this.node.members.length - 1; i++) {
-    const noise = BASE_NOISE * generator()
+    // TODO: Use a more general noising process
+    const noise = 1000000000 * generator()
     this.shares[i] = this.secretValue + noise
     accumulator += noise
   }
@@ -31,7 +31,7 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   for (const parent of receivedMessage.content.parents) {
     // Open a secure channel
-    this.localTime += AVERAGE_CRYPTO
+    this.localTime += this.config.averageCrypto
 
     // Send data to parent
     messages.push(
