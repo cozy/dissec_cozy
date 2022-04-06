@@ -66,8 +66,7 @@ export class NodesManager {
 
   updateFailures() {
     for (const node of Object.values(this.nodes)) {
-      // TODO: Currently only cause failures on aggregators, not contributors
-      if (node.alive && (!node.node || node.node.children.length !== 0)) {
+      if (node.alive) {
         // Querier can't die
         if (this.generator() < this.failureRate && node.role !== NodeRole.Querier) {
           const newFailure = node.alive
@@ -75,7 +74,7 @@ export class NodesManager {
           node.alive = false
           if (newFailure) {
             node.deathTime = this.globalTime
-            if (node.node && node.node.members
+            if (node.node && node.node.children.length !== 0 && node.node.members
               .map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking)
               .every(Boolean)
             ) {

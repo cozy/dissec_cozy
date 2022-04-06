@@ -1,5 +1,5 @@
 import { Message, MessageType } from '../message'
-import { Node } from '../node'
+import { arrayEquals, Node } from '../node'
 
 export function handleConfirmContributors(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -16,10 +16,10 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     )
   }
 
-  // Storing the final list from the first member
-  this.contributorsList[this.id] = receivedMessage.content.contributors
-
   if (!this.finishedWorking) {
+    // Storing the final list from the first member
+    this.contributorsList[this.id] = receivedMessage.content.contributors
+
     this.finishedWorking = true
     messages.push(
       new Message(
@@ -31,10 +31,35 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
         {
           aggregate: {
             counter: this.contributorsList[this.id].length,
-            data: Object.values(this.contributions).reduce(
+            data: this.contributorsList[this.id].map(e => this.contributions[e]).reduce(
               (prev, curr) => prev + curr,
               0
-            )
+            ),
+            id: this.aggregationId(this.contributorsList[this.id].map(String))
+          }
+        }
+      )
+    )
+  } else if (!arrayEquals(this.contributorsList[this.id], receivedMessage.content.contributors)) {
+    // Contributors have changed
+    // Updating the contributors list
+    this.contributorsList[this.id] = receivedMessage.content.contributors
+
+    messages.push(
+      new Message(
+        MessageType.SendAggregate,
+        this.localTime,
+        0, // Don't specify time to let the manager add the latency
+        this.id,
+        this.node.parents[this.node.members.indexOf(this.id)],
+        {
+          aggregate: {
+            counter: this.contributorsList[this.id].length,
+            data: this.contributorsList[this.id].map(e => this.contributions[e]).reduce(
+              (prev, curr) => prev + curr,
+              0
+            ),
+            id: this.aggregationId(this.contributorsList[this.id].map(String))
           }
         }
       )

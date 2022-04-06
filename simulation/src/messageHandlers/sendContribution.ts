@@ -29,8 +29,9 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
             counter: this.contributorsList[this.id].length,
             data: Object.values(this.contributions).reduce(
               (prev, curr) => prev + curr
-            )
-          }
+            ),
+            id: this.aggregationId(this.expectedContributors.map(String))
+          },
         }
       )
     )

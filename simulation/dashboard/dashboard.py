@@ -79,6 +79,10 @@ if __name__ == "__main__":
         data, x="status", y="observed_failure_rate", hover_name="type"
     )
     messages_histogram = px.histogram(data, x="receiver_time")
+    failure_histogram = px.histogram(data[data["delivered"] == True], x="failure_rate")
+    observed_failure_histogram = px.histogram(
+        data[data["delivered"] == True], x="observed_failure_rate"
+    )
 
     app.layout = html.Div(
         children=[
@@ -226,6 +230,20 @@ if __name__ == "__main__":
                     dcc.Graph(
                         id="observed_failure_rate_per_status",
                         figure=observed_failure_rate_per_status_fig,
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(id="failure_rate_hist", figure=failure_histogram),
+                    dcc.Graph(
+                        id="observed_failure_hist",
+                        figure=observed_failure_histogram,
                     ),
                 ],
             ),

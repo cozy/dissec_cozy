@@ -37,6 +37,8 @@ export class ExperimentRunner {
       console.log();
     }
 
+    console.log("Success rate:", results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
+
     if (!fs.existsSync(outputPath)) {
       const components = outputPath.split('/');
       fs.mkdirSync(outputPath.replace(components[components.length - 1], ''), {

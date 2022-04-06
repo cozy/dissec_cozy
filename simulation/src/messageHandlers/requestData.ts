@@ -41,8 +41,9 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
             counter: this.contributorsList[this.id].length,
             data: this.contributorsList[this.id].map(e => this.contributions[e]).reduce(
               (prev, curr) => prev + curr
-            )
-          }
+            ),
+            id: this.aggregationId(this.contributorsList[this.id].map(String))
+          },
         }
       )
     )
@@ -52,9 +53,11 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
 
     // Do not send data if they have not yet been received
     // Occurs when the node is a backup that has not yet received data from its children
-    if (children.length === 0 || children.map(child => this.aggregates[child]).some(e => !e))
+    if (children.length === 0 || children.map(child => this.aggregates[child]).some(e => !e)) {
       return messages
+    }
 
+    const aggregationId = this.aggregationId(children.map(child => this.aggregates[child].id))
     messages.push(
       new Message(
         MessageType.SendAggregate,
@@ -65,8 +68,9 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
         {
           aggregate: children.map(child => this.aggregates[child]).reduce((prev, curr) => ({
             counter: prev.counter + curr.counter,
-            data: prev.data + curr.data
-          }))
+            data: prev.data + curr.data,
+            id: aggregationId
+          })),
         }
       )
     )

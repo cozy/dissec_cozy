@@ -9,9 +9,45 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
     throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
   }
 
-  if (this.expectedContributors.length !== 0 && arrayEquals(this.expectedContributors, this.contributorsList[this.id])) {
-    // No need to synchronize because all contributors answered
-    return []
+  if (this.expectedContributors.length !== 0) {
+    if (!arrayEquals(this.expectedContributors, this.contributorsList[this.id])) {
+      // Inform other members
+      for (const member of this.node.members.filter(e => e !== this.id)) {
+        messages.push(
+          new Message(
+            MessageType.ConfirmContributors,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            member,
+            { contributors: this.contributorsList[this.id] }
+          )
+        )
+      }
+
+      messages.push(
+        new Message(
+          MessageType.SendAggregate,
+          this.localTime,
+          0, // Don't specify time to let the manager add the latency
+          this.id,
+          this.node.parents[this.node.members.indexOf(this.id)],
+          {
+            aggregate: {
+              counter: this.contributorsList[this.id].length,
+              data: this.contributorsList[this.id].map(contributor => this.contributions[contributor]).reduce(
+                (prev, curr) => prev + curr
+              ),
+              id: this.aggregationId(this.contributorsList[this.id].map(String))
+            }
+          }
+        )
+      )
+
+      this.finishedWorking = true
+    }
+
+    return messages
   }
 
   if (this.id === this.node.members[0]) {
@@ -55,11 +91,14 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
             counter: this.contributorsList[this.id].length,
             data: this.contributorsList[this.id].map(contributor => this.contributions[contributor]).reduce(
               (prev, curr) => prev + curr
-            )
+            ),
+            id: this.aggregationId(finalContributors.map(String))
           }
         }
       )
     )
+
+    this.finishedWorking = true
   } else {
     // Group members send their contributors list to the first member
     messages.push(

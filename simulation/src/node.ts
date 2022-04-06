@@ -2,7 +2,7 @@ import cloneDeep from 'lodash/cloneDeep'
 import isEqual from 'lodash/isEqual'
 
 import { MAX_LATENCY, MULTICAST_SIZE } from './manager'
-import { Message, MessageType, StopStatus } from './message'
+import { Aggregate, Message, MessageType, StopStatus } from './message'
 import {
   handleBackupResponse,
   handleConfirmBackup,
@@ -51,7 +51,7 @@ export class Node {
   contributorsList: { [nodeId: number]: number[] }
   contributions: { [contributor: string]: number }
   expectedContributors: number[]
-  aggregates: { [nodeId: number]: { counter: number; data: number } }
+  aggregates: { [nodeId: number]: Aggregate }
 
   handleRequestContribution = handleRequestContribution
   handleSendContribution = handleSendContribution
@@ -89,6 +89,14 @@ export class Node {
     this.aggregates = {}
   }
 
+  aggregationId(child: string[]): string {
+    const s = cloneDeep(child).sort().join('-')
+    return s.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0)
+      return a & a
+    }, 0).toString()
+  }
+
   receiveMessage(receivedMessage: Message, debug?: boolean): Message[] {
     const messages: Message[] = []
 
@@ -98,8 +106,7 @@ export class Node {
     if (debug) {
       const nodeOfInterest: number[] = [
         // 193, 226, 225, 420, 328, 192, 193, 194, 195,196,197
-        // 0, 1, 193, 240, 226, 241, 255
-        0, 1, 2, 5, 67, 114, 255, 3, 66, 129, 192, 415, 313, 373
+        255, 0, 1, 2, 129, 147, 148, 149, 193, 195, 226, 241, 255, 210, 225, 240, 317
       ]
       const filters: MessageType[] = [
         // MessageType.CheckHealth,
