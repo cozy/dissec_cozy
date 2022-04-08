@@ -1,3 +1,5 @@
+import cloneDeep from "lodash/cloneDeep"
+
 class TreeNode {
   id: number
   parents: number[]
@@ -18,6 +20,10 @@ class TreeNode {
     node.members = copy.members
     node.children = source.children.map(e => this.fromCopy(e, e.id))
     return node
+  }
+
+  copy(): TreeNode {
+    return cloneDeep(this)
   }
 
   /**

@@ -35,7 +35,8 @@ export enum StopStatus {
   GroupDead = "GroupDead",
   SimultaneousFailures = "SimultaneousFailures",
   ExceededDeadline = "ExceededDeadline",
-  BadResult = "BadResult"
+  BadResult = "BadResult",
+  AllContributorsDead = "AllContributorsDead"
 }
 
 export interface Aggregate {
@@ -47,6 +48,7 @@ export interface Aggregate {
 export interface MessageContent {
   status?: StopStatus
   parents?: number[]
+  members?: number[]
   share?: number
   contributors?: number[]
   aggregate?: Aggregate
@@ -209,7 +211,7 @@ export class Message {
         break
       case MessageType.NotifyGroupTimeout:
         console.log(
-          `${tag} has timed out on the group notification. New children are [${receiver.node?.children.map(e => e.members[position!])}]`
+          `${tag} has timed out on the group notification. New children are [${receiver.node?.children.map(e => e.members[position!])}] ${!receiver.node?.children.length ? "No known children" : "Ignored"}`
         )
         break
       case MessageType.SendChildren:

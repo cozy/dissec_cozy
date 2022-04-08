@@ -17,6 +17,8 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   // TODO: Set contributors during initialization
   this.role = NodeRole.Contributor
 
+  // Verifying the parent's certificate and signature
+  this.localTime += 2 * this.config.averageCrypto
   // Prepare shares
   this.localTime += this.config.averageCompute
   this.shares = Array(this.node.members.length).fill(0)

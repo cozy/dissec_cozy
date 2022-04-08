@@ -18,7 +18,8 @@ import {
   handleSendContribution,
   handleShareContributors,
 } from './messageHandlers'
-import { createGenerator } from './random'
+import { handleContinueMulticast } from './messageHandlers/continueMulticast'
+import { handleNotifyGroup } from './messageHandlers/notifyGroup'
 import TreeNode from './treeNode'
 
 export const arrayEquals = (a: number[], b: number[]): boolean => {
@@ -53,6 +54,7 @@ export class Node {
   contributions: { [contributor: string]: number }
   expectedContributors: number[]
   aggregates: { [nodeId: number]: Aggregate }
+  lastSentAggregateId: string
 
   handleRequestContribution = handleRequestContribution
   handleSendContribution = handleSendContribution
@@ -63,8 +65,10 @@ export class Node {
   handleRequestHealthChecks = handleRequestHealthChecks
   handleHealthCheckTimeout = handleHealthCheckTimeout
   handleContactBackup = handleContactBackup
+  handleContinueMulticast = handleContinueMulticast
   handleBackupResponse = handleBackupResponse
   handleConfirmBackup = handleConfirmBackup
+  handleNotifyGroup = handleNotifyGroup
   handleSendChildren = handleSendChildren
   handleRequestData = handleRequestData
 
@@ -72,7 +76,7 @@ export class Node {
     if (!node && !id) return //throw new Error("Initializing a node without id")
 
     this.id = (node ? node.id : id)!
-    this.node = node
+    this.node = cloneDeep(node)
     this.config = config
     this.localTime = 0
     this.alive = true
@@ -99,16 +103,23 @@ export class Node {
     }, 0).toString()
   }
 
-  receiveMessage(receivedMessage: Message, debug?: boolean): Message[] {
+  receiveMessage(receivedMessage: Message): Message[] {
     const messages: Message[] = []
+
+    // When the node is busy, messages are put back into the queue at the earliest available time
+    if (receivedMessage.receptionTime < this.localTime) {
+      // console.log("bounced", this.id, receivedMessage.emitterId, this.localTime, receivedMessage.receptionTime);
+      receivedMessage.receptionTime = this.localTime
+      return [receivedMessage]
+    }
 
     receivedMessage.delivered = true
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
-    if (debug) {
+    if (this.config.debug) {
       const nodeOfInterest: number[] = [
-        // 193, 226, 225, 420, 328, 192, 193, 194, 195,196,197
-        255, 0, 1, 2, 129, 147, 148, 149, 193, 195, 226, 241, 255, 210, 225, 240, 317
+        255, 0,1,2,3, 4,5,51, 53, 52, 415, 401, 429, 359
+        // 255, 0, 1, 2, 3, 4, 6, 22, 66, 129, 147, 148, 149, 193, 195, 226, 241, 255, 210, 225, 240, 267, 317, 359, 376
       ]
       const filters: MessageType[] = [
         // MessageType.CheckHealth,
@@ -145,6 +156,9 @@ export class Node {
         messages.push(...this.handleRequestHealthChecks(receivedMessage))
         break
       case MessageType.CheckHealth:
+        if(this.node && receivedMessage.content.parents)
+          this.node.parents = receivedMessage.content.parents
+
         messages.push(
           new Message(
             MessageType.ConfirmHealth,
@@ -152,7 +166,7 @@ export class Node {
             0, // Don't specify time to let the manager add the latency
             this.id,
             receivedMessage.emitterId,
-            {}
+            { members: this.node?.members }
           )
         )
         break
@@ -163,63 +177,7 @@ export class Node {
         messages.push(...this.handleHealthCheckTimeout(receivedMessage))
         break
       case MessageType.ContinueMulticast:
-        if (this.continueMulticast) {
-          if (!this.node) {
-            throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-          }
-          if (receivedMessage.content.failedNode === undefined) {
-            throw new Error(`${this.id} did not receive failed node`)
-          }
-
-          // Multicasting to a group of the backup list
-          const sorterGenerator = createGenerator(this.id.toString())
-          const multicastTargets = receivedMessage.content.remainingBackups!
-            .sort(() => sorterGenerator() - 0.5)
-            .slice(0, this.config.multicastSize)
-
-          for (const backup of multicastTargets) {
-            const targetGroup = this.node.children.filter(e =>
-              e.members.includes(receivedMessage.content.failedNode!)
-            )[0]
-
-            messages.push(
-              new Message(
-                MessageType.ContactBackup,
-                this.localTime,
-                0, // ASAP
-                this.id,
-                backup,
-                {
-                  failedNode: receivedMessage.content.failedNode,
-                  targetGroup
-                }
-              )
-            )
-          }
-
-          const remainingBackups = this.backupList.filter(e =>
-            !multicastTargets.includes(e)
-          )
-          if (remainingBackups.length > 0) {
-            // Reschedule a multicast if there are other backups available and the previously contacted ones didn't answer
-            this.continueMulticast = true
-            messages.push(
-              new Message(
-                MessageType.ContinueMulticast,
-                this.localTime,
-                this.localTime + 2 * this.config.maxLatency,
-                this.id,
-                this.id,
-                {
-                  remainingBackups,
-                  failedNode: receivedMessage.content.failedNode
-                }
-              )
-            )
-          } else {
-            throw new Error("Ran out of backups...")
-          }
-        }
+        messages.push(...this.handleContinueMulticast(receivedMessage))
         break
       case MessageType.ContactBackup:
         messages.push(...this.handleContactBackup(receivedMessage))
@@ -231,36 +189,7 @@ export class Node {
         messages.push(...this.handleConfirmBackup(receivedMessage))
         break
       case MessageType.NotifyGroup:
-        // NotifyGroup messages are ignored if the node does not know its part of the tree.
-        // This occurs when 2 nodes are being replaced concurrently in the same group.
-        if (this.node && this.node.children.length > 0) {
-          if (!receivedMessage.content.targetGroup) {
-            throw new Error(`#${this.id} did not receive targetGroup`)
-          }
-          if (receivedMessage.content.failedNode === undefined) {
-            throw new Error(`#${this.id} did not receive failed node from #${receivedMessage.emitterId}`)
-          }
-          // The node has been notified by a backup that it is joining the group
-          // Compare the local members with the received one, keep the newest version
-          this.node.members = receivedMessage.content.targetGroup!.members
-
-          messages.push(
-            new Message(
-              MessageType.SendChildren,
-              this.localTime,
-              0, // ASAP
-              this.id,
-              receivedMessage.emitterId,
-              {
-                targetGroup: this.node,
-                children: this.node.children,
-                role: this.role,
-                backupList: this.backupList,
-                contributors: this.contributorsList[this.id]
-              }
-            )
-          )
-        }
+        messages.push(...this.handleNotifyGroup(receivedMessage))
         break
       case MessageType.NotifyGroupTimeout:
         if (!this.node?.children.length) {

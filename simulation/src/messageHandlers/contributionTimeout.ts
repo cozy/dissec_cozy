@@ -10,6 +10,21 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
 
   if (this.expectedContributors.length !== 0) {
     if (!arrayEquals(this.expectedContributors, this.contributorsList[this.id])) {
+      // Contributors changed
+      if (this.contributorsList[this.id].length === 0) {
+        console.log(
+          this.contributorsList[this.id],
+          this.expectedContributors,
+          this.node.children.flatMap(e => e.members)
+        )
+        // All contributors are dead, the protocol has to stop
+        // return [
+        //   new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+        //     status: StopStatus.AllContributorsDead
+        //   })
+        // ]
+      }
+
       // Inform other members
       for (const member of this.node.members.filter(e => e !== this.id)) {
         messages.push(
@@ -24,6 +39,7 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
         )
       }
 
+      this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id].map(String))
       messages.push(
         new Message(
           MessageType.SendAggregate,
@@ -34,9 +50,9 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
           {
             aggregate: {
               counter: this.contributorsList[this.id].length,
-              data: this.contributorsList[this.id].map(contributor => this.contributions[contributor]).reduce(
-                (prev, curr) => prev + curr
-              ),
+              data: this.contributorsList[this.id]
+                .map(contributor => this.contributions[contributor])
+                .reduce((prev, curr) => prev + curr),
               id: this.aggregationId(this.contributorsList[this.id].map(String))
             }
           }
@@ -57,7 +73,7 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
       // It only looks at contributors list received, preventing that a failed members stops this process
       if (
         this.node.members
-          .map(member => this.contributorsList[member] ? this.contributorsList[member].includes(contributor) : true)
+          .map(member => (this.contributorsList[member] ? this.contributorsList[member].includes(contributor) : true))
           .every(Boolean)
       ) {
         finalContributors.push(contributor)
@@ -78,6 +94,7 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
       )
     }
 
+    this.lastSentAggregateId = this.aggregationId(finalContributors.map(String))
     messages.push(
       new Message(
         MessageType.SendAggregate,
@@ -88,9 +105,9 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
         {
           aggregate: {
             counter: this.contributorsList[this.id].length,
-            data: this.contributorsList[this.id].map(contributor => this.contributions[contributor]).reduce(
-              (prev, curr) => prev + curr
-            ),
+            data: this.contributorsList[this.id]
+              .map(contributor => this.contributions[contributor])
+              .reduce((prev, curr) => prev + curr),
             id: this.aggregationId(finalContributors.map(String))
           }
         }
@@ -116,7 +133,7 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
       new Message(
         MessageType.ConfirmContributors,
         this.localTime,
-        this.localTime + 2 * this.config.maxLatency, // wait for a back and forth with the first member
+        this.localTime + 2 * this.config.averageLatency * this.config.maxToAverageRatio, // wait for a back and forth with the first member
         this.id,
         this.id,
         { contributors: this.contributorsList[this.id] }

@@ -5,11 +5,13 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
   const messages: Message[] = []
 
   if (!this.node) {
-    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+    throw new Error(`${this.id} is not in the tree`)
   }
   if (!receivedMessage.content.aggregate) {
     throw new Error('Received an empty aggregate')
   }
+
+  // Cryptographic verification have been executed during the tree setup except for backups
 
   if (this.role === NodeRole.Querier) {
     this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
@@ -63,6 +65,7 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       // Stop regularly checking children's health
       this.finishedWorking = true
 
+      this.lastSentAggregateId = aggregate.id
       messages.push(
         new Message(
           MessageType.SendAggregate,

@@ -73,10 +73,10 @@ if __name__ == "__main__":
         data, x="receiver_time", y="receiver_id", color="type", hover_name="type"
     )
     failure_rate_per_status_fig = px.box(
-        data, x="status", y="failure_rate", hover_name="type"
+        data, x="status", y="failure_rate", hover_name="type", points="all"
     )
     observed_failure_rate_per_status_fig = px.box(
-        data, x="status", y="observed_failure_rate", hover_name="type"
+        data, x="status", y="observed_failure_rate", hover_name="type", points="all"
     )
     messages_histogram = px.histogram(data, x="receiver_time")
     failure_histogram = px.histogram(data[data["delivered"] == True], x="failure_rate")
@@ -155,8 +155,8 @@ if __name__ == "__main__":
                     html.H3("Protocol executions:"),
                     dcc.Checklist(
                         id="runs-list",
-                        options=run_ids,
-                        value=run_ids,
+                        options=["All"] + [i for i in run_ids],
+                        value=[],
                         style={
                             "display": "flex",
                             "flex-wrap": "wrap",
@@ -296,7 +296,8 @@ if __name__ == "__main__":
                 ]
             )
         ]
-        df = df[df["run_id"].isin(selected_run_ids)]
+        if "All" not in selected_run_ids:
+            df = df[df["run_id"].isin(selected_run_ids)]
         df = df[df["type"].isin(selected_types)]
 
         new_message_timeline = px.scatter(

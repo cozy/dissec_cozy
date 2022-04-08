@@ -85,9 +85,10 @@ export class NodesManager {
               .map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking)
               .every(Boolean)
             ) {
-              console.log(`Group of node ${node.id} ([${node.node.members}]) died at [${node.node.members.map(m => this.nodes[m].deathTime)}]`)
-              this.messages.push(new Message(MessageType.StopSimulator, 0, -1, this.querier, this.querier, { status: StopStatus.GroupDead }))
               // All members of the group are dead, stop the run because it's dead
+              this.messages.push(
+                new Message(MessageType.StopSimulator, 0, -1, this.querier, this.querier, { status: StopStatus.GroupDead, targetGroup: node.node })
+              )
             }
           }
         }
@@ -128,7 +129,10 @@ export class NodesManager {
 
       switch (this.status) {
         case StopStatus.SimultaneousFailures:
-          console.log(`#${message.content.targetGroup?.id} did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(e => `#${e} (${this.nodes[e].alive})`)}]; children = [${message.content.targetGroup!.children}]`)
+          console.log(`#${message.content.targetGroup?.id} did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(e => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`)}]; children = [${message.content.targetGroup!.children}]`)
+          break
+        case StopStatus.GroupDead:
+          console.log(`Group of node [${message.content.targetGroup!.members}]) died at [${message.content.targetGroup!.members.map(m => this.nodes[m].deathTime)}]`)
           break;
       }
     } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
@@ -137,13 +141,27 @@ export class NodesManager {
       this.globalTime = message?.receptionTime
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId].receiveMessage(
-        message,
-        this.debug
+        message
       )
       for (const msg of resultingMessages) {
         this.transmitMessage(msg)
       }
     }
+  }
+
+  displayAggregateId() {
+    const querier = Object.values(this.nodes).filter(e => e.role === NodeRole.Querier)[0]
+
+    const log = (node: Node) => {
+      (node.node?.children.length || 0) > 0 && console.log(`Node #${node.id} (members=${node.node!.members}) ID=[${node.node!.members.map(e => this.nodes[e].lastSentAggregateId)}]`)
+      for (const child of node.node!.children) {
+        console.group()
+        log(this.nodes[child.id])
+      }
+      console.groupEnd()
+    }
+
+    log(querier)
   }
 
   private standardLatency(): number {

@@ -28,7 +28,7 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
       0, // Don't specify time to let the manager add the latency
       this.id,
       child,
-      {}
+      { parents: this.node.members }
     )
     messages.push(msg)
     this.ongoingHealthChecks[msg.receiverId] = true
@@ -39,7 +39,7 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
     new Message(
       MessageType.HealthCheckTimeout,
       this.localTime,
-      this.localTime + 2 * this.config.maxLatency,
+      this.localTime + 2 * this.config.averageLatency * this.config.maxToAverageRatio,
       this.id,
       this.id,
       {}
@@ -51,7 +51,7 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
     new Message(
       MessageType.RequestHealthChecks,
       this.localTime,
-      this.localTime + this.config.healthCheckPeriod,
+      this.localTime + this.config.healthCheckPeriod * this.config.maxToAverageRatio * this.config.averageLatency,
       this.id,
       this.id,
       {}
