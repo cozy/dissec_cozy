@@ -18,9 +18,9 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   this.role = NodeRole.Contributor
 
   // Verifying the parent's certificate and signature
-  this.localTime += 2 * this.config.averageCrypto
+  this.localTime += 2 * this.config.averageCryptoTime
   // Prepare shares
-  this.localTime += this.config.averageCompute
+  this.localTime += this.config.averageComputeTime
   this.shares = Array(this.node.members.length).fill(0)
   let accumulator = 0
   for (let i = 0; i < this.node.members.length - 1; i++) {
@@ -33,7 +33,7 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   for (const parent of receivedMessage.content.parents) {
     // Open a secure channel
-    this.localTime += this.config.averageCrypto
+    this.localTime += this.config.averageCryptoTime
 
     // Send data to parent
     messages.push(

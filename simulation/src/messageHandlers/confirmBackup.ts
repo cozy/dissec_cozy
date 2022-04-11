@@ -15,7 +15,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     }
 
     // Open the encryted channel with the parent and sign the notification for members
-    this.localTime += 2 * this.config.averageCrypto
+    this.localTime += 2 * this.config.averageCryptoTime
 
     // The node is still available and the parent wants it as a child
     this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup, this.id)

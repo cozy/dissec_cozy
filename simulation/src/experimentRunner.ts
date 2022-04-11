@@ -8,8 +8,8 @@ import TreeNode from './treeNode'
 export interface RunConfig {
   averageLatency: number
   maxToAverageRatio: number
-  averageCrypto: number
-  averageCompute: number
+  averageCryptoTime: number
+  averageComputeTime: number
   healthCheckPeriod: number
   multicastSize: number
   deadline: number
@@ -110,7 +110,7 @@ export class ExperimentRunner {
       for (const member of aggregator.members) {
         // TODO: Timeouts should take into account the broadcasts.
         const contributorLatency =
-          (2 * run.averageLatency + run.averageCrypto * run.groupSize * 3) * run.maxToAverageRatio
+          (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio
         // Currently supposes that contributors are reached in 1 hop
         if (member === aggregator.id) {
           // The first member of the group also waits for the rest of the group

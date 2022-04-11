@@ -1,4 +1,4 @@
-import cloneDeep from "lodash/cloneDeep"
+import cloneDeep from 'lodash/cloneDeep'
 
 class TreeNode {
   id: number
@@ -35,12 +35,7 @@ class TreeNode {
    * @param id The id of the first member of the root
    * @returns The number of node created and the root of the tree
    */
-  static createTree(
-    depth: number,
-    fanout: number,
-    groupSize: number,
-    id: number
-  ): { nextId: number; node: TreeNode } {
+  static createTree(depth: number, fanout: number, groupSize: number, id: number): { nextId: number; node: TreeNode } {
     const node = new TreeNode(id)
     node.members = Array(groupSize)
       .fill(id)
@@ -48,12 +43,7 @@ class TreeNode {
     if (depth > 0) {
       let currentId = id + groupSize
       for (let i = 0; i < fanout; i++) {
-        const { nextId, node: child } = TreeNode.createTree(
-          depth - 1,
-          fanout,
-          groupSize,
-          currentId
-        )
+        const { nextId, node: child } = TreeNode.createTree(depth - 1, fanout, groupSize, currentId)
         child.parents = node.members
         node.children.push(child)
         currentId = nextId
@@ -90,10 +80,10 @@ class TreeNode {
   }
 
   selectNodesByDepth(depth: number): TreeNode[] {
-    if(depth === 0) {
+    if (depth === 0) {
       return [this]
     } else {
-      return this.children.flatMap(child => child.selectNodesByDepth(depth-1))
+      return this.children.flatMap(child => child.selectNodesByDepth(depth - 1))
     }
   }
 

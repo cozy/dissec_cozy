@@ -1,4 +1,4 @@
-import { Message, MessageType } from '../message'
+import { Message, MessageType, StopStatus } from '../message'
 import { arrayEquals, Node } from '../node'
 
 export function handleContributionTimeout(this: Node, receivedMessage: Message): Message[] {
@@ -12,17 +12,12 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
     if (!arrayEquals(this.expectedContributors, this.contributorsList[this.id])) {
       // Contributors changed
       if (this.contributorsList[this.id].length === 0) {
-        console.log(
-          this.contributorsList[this.id],
-          this.expectedContributors,
-          this.node.children.flatMap(e => e.members)
-        )
         // All contributors are dead, the protocol has to stop
-        // return [
-        //   new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
-        //     status: StopStatus.AllContributorsDead
-        //   })
-        // ]
+        return [
+          new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+            status: StopStatus.AllContributorsDead
+          })
+        ]
       }
 
       // Inform other members

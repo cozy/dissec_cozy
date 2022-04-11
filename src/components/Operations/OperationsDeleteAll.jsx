@@ -25,13 +25,7 @@ export const OperationsDeleteAll = props => {
   return (
     <div>
       <h2>Delete all Operation:</h2>
-      <Button
-        onClick={handleDelete}
-        busy={isWorking}
-        theme="danger"
-        label="delete all"
-        size="large"
-      />
+      <Button onClick={handleDelete} busy={isWorking} theme="danger" label="delete all" size="large" />
     </div>
   )
 }

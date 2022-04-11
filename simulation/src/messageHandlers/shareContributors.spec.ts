@@ -1,6 +1,6 @@
-import NodesManager from "../manager"
-import Message, { MessageType } from "../message"
-import TreeNode from "../treeNode"
+import NodesManager from '../manager'
+import Message, { MessageType } from '../message'
+import TreeNode from '../treeNode'
 
 describe('Share contributors', () => {
   const depth = 3
@@ -22,14 +22,9 @@ describe('Share contributors', () => {
     const treenode = root.children[0]
     const node = manager.nodes[root.id]
 
-    node.receiveMessage(new Message(
-      MessageType.ShareContributors,
-      0,
-      receptionTime,
-      treenode.id,
-      root.id,
-      { contributors }
-    ))
+    node.receiveMessage(
+      new Message(MessageType.ShareContributors, 0, receptionTime, treenode.id, root.id, { contributors })
+    )
 
     expect(node.contributorsList[treenode.id]).toStrictEqual(contributors)
   })
@@ -37,14 +32,7 @@ describe('Share contributors', () => {
   it('should fail when the node does not receive contributors', async () => {
     const receptionTime = 10
     const treenode = root.children[0]
-    const message = new Message(
-      MessageType.ShareContributors,
-      0,
-      receptionTime,
-      root.id,
-      treenode.id,
-      {}
-    )
+    const message = new Message(MessageType.ShareContributors, 0, receptionTime, root.id, treenode.id, {})
     const node = manager.nodes[treenode.id]
     expect(() => node.receiveMessage(message)).toThrow()
   })

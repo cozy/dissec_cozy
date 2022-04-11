@@ -1,6 +1,6 @@
-import NodesManager, { MULTICAST_SIZE } from "../manager"
-import { Message, MessageType } from "../message"
-import TreeNode from "../treeNode"
+import NodesManager, { MULTICAST_SIZE } from '../manager'
+import { Message, MessageType } from '../message'
+import TreeNode from '../treeNode'
 
 describe('Health check timeout', () => {
   const depth = 3
@@ -20,19 +20,16 @@ describe('Health check timeout', () => {
     const receptionTime = 10
     const treenode = root.children[0]
     const node = manager.nodes[treenode.id]
-    node.backupList = Array(20).fill(0).map((_, i) => i)
+    node.backupList = Array(20)
+      .fill(0)
+      .map((_, i) => i)
 
     const toCheck = { 10: true, 20: true }
     node.ongoingHealthChecks = JSON.parse(JSON.stringify(toCheck))
 
-    const messages = node.receiveMessage(new Message(
-      MessageType.HealthCheckTimeout,
-      0,
-      receptionTime,
-      node.id,
-      node.id,
-      {}
-    ))
+    const messages = node.receiveMessage(
+      new Message(MessageType.HealthCheckTimeout, 0, receptionTime, node.id, node.id, {})
+    )
 
     expect(messages.length).toBe(Object.values(toCheck).length * (MULTICAST_SIZE + 1))
   })
@@ -42,14 +39,9 @@ describe('Health check timeout', () => {
     const treenode = root.children[0]
     const node = manager.nodes[treenode.id]
 
-    const messages = node.receiveMessage(new Message(
-      MessageType.HealthCheckTimeout,
-      0,
-      receptionTime,
-      node.id,
-      node.id,
-      {}
-    ))
+    const messages = node.receiveMessage(
+      new Message(MessageType.HealthCheckTimeout, 0, receptionTime, node.id, node.id, {})
+    )
 
     expect(messages.length).toBe(0)
   })
@@ -57,14 +49,7 @@ describe('Health check timeout', () => {
   it('should fail when the node does not know the tree', async () => {
     const receptionTime = 10
     const treenode = root.children[0]
-    const message = new Message(
-      MessageType.HealthCheckTimeout,
-      0,
-      receptionTime,
-      root.id,
-      treenode.id,
-      {}
-    )
+    const message = new Message(MessageType.HealthCheckTimeout, 0, receptionTime, root.id, treenode.id, {})
     const node = manager.nodes[treenode.id]
     node.node = undefined
     expect(() => node.receiveMessage(message)).toThrow()

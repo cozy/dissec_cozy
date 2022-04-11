@@ -8,13 +8,7 @@ import { Model } from './model'
 import dissecConfig from '../../../dissec.config.json'
 
 export const contribution = async () => {
-  const {
-    parents,
-    nbShares,
-    pretrained,
-    executionId,
-    filters = {}
-  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
+  const { parents, nbShares, pretrained, executionId, filters = {} } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   if (parents.length !== nbShares) {
     return

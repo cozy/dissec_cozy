@@ -6,16 +6,6 @@ import Node, { NodeRole } from './node'
 import { Generator } from './random'
 import TreeNode from './treeNode'
 
-// export const AVERAGE_LATENCY = 100 // Average time between emission and reception of a message
-// export const MAX_LATENCY = 8 * AVERAGE_LATENCY // The maximum latency for a message
-// export const AVERAGE_CRYPTO = 100 // Average cost of an asym. crypto op.
-// export const AVERAGE_COMPUTE = 100 // Average cost of local learning and data splitting
-// export const HEALTH_CHECK_PERIOD = 3 * MAX_LATENCY // Needs to be greater than 2*MAX_LATENCY to avoid confusing new requests with previous answers
-// export const MULTICAST_SIZE = 5 // Number of nodes contacted simulatneously when looking for a backup
-// export const BASE_NOISE = 10000000 // The amplitude of noise
-
-// const DEADLINE = 100 * MAX_LATENCY
-
 export interface ManagerArguments extends RunConfig {
   debug?: boolean
 }

@@ -1,7 +1,7 @@
-import { NodeRole } from "../node"
-import NodesManager from "../manager"
-import { Message, MessageType } from "../message"
-import TreeNode from "../treeNode"
+import { NodeRole } from '../node'
+import NodesManager from '../manager'
+import { Message, MessageType } from '../message'
+import TreeNode from '../treeNode'
 
 describe('Contact backup', () => {
   const depth = 3
@@ -24,14 +24,9 @@ describe('Contact backup', () => {
     node.role = NodeRole.Backup
     node.contactedAsABackup = false
 
-    let messages = node.receiveMessage(new Message(
-      MessageType.ContactBackup,
-      0,
-      receptionTime,
-      node.id,
-      node.id,
-      { failedNode: 42 }
-    ))
+    let messages = node.receiveMessage(
+      new Message(MessageType.ContactBackup, 0, receptionTime, node.id, node.id, { failedNode: 42 })
+    )
 
     expect(messages.length).toBe(1)
     expect(messages[0].content.backupIsAvailable).toBe(true)
@@ -44,14 +39,9 @@ describe('Contact backup', () => {
     node.role = NodeRole.Backup
     node.contactedAsABackup = true
 
-    let messages = node.receiveMessage(new Message(
-      MessageType.ContactBackup,
-      0,
-      receptionTime,
-      node.id,
-      node.id,
-      { failedNode: 42 }
-    ))
+    let messages = node.receiveMessage(
+      new Message(MessageType.ContactBackup, 0, receptionTime, node.id, node.id, { failedNode: 42 })
+    )
 
     expect(messages.length).toBe(1)
     expect(messages[0].content.backupIsAvailable).toBe(false)
@@ -64,14 +54,9 @@ describe('Contact backup', () => {
     node.role = NodeRole.Aggregator
     node.contactedAsABackup = false
 
-    let messages = node.receiveMessage(new Message(
-      MessageType.ContactBackup,
-      0,
-      receptionTime,
-      node.id,
-      node.id,
-      { failedNode: 42 }
-    ))
+    let messages = node.receiveMessage(
+      new Message(MessageType.ContactBackup, 0, receptionTime, node.id, node.id, { failedNode: 42 })
+    )
 
     expect(messages.length).toBe(1)
     expect(messages[0].content.backupIsAvailable).toBe(false)

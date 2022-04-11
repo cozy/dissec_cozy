@@ -5,18 +5,9 @@ import { createLogger, getAppDirectory } from './helpers'
 
 export const receiveShares = async () => {
   // Worker's arguments
-  const {
-    docId,
-    sharecode,
-    uri,
-    nbShares,
-    parent,
-    finalize,
-    level,
-    aggregatorId,
-    executionId,
-    nbChild
-  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
+  const { docId, sharecode, uri, nbShares, parent, finalize, level, aggregatorId, executionId, nbChild } = JSON.parse(
+    process.env['COZY_PAYLOAD'] || '{}'
+  )
 
   const client = CozyClient.fromEnv(process.env, {})
 
@@ -42,9 +33,7 @@ export const receiveShares = async () => {
     store: false
   })
 
-  const response = await sharedClient
-    .collection('io.cozy.files')
-    .fetchFileContentById(docId)
+  const response = await sharedClient.collection('io.cozy.files').fetchFileContentById(docId)
   const share = await response.text()
 
   const appDirectory = await getAppDirectory(client)

@@ -15,7 +15,7 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
     }
 
     // Verifying the backup's certificate and signature, then sign the current group and children
-    this.localTime += 2 * this.config.averageCrypto
+    this.localTime += 2 * this.config.averageCryptoTime
 
     // The node has been notified by a backup that it is joining the group
     // Compare the local members with the received one, keep the newest version

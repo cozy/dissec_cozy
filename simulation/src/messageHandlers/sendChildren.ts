@@ -27,7 +27,7 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
     // The node does not know its children yet
     // Verifying the member's certificate and signature.
     // Also sign the request for the children
-    this.localTime += 3 * this.config.averageCrypto
+    this.localTime += 3 * this.config.averageCryptoTime
     this.node.children = receivedMessage.content.children.map(child => TreeNode.fromCopy(child, child.id)) // Copy children
     this.role = receivedMessage.content.role
     this.backupList = receivedMessage.content.backupList
@@ -42,7 +42,7 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
       // Resume the aggregation by asking for data and checking health
       for (const contributor of this.expectedContributors) {
         // Open a secure channel
-        this.localTime += this.config.averageCrypto
+        this.localTime += this.config.averageCryptoTime
         messages.push(
           new Message(
             MessageType.RequestData,
@@ -59,7 +59,7 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
       // If all contributions are received, the aggregation will continue before the timeout
       // The delay must account for latency and crypto operations
       const timeoutDelay =
-        (2 * this.config.averageLatency + 3 * this.config.averageCrypto) * this.config.maxToAverageRatio
+        (2 * this.config.averageLatency + 3 * this.config.averageCryptoTime) * this.config.maxToAverageRatio
       messages.push(
         new Message(
           MessageType.ContributionTimeout,
@@ -75,7 +75,7 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
       // Resume the aggregation by asking for data and checking health
       for (const child of this.node.children) {
         // Open a secure channel
-        this.localTime += this.config.averageCrypto
+        this.localTime += this.config.averageCryptoTime
         // Contact the matching member in each child to update new parents and send data
         messages.push(
           new Message(
@@ -92,7 +92,7 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
       // Start monitoring children's health
       // The delay must account for latency and crypto operations
       const timeoutDelay =
-        (2 * this.config.averageLatency + 3 * this.config.averageCrypto) * this.config.maxToAverageRatio
+        (2 * this.config.averageLatency + 3 * this.config.averageCryptoTime) * this.config.maxToAverageRatio
       messages.push(
         new Message(
           MessageType.RequestHealthChecks,

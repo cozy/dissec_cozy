@@ -7,6 +7,6 @@ const PERFORMANCES_DOCTYPE = 'io.cozy.dissec.performances'
 const performancesQuery = Q(PERFORMANCES_DOCTYPE)
 
 module.exports = {
-    PERFORMANCES_DOCTYPE,
-    performancesQuery
+  PERFORMANCES_DOCTYPE,
+  performancesQuery
 }

@@ -1,19 +1,8 @@
 import React, { useState, useCallback } from 'react'
 import { useClient } from 'cozy-client'
 
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
-} from '@material-ui/core'
-import {
-  Divider,
-  FormControl,
-  Select,
-  MenuItem,
-  InputLabel,
-  TextField
-} from '@material-ui/core'
+import { Accordion, AccordionSummary, AccordionDetails } from '@material-ui/core'
+import { Divider, FormControl, Select, MenuItem, InputLabel, TextField } from '@material-ui/core'
 
 import OperationRemoveButton from './OperationRemoveButton'
 
@@ -26,9 +15,7 @@ const capitalizeFirstLetter = str => {
 export const Operation = ({ operation }) => {
   const client = useClient()
 
-  const [category, setCategory] = useState(
-    operation.manualCategoryId || operation.cozyCategoryId || ''
-  )
+  const [category, setCategory] = useState(operation.manualCategoryId || operation.cozyCategoryId || '')
 
   const handleCategoryChange = useCallback(
     async e => {
@@ -74,9 +61,7 @@ export const Operation = ({ operation }) => {
               className="category-item"
               disabled
               label="Automatic category"
-              value={capitalizeFirstLetter(
-                categories[operation.automaticCategoryId || '0']
-              )}
+              value={capitalizeFirstLetter(categories[operation.automaticCategoryId || '0'])}
             />
           </FormControl>
         </div>

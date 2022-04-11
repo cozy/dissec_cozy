@@ -21,7 +21,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
     const multicastTargets = this.backupList.sort(() => sorterGenerator() - 0.5).slice(0, this.config.multicastSize)
 
     // Signing the contact request
-    this.localTime += this.config.averageCrypto
+    this.localTime += this.config.averageCryptoTime
 
     for (const backup of multicastTargets) {
       const targetGroup = this.node.children.find(e => e.members.includes(unansweredHealthCheck))

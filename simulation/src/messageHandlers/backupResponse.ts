@@ -15,7 +15,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
   if (receivedMessage.content.backupIsAvailable && this.lookingForBackup[receivedMessage.content.failedNode]) {
     // The parent received a response and is still looking for a backup
     // Verifying the backup's certificate, signature and opening a encrypted channel
-    this.localTime += 3 * this.config.averageCrypto
+    this.localTime += 3 * this.config.averageCryptoTime
     // Accept this one, reject future ones
     this.lookingForBackup[receivedMessage.content.failedNode] = false
     this.continueMulticast = false

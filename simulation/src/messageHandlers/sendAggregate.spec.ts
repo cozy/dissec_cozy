@@ -1,7 +1,7 @@
-import { NodeRole } from "../node"
-import NodesManager from "../manager"
-import { Message, MessageType } from "../message"
-import TreeNode from "../treeNode"
+import { NodeRole } from '../node'
+import NodesManager from '../manager'
+import { Message, MessageType } from '../message'
+import TreeNode from '../treeNode'
 
 describe('Send aggregate', () => {
   const depth = 3
@@ -24,40 +24,29 @@ describe('Send aggregate', () => {
     const node = manager.nodes[root.id]
     node.role = NodeRole.Querier
 
-    let messages = node.receiveMessage(new Message(
-      MessageType.SendAggregate,
-      0,
-      receptionTime,
-      treenode.id,
-      root.id,
-      { aggregate: agg1 }
-    ))
+    let messages = node.receiveMessage(
+      new Message(MessageType.SendAggregate, 0, receptionTime, treenode.id, root.id, { aggregate: agg1 })
+    )
 
     expect(node.aggregates[treenode.id]).toStrictEqual(agg1)
     expect(node.finishedWorking).toBeFalsy()
     expect(messages.length).toBe(0)
 
-    messages = node.receiveMessage(new Message(
-      MessageType.SendAggregate,
-      0,
-      receptionTime,
-      root.children[0].members[1],
-      root.id,
-      { aggregate: agg1 }
-    ))
+    messages = node.receiveMessage(
+      new Message(MessageType.SendAggregate, 0, receptionTime, root.children[0].members[1], root.id, {
+        aggregate: agg1
+      })
+    )
 
     expect(node.aggregates[root.children[0].members[1]]).toStrictEqual(agg1)
     expect(node.finishedWorking).toBeFalsy()
     expect(messages.length).toBe(0)
 
-    messages = node.receiveMessage(new Message(
-      MessageType.SendAggregate,
-      0,
-      receptionTime,
-      root.children[0].members[2],
-      root.id,
-      { aggregate: agg1 }
-    ))
+    messages = node.receiveMessage(
+      new Message(MessageType.SendAggregate, 0, receptionTime, root.children[0].members[2], root.id, {
+        aggregate: agg1
+      })
+    )
 
     expect(node.aggregates[root.children[0].members[2]]).toStrictEqual(agg1)
     expect(node.finishedWorking).toBeTruthy()
@@ -67,14 +56,9 @@ describe('Send aggregate', () => {
   it('should fail when the node does not know the tree', async () => {
     const receptionTime = 10
     const treenode = root.children[0]
-    const message = new Message(
-      MessageType.SendAggregate,
-      0,
-      receptionTime,
-      root.id,
-      treenode.id,
-      { aggregate: { data: 0, counter: 1 } }
-    )
+    const message = new Message(MessageType.SendAggregate, 0, receptionTime, root.id, treenode.id, {
+      aggregate: { data: 0, counter: 1 }
+    })
     const node = manager.nodes[treenode.id]
     node.node = undefined
     expect(() => node.receiveMessage(message)).toThrow()
@@ -83,14 +67,7 @@ describe('Send aggregate', () => {
   it('should fail when the node does not receive the aggregate', async () => {
     const receptionTime = 10
     const treenode = root.children[0]
-    const message = new Message(
-      MessageType.SendAggregate,
-      0,
-      receptionTime,
-      root.id,
-      treenode.id,
-      {}
-    )
+    const message = new Message(MessageType.SendAggregate, 0, receptionTime, root.id, treenode.id, {})
     const node = manager.nodes[treenode.id]
     expect(() => node.receiveMessage(message)).toThrow()
   })

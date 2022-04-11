@@ -5,11 +5,13 @@ export function handleContactBackup(this: Node, receivedMessage: Message): Messa
   const messages: Message[] = []
 
   if (receivedMessage.content.failedNode === undefined) {
-    throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced from ${receivedMessage.emitterId}`)
+    throw new Error(
+      `Backup ${this.id} did not receive the group member to needs to be replaced from ${receivedMessage.emitterId}`
+    )
   }
 
   // Verifying the emitter's certificate and signature
-  this.localTime += 2 * this.config.averageCrypto
+  this.localTime += 2 * this.config.averageCryptoTime
 
   if (this.contactedAsABackup || this.role !== NodeRole.Backup) {
     // The backup is not available

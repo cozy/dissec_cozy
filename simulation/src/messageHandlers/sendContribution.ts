@@ -12,7 +12,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
   }
 
   // Verifying the child's certificate, signature and decrypt the symmetric key
-  this.localTime += 3 * this.config.averageCrypto
+  this.localTime += 3 * this.config.averageCryptoTime
 
   if (!this.contributorsList[this.id].includes(receivedMessage.emitterId)) {
     this.contributorsList[this.id].push(receivedMessage.emitterId)

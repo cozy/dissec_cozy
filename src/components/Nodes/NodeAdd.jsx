@@ -82,19 +82,8 @@ export const NodeAdd = () => {
           type="url"
         />
         <Label htmlFor="aggregation-input">Aggregation webhook:</Label>
-        <Input
-          value={aggregationWebhook}
-          onChange={handleAggregationWebhookChange}
-          id="aggregation-input"
-          type="url"
-        />
-        <Button
-          className="add-node-button"
-          onClick={handleSubmit}
-          busy={isWorking}
-          label="add"
-          size="large"
-        />
+        <Input value={aggregationWebhook} onChange={handleAggregationWebhookChange} id="aggregation-input" type="url" />
+        <Button className="add-node-button" onClick={handleSubmit} busy={isWorking} label="add" size="large" />
       </form>
     </div>
   )

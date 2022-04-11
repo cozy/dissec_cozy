@@ -95,8 +95,13 @@ export class Node {
     this.aggregates = {}
   }
 
-  aggregationId(child: string[]): string {
-    const s = cloneDeep(child).sort().join('-')
+  /**
+   * Produces a simple non-cryptographic hash because JS does not have a default, easy to use hash function
+   * @param children ID for the aggregate sent by each child
+   * @returns A new unique ID
+   */
+  aggregationId(children: string[]): string {
+    const s = cloneDeep(children).sort().join('-')
     return s.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0)
       return a & a
