@@ -1,5 +1,4 @@
 import cloneDeep from 'lodash/cloneDeep'
-import isEqual from 'lodash/isEqual'
 
 import { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType, StopStatus } from './message'
@@ -21,10 +20,6 @@ import {
 import { handleContinueMulticast } from './messageHandlers/continueMulticast'
 import { handleNotifyGroup } from './messageHandlers/notifyGroup'
 import TreeNode from './treeNode'
-
-export const arrayEquals = (a: number[], b: number[]): boolean => {
-  return isEqual(cloneDeep(a).sort(), cloneDeep(b).sort())
-}
 
 export enum NodeRole {
   Querier = "Querier",
@@ -108,6 +103,23 @@ export class Node {
     }, 0).toString()
   }
 
+  mergeContributorsLists() {
+    // The node aggregates the received contributors lists to confirm them to the group
+    const finalContributors = []
+    for (const contributor of this.contributorsList[this.id]) {
+      // Checking that a given contributor is in every contributors lists
+      // It only looks at contributors list received, preventing that a failed members stops this process
+      if (
+        this.node?.members
+          .map(member => (this.contributorsList[member] ? this.contributorsList[member].includes(contributor) : true))
+          .every(Boolean)
+      ) {
+        finalContributors.push(contributor)
+      }
+    }
+    this.contributorsList[this.id] = finalContributors
+  }
+
   receiveMessage(receivedMessage: Message): Message[] {
     const messages: Message[] = []
 
@@ -123,16 +135,9 @@ export class Node {
 
     if (this.config.debug) {
       const nodeOfInterest: number[] = [
-        255, 0,1,2,3, 4,5,51, 53, 52, 415, 401, 429, 359
-        // 255, 0, 1, 2, 3, 4, 6, 22, 66, 129, 147, 148, 149, 193, 195, 226, 241, 255, 210, 225, 240, 267, 317, 359, 376
+        255, 0, 1, 2, 3, 4, 5, 51, 53, 52, 134, 415, 401, 429, 359, 5, 68, 131, 194, 179, 134, 164, 149, 178, 177, 309, 193, 211, 364, 269
       ]
-      const filters: MessageType[] = [
-        // MessageType.CheckHealth,
-        // MessageType.ConfirmHealth,
-        // MessageType.HealthCheckTimeout
-        // MessageType.ContactBackup,
-        // MessageType.BackupResponse
-      ]
+      const filters: MessageType[] = []
       if (nodeOfInterest.includes(this.id) || nodeOfInterest.includes(receivedMessage.emitterId) || nodeOfInterest.length === 0) {
         receivedMessage.log(this, filters)
       }
@@ -161,7 +166,7 @@ export class Node {
         messages.push(...this.handleRequestHealthChecks(receivedMessage))
         break
       case MessageType.CheckHealth:
-        if(this.node && receivedMessage.content.parents)
+        if (this.node && receivedMessage.content.parents)
           this.node.parents = receivedMessage.content.parents
 
         messages.push(

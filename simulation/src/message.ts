@@ -127,7 +127,7 @@ export class Message {
         break
       case MessageType.ContributionTimeout:
         console.log(
-          `${tag} timed out waiting for contributions, received ${Object.values(receiver.contributions).length} contributions, sending to #${receiver.node?.parents[position!] ? receiver.node?.parents[position!] : "??"}`
+          `${tag} timed out waiting for contributions, received ${Object.values(receiver.contributions).length} contributions, sending to ${receiver.node?.members[0] === receiver.id ? `#${receiver.node?.parents[position!]}` : "member"}`
         )
         break
       case MessageType.ShareContributors:
@@ -147,7 +147,7 @@ export class Message {
           `${tag} received an aggregate (ID=${this.content.aggregate!.id}) from child #${this.emitterId}. [${children
             ?.filter(child => Boolean(receiver.aggregates[child]))
             .map(e => "#" + e)
-          }] out of [${children.map(e => "#" + e)}]`
+          }] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || "??"})`)}]`
         )
         break
       case MessageType.RequestHealthChecks:

@@ -1,5 +1,6 @@
+import { arrayEquals } from '../helpers'
 import { Message, MessageType } from '../message'
-import { arrayEquals, Node, NodeRole } from '../node'
+import { Node, NodeRole } from '../node'
 
 export function handleRequestData(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

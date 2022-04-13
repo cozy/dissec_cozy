@@ -1,5 +1,6 @@
+import { arrayEquals } from '../helpers'
 import { Message, MessageType, StopStatus } from '../message'
-import { arrayEquals, Node } from '../node'
+import { Node } from '../node'
 
 export function handleContributionTimeout(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -60,21 +61,8 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
     return messages
   }
 
-  if (this.id === this.node.members[0]) {
-    // The leader aggregates the received contributors lists and confirms them to the group
-    const finalContributors = []
-    for (const contributor of this.contributorsList[this.id]) {
-      // Checking that a given contributor is in every contributors lists
-      // It only looks at contributors list received, preventing that a failed members stops this process
-      if (
-        this.node.members
-          .map(member => (this.contributorsList[member] ? this.contributorsList[member].includes(contributor) : true))
-          .every(Boolean)
-      ) {
-        finalContributors.push(contributor)
-      }
-    }
-    this.contributorsList[this.id] = finalContributors
+  if (this.id === this.node.members[0] && !this.finishedWorking) {
+    this.mergeContributorsLists()
 
     for (const member of this.node.members.filter(e => e !== this.id)) {
       messages.push(
@@ -84,12 +72,12 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
           0, // Don't specify time to let the manager add the latency
           this.id,
           member,
-          { contributors: finalContributors }
+          { contributors: this.contributorsList[this.id] }
         )
       )
     }
 
-    this.lastSentAggregateId = this.aggregationId(finalContributors.map(String))
+    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id].map(String))
     messages.push(
       new Message(
         MessageType.SendAggregate,
@@ -103,14 +91,14 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
             data: this.contributorsList[this.id]
               .map(contributor => this.contributions[contributor])
               .reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(finalContributors.map(String))
+            id: this.lastSentAggregateId
           }
         }
       )
     )
 
     this.finishedWorking = true
-  } else {
+  } else if (this.id !== this.node.members[0]) {
     // Group members send their contributors list to the first member
     messages.push(
       new Message(

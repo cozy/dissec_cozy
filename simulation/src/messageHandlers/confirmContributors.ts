@@ -1,5 +1,6 @@
+import { arrayEquals } from '../helpers'
 import { Message, MessageType } from '../message'
-import { arrayEquals, Node } from '../node'
+import { Node } from '../node'
 
 export function handleConfirmContributors(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -37,7 +38,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     !arrayEquals(this.contributorsList[this.id], receivedMessage.content.contributors) &&
     receivedMessage.emitterId !== this.id
   ) {
-    // Contributors have changed
+    // Contributors have changed and the updates comes from another member
     // Updating the contributors list
     this.contributorsList[this.id] = receivedMessage.content.contributors
 
@@ -53,7 +54,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
           aggregate: {
             counter: this.contributorsList[this.id].length,
             data: this.contributorsList[this.id].map(e => this.contributions[e]).reduce((prev, curr) => prev + curr, 0),
-            id: this.aggregationId(this.contributorsList[this.id].map(String))
+            id: this.lastSentAggregateId
           }
         }
       )

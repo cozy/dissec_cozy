@@ -1,5 +1,6 @@
+import { arrayEquals } from '../helpers'
 import { Message, MessageType } from '../message'
-import { arrayEquals, Node } from '../node'
+import { Node } from '../node'
 
 export function handleSendContribution(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
