@@ -4,22 +4,33 @@ import { Message, MessageType } from '../message'
 import TreeNode from '../treeNode'
 
 describe('Send aggregate', () => {
-  const depth = 3
-  const fanout = 4
-  const groupSize = 3
+  const config = {
+    averageLatency: 100,
+    maxToAverageRatio: 10,
+    averageCryptoTime: 100,
+    averageComputeTime: 100,
+    healthCheckPeriod: 3,
+    multicastSize: 5,
+    deadline: 100000,
+    failureRate: 0.0004,
+    depth: 3,
+    fanout: 4,
+    groupSize: 3,
+    seed: '4-7'
+  }
 
   let root: TreeNode
   let manager: NodesManager
 
   beforeEach(() => {
-    const { node } = TreeNode.createTree(depth, fanout, groupSize, 0)
+    const { node } = TreeNode.createTree(config.depth, config.fanout, config.groupSize, 0)
     root = node
-    manager = NodesManager.createFromTree(root)
+    manager = NodesManager.createFromTree(root, config)
   })
 
   it('should make the querier add the aggregate to its buffer and finalize the computation if possible', async () => {
     const receptionTime = 10
-    const agg1 = { data: 42, counter: 1 }
+    const agg1 = { data: 42, counter: 1, id: '1' }
     const treenode = root.children[0]
     const node = manager.nodes[root.id]
     node.role = NodeRole.Querier
@@ -57,7 +68,7 @@ describe('Send aggregate', () => {
     const receptionTime = 10
     const treenode = root.children[0]
     const message = new Message(MessageType.SendAggregate, 0, receptionTime, root.id, treenode.id, {
-      aggregate: { data: 0, counter: 1 }
+      aggregate: { data: 0, counter: 1, id: '1' }
     })
     const node = manager.nodes[treenode.id]
     node.node = undefined

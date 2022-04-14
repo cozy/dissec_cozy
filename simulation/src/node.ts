@@ -125,7 +125,6 @@ export class Node {
 
     // When the node is busy, messages are put back into the queue at the earliest available time
     if (receivedMessage.receptionTime < this.localTime) {
-      // console.log("bounced", this.id, receivedMessage.emitterId, this.localTime, receivedMessage.receptionTime);
       receivedMessage.receptionTime = this.localTime
       return [receivedMessage]
     }
@@ -134,11 +133,11 @@ export class Node {
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
     if (this.config.debug) {
-      const nodeOfInterest: number[] = [
+      const nodesOfInterest: number[] = [
         255, 0, 1, 2, 3, 4, 5, 51, 53, 52, 134, 415, 401, 429, 359, 5, 68, 131, 194, 179, 134, 164, 149, 178, 177, 309, 193, 211, 364, 269
       ]
       const filters: MessageType[] = []
-      if (nodeOfInterest.includes(this.id) || nodeOfInterest.includes(receivedMessage.emitterId) || nodeOfInterest.length === 0) {
+      if (nodesOfInterest.includes(this.id) || nodesOfInterest.includes(receivedMessage.emitterId) || nodesOfInterest.length === 0) {
         receivedMessage.log(this, filters)
       }
     }
