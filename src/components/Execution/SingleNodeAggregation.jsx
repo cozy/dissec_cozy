@@ -42,11 +42,7 @@ const SingleNodeAggregation = ({ node }) => {
         nbShares,
         parents
       }
-      await client.stackClient.fetchJSON(
-        'POST',
-        node.contributionWebhook,
-        contributionBody
-      )
+      await client.stackClient.fetchJSON('POST', node.contributionWebhook, contributionBody)
       setIsWorking(false)
     },
     [node, client, nbShares, pretrained, setIsWorking]
@@ -54,25 +50,15 @@ const SingleNodeAggregation = ({ node }) => {
 
   return (
     <div className="selected-single-node">
-      <div className="single-node-title">
-        {node && (node.label ? node.label : node.id)}
-      </div>
+      <div className="single-node-title">{node && (node.label ? node.label : node.id)}</div>
       <div>
         <Label htmlFor="single-node-shares">Number of shares: </Label>
-        <Input
-          value={nbShares}
-          onChange={e => setNbShares(e.target.value)}
-          id="single-node-shares"
-        />
+        <Input value={nbShares} onChange={e => setNbShares(e.target.value)} id="single-node-shares" />
       </div>
       <FormControlLabel
         label="Use pretrained model?"
         control={
-          <Switch
-            checked={pretrained}
-            onChange={() => setPretrained(old => !old)}
-            name="Use pretrained model?"
-          />
+          <Switch checked={pretrained} onChange={() => setPretrained(old => !old)} name="Use pretrained model?" />
         }
       />
       <Button

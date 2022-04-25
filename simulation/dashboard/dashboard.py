@@ -72,13 +72,36 @@ if __name__ == "__main__":
     message_timeline_fig = px.scatter(
         data, x="receiver_time", y="receiver_id", color="type", hover_name="type"
     )
+    failure_map_fig = px.scatter(
+        data.groupby(["run_id", "status"], as_index=False).mean(),
+        x="failure_rate",
+        y="observed_failure_rate",
+        color="status",
+        hover_name="run_id",
+    )
     failure_rate_per_status_fig = px.box(
-        data, x="status", y="failure_rate", hover_name="type"
+        data.groupby(["run_id", "status"], as_index=False).mean(),
+        x="status",
+        y="failure_rate",
+        hover_name="run_id",
+        points="all",
     )
     observed_failure_rate_per_status_fig = px.box(
-        data, x="status", y="observed_failure_rate", hover_name="type"
+        data.groupby(["run_id", "status"], as_index=False).mean(),
+        x="status",
+        y="observed_failure_rate",
+        hover_name="run_id",
+        points="all",
     )
     messages_histogram = px.histogram(data, x="receiver_time")
+    failure_histogram = px.histogram(
+        data[data["delivered"] == True],
+        x="failure_rate",
+    )
+    observed_failure_histogram = px.histogram(
+        data[data["delivered"] == True],
+        x="observed_failure_rate",
+    )
 
     app.layout = html.Div(
         children=[
@@ -151,8 +174,8 @@ if __name__ == "__main__":
                     html.H3("Protocol executions:"),
                     dcc.Checklist(
                         id="runs-list",
-                        options=run_ids,
-                        value=run_ids,
+                        options=["All"] + [i for i in run_ids],
+                        value=[],
                         style={
                             "display": "flex",
                             "flex-wrap": "wrap",
@@ -213,6 +236,7 @@ if __name__ == "__main__":
             ),
             dcc.Graph(id="message_timeline", figure=message_timeline_fig),
             dcc.Graph(id="message_histogram", figure=messages_histogram),
+            dcc.Graph(id="failure_map", figure=failure_map_fig),
             html.Div(
                 style={
                     "display": "flex",
@@ -226,6 +250,20 @@ if __name__ == "__main__":
                     dcc.Graph(
                         id="observed_failure_rate_per_status",
                         figure=observed_failure_rate_per_status_fig,
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(id="failure_rate_hist", figure=failure_histogram),
+                    dcc.Graph(
+                        id="observed_failure_hist",
+                        figure=observed_failure_histogram,
                     ),
                 ],
             ),
@@ -278,7 +316,8 @@ if __name__ == "__main__":
                 ]
             )
         ]
-        df = df[df["run_id"].isin(selected_run_ids)]
+        if "All" not in selected_run_ids:
+            df = df[df["run_id"].isin(selected_run_ids)]
         df = df[df["type"].isin(selected_types)]
 
         new_message_timeline = px.scatter(

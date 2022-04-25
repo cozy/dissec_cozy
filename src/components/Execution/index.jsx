@@ -10,11 +10,7 @@ import Button from 'cozy-ui/react/Button'
 import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import FullAggregation from './FullAggregation.jsx'
-import {
-  SERVICE_CATEGORIZE,
-  SERVICE_CONTRIBUTION,
-  SERVICE_RECEIVE_SHARES
-} from '../../targets/services/helpers'
+import { SERVICE_CATEGORIZE, SERVICE_CONTRIBUTION, SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -62,11 +58,7 @@ export const Execution = ({ nodes }) => {
     async () => {
       let { data: webhooks } = await client.collection('io.cozy.triggers').all()
 
-      setWebhooks(
-        webhooks
-          .filter(hook => hook.type === '@webhook')
-          .sort((a, b) => a.id > b.id)
-      )
+      setWebhooks(webhooks.filter(hook => hook.type === '@webhook').sort((a, b) => a.id > b.id))
     },
     [client, setWebhooks]
   )
@@ -95,9 +87,7 @@ export const Execution = ({ nodes }) => {
               <b>Single node aggregation</b>
             </div>
             <div>
-              <Label htmlFor="single-node-selector">
-                Select the node performing the execution:{' '}
-              </Label>
+              <Label htmlFor="single-node-selector">Select the node performing the execution: </Label>
               <SelectBox
                 id="single-node-selector"
                 options={options}
@@ -110,10 +100,7 @@ export const Execution = ({ nodes }) => {
           </div>
         </>
       )}
-      {webhooks &&
-        webhooks.map(hook => (
-          <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
-        ))}
+      {webhooks && webhooks.map(hook => <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />)}
       {isWorking ? (
         <Spinner size="xxlarge" middle />
       ) : (

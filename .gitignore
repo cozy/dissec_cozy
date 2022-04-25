@@ -3,9 +3,9 @@
 scripts/.token.json
 
 # DISSECOZY
-/assets
+assets/
 dissec.config.json
-/outputs
+outputs
 
 # NPM
 node_modules/

@@ -100,6 +100,32 @@ The script located at `scripts/localVsDissecLearning.js` can be used to demonstr
 It runs both type of learning and measures the accuracy on a single validation dataset.
 This script implies that `populateInstances` has been run before.
 
+## Simulation
+
+In order to obtain experimental results, a [simulation](simulation/README.md) has been done.
+It aims to simulate only the phase of the protocol spanning from contacting contributors to the querier recomposing the final result.
+It abstracts the network overlay and assumes the tree construction, as presented in [the paper](https://dl.acm.org/doi/abs/10.1145/3468791.3468821?casa_token=JghDDbwYFtYAAAAA:SwWawr7gz0QmwOc_iCvV_HmrfB8qAcK9IvuWuhCgMfko33o_g7o6NOyjVHqUsgbfwaUPyouSGboLiGI), is already done.
+
+The simulation starts in the following state:
+- All the aggregators (leaf aggregators and querier included) start the process of monitoring their children's health with periodic pings
+- The first member of each leaf aggregator group sends a request to all its associated contributors to send their data to its group.
+
+The simulator has two components: the simulator itself and a visualization dashboard.
+
+### Usage
+
+1. `cd simulation`
+2. Rename `example.dissec.config.json` to `dissec.config.json` and fill it properly
+3. `yarn install`
+4. `yarn start`
+
+The simulation has executed and the results are stored at the path indicated by `dissec.config.json`
+
+To launch the dashboard:
+1. `pip install requirements.txt`
+2. `yarn dashboard`
+3. Open your browser at [localhost:8050](http://localhost:8050)
+
 ## Models
 
 The Cozy datastore stores documents, which can be seen as JSON objects. A `doctype` is simply a declaration of the fields in a given JSON object, to store similar objects in an homogeneous fashion.

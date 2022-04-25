@@ -1,3 +1,4 @@
+import cloneDeep from 'lodash/cloneDeep'
 import { Message, MessageType } from '../message'
 import { Node } from '../node'
 
@@ -13,16 +14,14 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
 
   if (receivedMessage.content.backupIsAvailable && this.lookingForBackup[receivedMessage.content.failedNode]) {
     // The parent received a response and is still looking for a backup
+    // Verifying the backup's certificate, signature and opening a encrypted channel
+    this.localTime += 3 * this.config.averageCryptoTime
     // Accept this one, reject future ones
     this.lookingForBackup[receivedMessage.content.failedNode] = false
     this.continueMulticast = false
 
-    const child = this.node.children.filter(e =>
-      e.members.includes(receivedMessage.content.failedNode!)
-    )[0] // The group that the backup will join
-    const failedPosition = child.members.indexOf(
-      receivedMessage.content.failedNode
-    )
+    const child = this.node.children.filter(e => e.members.includes(receivedMessage.content.failedNode!))[0] // The group that the backup will join
+    const failedPosition = child.members.indexOf(receivedMessage.content.failedNode)
 
     // Update child group
     child.members[failedPosition] = receivedMessage.emitterId
@@ -38,7 +37,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
         receivedMessage.emitterId,
         {
           useAsBackup: true,
-          targetGroup: child,
+          targetGroup: cloneDeep(child),
           failedNode: receivedMessage.content.failedNode
         }
       )

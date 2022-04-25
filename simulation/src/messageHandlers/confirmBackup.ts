@@ -1,4 +1,3 @@
-import { MAX_LATENCY } from '../manager'
 import { Message, MessageType } from '../message'
 import { Node, NodeRole } from '../node'
 import TreeNode from '../treeNode'
@@ -15,6 +14,9 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
       throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced`)
     }
 
+    // Open the encryted channel with the parent and sign the notification for members
+    this.localTime += 2 * this.config.averageCryptoTime
+
     // The node is still available and the parent wants it as a child
     this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup, this.id)
     this.node.children = [] // The backup receives children later
@@ -30,7 +32,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
           this.id,
           member,
           {
-            targetGroup: this.node,
+            targetGroup: receivedMessage.content.targetGroup,
             failedNode: receivedMessage.content.failedNode
           }
         )
@@ -42,7 +44,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
       new Message(
         MessageType.NotifyGroupTimeout,
         this.localTime,
-        this.localTime + 2 * MAX_LATENCY,
+        this.localTime + 2 * this.config.averageLatency * this.config.maxToAverageRatio,
         this.id,
         this.id,
         {}

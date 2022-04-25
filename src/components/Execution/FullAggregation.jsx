@@ -17,9 +17,8 @@ const FullAggregation = ({ nodes, webhooks }) => {
       if (!webhooks) return
 
       let querier = {
-        webhook: webhooks.filter(
-          webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES
-        )[0].links.webhook,
+        webhook: webhooks.filter(webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES)[0].links
+          .webhook,
         level: 0,
         nbChild: 3,
         aggregatorId: uuid(),
@@ -95,11 +94,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
         await new Promise(resolve => {
           setTimeout(resolve, 1000)
         })
-        await client.stackClient.fetchJSON(
-          'POST',
-          contributor.contributionWebhook,
-          contributionBody
-        )
+        await client.stackClient.fetchJSON('POST', contributor.contributionWebhook, contributionBody)
       }
 
       setIsWorking(false)

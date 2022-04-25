@@ -32,19 +32,13 @@ export class Model {
    */
   initializeOccurences() {
     // Copy the classificator into the occurences matrix
-    for (const category of Object.keys(
-      this.classifiers[0].wordFrequencyCount
-    )) {
+    for (const category of Object.keys(this.classifiers[0].wordFrequencyCount)) {
       const catIndex = this.uniqueY.findIndex(e => e == category)
       if (catIndex === -1) continue
-      for (const token of Object.keys(
-        this.classifiers[0].wordFrequencyCount[category]
-      )) {
+      for (const token of Object.keys(this.classifiers[0].wordFrequencyCount[category])) {
         const wordIndex = vocabulary.findIndex(e => e == token)
         if (wordIndex === -1) continue
-        this.occurences[catIndex][
-          wordIndex
-        ] = this.classifiers[0].wordFrequencyCount[category][token]
+        this.occurences[catIndex][wordIndex] = this.classifiers[0].wordFrequencyCount[category][token]
       }
     }
   }
@@ -55,8 +49,7 @@ export class Model {
    * @private
    */
   initializeClassifier() {
-    if (this.classifiers.length !== 0)
-      throw new Error('Initializing non empty classifiers')
+    if (this.classifiers.length !== 0) throw new Error('Initializing non empty classifiers')
 
     const classifier = NaiveBayes({
       tokenizer,
@@ -67,20 +60,15 @@ export class Model {
         // Keep the matrix sparse by skiping zeroes
         if (this.occurences[j][i] === 0) continue
 
-        if (!classifier.wordFrequencyCount[this.uniqueY[j]])
-          classifier.wordFrequencyCount[this.uniqueY[j]] = {}
+        if (!classifier.wordFrequencyCount[this.uniqueY[j]]) classifier.wordFrequencyCount[this.uniqueY[j]] = {}
         if (!classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]])
           classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]] = 0
-        classifier.wordFrequencyCount[this.uniqueY[j]][
-          vocabulary[i]
-        ] += this.occurences[j][i]
+        classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]] += this.occurences[j][i]
 
-        if (!classifier.vocabulary[vocabulary[i]])
-          classifier.vocabulary[vocabulary[i]] = 0
+        if (!classifier.vocabulary[vocabulary[i]]) classifier.vocabulary[vocabulary[i]] = 0
         classifier.vocabulary[vocabulary[i]] += this.occurences[j][i]
 
-        if (!classifier.wordCount[this.uniqueY[j]])
-          classifier.wordCount[this.uniqueY[j]] = 0
+        if (!classifier.wordCount[this.uniqueY[j]]) classifier.wordCount[this.uniqueY[j]] = 0
         classifier.wordCount[this.uniqueY[j]] += this.occurences[j][i]
       }
     }
@@ -264,9 +252,7 @@ export class Model {
   }
 
   getCompressedShares(nbShares) {
-    return this.getShares(nbShares).map(share =>
-      Model.shareToCompressedBinary(share)
-    )
+    return this.getShares(nbShares).map(share => Model.shareToCompressedBinary(share))
   }
 
   /**
@@ -308,10 +294,7 @@ export class Model {
     buf.writeInt32BE(share.contributions, 0)
     for (let j = 0; j < rows; j++) {
       for (let i = 0; i < cols; i++) {
-        buf.writeInt32BE(
-          share.occurences[j][i],
-          (j * cols + i + 1) * numberSize
-        )
+        buf.writeInt32BE(share.occurences[j][i], (j * cols + i + 1) * numberSize)
       }
     }
 

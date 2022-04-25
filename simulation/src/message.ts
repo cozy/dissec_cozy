@@ -35,14 +35,23 @@ export enum StopStatus {
   GroupDead = "GroupDead",
   SimultaneousFailures = "SimultaneousFailures",
   ExceededDeadline = "ExceededDeadline",
+  BadResult = "BadResult",
+  AllContributorsDead = "AllContributorsDead"
+}
+
+export interface Aggregate {
+  counter: number
+  data: number
+  id: string
 }
 
 export interface MessageContent {
   status?: StopStatus
   parents?: number[]
+  members?: number[]
   share?: number
   contributors?: number[]
-  aggregate?: { counter: number; data: number }
+  aggregate?: Aggregate
   failedNode?: number
   targetGroup?: TreeNode
   remainingBackups?: number[]
@@ -63,7 +72,7 @@ export class Message {
   content: MessageContent
   delivered: boolean
 
-  constructor(
+  constructor (
     type: MessageType,
     emissionTime: number,
     receptionTime: number,
@@ -118,7 +127,7 @@ export class Message {
         break
       case MessageType.ContributionTimeout:
         console.log(
-          `${tag} timed out waiting for contributions, received ${Object.values(receiver.contributions).length} contributions, sending to #${position ? receiver.node?.parents[position] : "??"}`
+          `${tag} timed out waiting for contributions, received ${Object.values(receiver.contributions).length} contributions, sending to ${receiver.node?.members[0] === receiver.id ? `#${receiver.node?.parents[position!]}` : "member"}`
         )
         break
       case MessageType.ShareContributors:
@@ -129,16 +138,16 @@ export class Message {
         break
       case MessageType.ConfirmContributors:
         console.log(
-          `${tag} received a confirmation of the final contributors list from member node #${this.emitterId
-          }, sending data to parent #${receiver.node!.parents[receiver.node!.members.indexOf(receiver.id)]}`
+          `${tag} received a ${receiver.finishedWorking ? "another " : ""}confirmation of the final contributors list from node #${this.emitterId
+          }, sending data to parent #${receiver.node!.parents[receiver.node!.members.indexOf(receiver.id)]}. new id=${receiver.aggregationId(this.content.contributors!.map(String))}`
         )
         break
       case MessageType.SendAggregate:
         console.log(
-          `${tag} received an aggregate from child #${this.emitterId}. [${children
+          `${tag} received an aggregate (ID=${this.content.aggregate!.id}) from child #${this.emitterId}. [${children
             ?.filter(child => Boolean(receiver.aggregates[child]))
             .map(e => "#" + e)
-          }] out of [${children.map(e => "#" + e)}]`
+          }] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || "??"})`)}]`
         )
         break
       case MessageType.RequestHealthChecks:
@@ -202,7 +211,7 @@ export class Message {
         break
       case MessageType.NotifyGroupTimeout:
         console.log(
-          `${tag} has timed out on the group notification. New children are ${receiver.node?.children}`
+          `${tag} has timed out on the group notification. New children are [${receiver.node?.children.map(e => e.members[position!])}] ${!receiver.node?.children.length ? "No known children" : "Ignored"}`
         )
         break
       case MessageType.SendChildren:

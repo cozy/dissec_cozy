@@ -45,24 +45,12 @@ describe('Model library', () => {
   describe('fromDocs', () => {
     it('should increment the correct occurences', async () => {
       const model = await Model.fromDocs(mockDocs)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
-      ).toEqual(2)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
-      ).toEqual(3)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]).toEqual(2)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]).toEqual(3)
     })
   })
 
@@ -72,24 +60,12 @@ describe('Model library', () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const shares = firstModel.getShares(nbShares)
       const model = Model.fromShares(shares, { shouldFinalize: true })
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
-      ).toEqual(2)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
-      ).toEqual(3)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]).toEqual(2)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]).toEqual(3)
     })
 
     it('should gives the same result as a centralized dataset', async () => {
@@ -100,17 +76,14 @@ describe('Model library', () => {
       const shares2 = secondModel.getShares(nbShares)
       const agg1 = Model.fromShares([shares1[0], shares2[0]])
       const agg2 = Model.fromShares([shares1[1], shares2[1]])
-      const modelRecomposed = Model.fromShares(
-        [agg1.getAggregate(), agg2.getAggregate()],
-        { shouldFinalize: true }
-      )
+      const modelRecomposed = Model.fromShares([agg1.getAggregate(), agg2.getAggregate()], { shouldFinalize: true })
       const model = await Model.fromDocs(mockDocs.concat(mockDocs2))
 
       for (const key of ['100', '200']) {
         for (const word of vocabulary) {
-          expect(
-            modelRecomposed.classifiers[0].wordFrequencyCount[key][word]
-          ).toEqual(model.classifiers[0].wordFrequencyCount[key][word])
+          expect(modelRecomposed.classifiers[0].wordFrequencyCount[key][word]).toEqual(
+            model.classifiers[0].wordFrequencyCount[key][word]
+          )
         }
       }
     })
@@ -121,24 +94,12 @@ describe('Model library', () => {
       const firstModel = await Model.fromDocs(mockDocs)
       const aggregate = firstModel.getAggregate()
       const model = await Model.fromAggregate(aggregate, { shouldFinalize: true })
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
-      ).toEqual(2)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
-      ).toEqual(3)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]).toEqual(2)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]).toEqual(3)
     })
   })
 
@@ -149,24 +110,12 @@ describe('Model library', () => {
       const model = await Model.fromCompressedAggregate(aggregate, {
         shouldFinalize: true
       })
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]
-      ).toEqual(2)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]
-      ).toEqual(1)
-      expect(
-        model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]
-      ).toEqual(3)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[0]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[1]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['100'][vocabulary[2]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[3]]).toEqual(2)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[4]]).toEqual(1)
+      expect(model.classifiers[0].wordFrequencyCount['200'][vocabulary[5]]).toEqual(3)
     })
   })
 
@@ -209,15 +158,10 @@ describe('Model library', () => {
       const firstShares = model.getShares(nbShares)
       const firstModel = Model.fromShares(firstShares, { shouldFinalize: true })
       const secondShares = model.getShares(nbShares)
-      const secondModel = Model.fromShares(
-        [firstShares[0], secondShares[1], firstShares[2]],
-        { shouldFinalize: true }
-      )
+      const secondModel = Model.fromShares([firstShares[0], secondShares[1], firstShares[2]], { shouldFinalize: true })
 
       for (let i = 0; i < 5; i++) {
-        expect(
-          firstModel.occurences[i] !== secondModel.occurences[i]
-        ).toBeTruthy()
+        expect(firstModel.occurences[i] !== secondModel.occurences[i]).toBeTruthy()
       }
     })
   })
@@ -230,20 +174,13 @@ describe('Model library', () => {
       const compressedShares = originalModel.getCompressedShares(nbShares)
 
       const modelFromShares = Model.fromShares(shares, { shouldFinalize: true })
-      const modelFromCompressedShares = Model.fromCompressedShares(
-        compressedShares,
-        { shouldFinalize: true }
-      )
+      const modelFromCompressedShares = Model.fromCompressedShares(compressedShares, { shouldFinalize: true })
 
       for (let i = 0; i < 5; i++) {
-        expect(modelFromShares.occurences[i]).toEqual(
-          originalModel.occurences[i]
-        )
+        expect(modelFromShares.occurences[i]).toEqual(originalModel.occurences[i])
       }
       for (let i = 0; i < 5; i++) {
-        expect(modelFromCompressedShares.occurences[i]).toEqual(
-          originalModel.occurences[i]
-        )
+        expect(modelFromCompressedShares.occurences[i]).toEqual(originalModel.occurences[i])
       }
     })
   })
@@ -258,9 +195,7 @@ describe('Model library', () => {
       )
 
       const nbShares = 3
-      const contributorShares = contributorsModel.map(model =>
-        model.getCompressedShares(nbShares)
-      )
+      const contributorShares = contributorsModel.map(model => model.getCompressedShares(nbShares))
 
       const aggregatorShares = []
       for (let j = 0; j < nbShares; j++) {
@@ -271,9 +206,7 @@ describe('Model library', () => {
         aggregatorShares.push(shares)
       }
 
-      const aggregates = aggregatorShares.map(shares =>
-        Model.fromCompressedShares(shares).getCompressedAggregate()
-      )
+      const aggregates = aggregatorShares.map(shares => Model.fromCompressedShares(shares).getCompressedAggregate())
       const finalModel = Model.fromCompressedShares(aggregates, {
         shouldFinalize: true
       })

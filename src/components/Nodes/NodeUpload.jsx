@@ -45,13 +45,7 @@ export const NodeUpload = () => {
         <Label htmlFor="aggregation-input">JSON File:</Label>
         <FileInput hidden={false} onChange={handleFileChange} />
         {entries && `Found ${entries.length} entries`}
-        <Button
-          className="upload-node-button"
-          onClick={handleUpload}
-          busy={isWorking}
-          label="Upload"
-          size="large"
-        />
+        <Button className="upload-node-button" onClick={handleUpload} busy={isWorking} label="Upload" size="large" />
       </form>
     </div>
   )

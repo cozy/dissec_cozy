@@ -4,17 +4,28 @@ import { Message, MessageType } from "../message"
 import TreeNode from "../treeNode"
 
 describe('Backup response', () => {
-  const depth = 3
-  const fanout = 4
-  const groupSize = 3
+  const config = {
+    averageLatency: 100,
+    maxToAverageRatio: 10,
+    averageCryptoTime: 100,
+    averageComputeTime: 100,
+    healthCheckPeriod: 3,
+    multicastSize: 5,
+    deadline: 100000,
+    failureRate: 0.0004,
+    depth: 3,
+    fanout: 4,
+    groupSize: 3,
+    seed: '4-7'
+  }
 
   let root: TreeNode
   let manager: NodesManager
 
   beforeEach(() => {
-    const { node } = TreeNode.createTree(depth, fanout, groupSize, 0)
+    const { node } = TreeNode.createTree(config.depth, config.fanout, config.groupSize, 0)
     root = node
-    manager = NodesManager.createFromTree(root)
+    manager = NodesManager.createFromTree(root, config)
   })
 
   it('should send a confirmation to the backup if the node is still looking for one', async () => {

@@ -2,29 +2,26 @@ import { Message, MessageType } from '../message'
 import { Node } from '../node'
 import { createGenerator } from '../random'
 
-export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): Message[] {
+export function handleContinueMulticast(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
-  if (!this.node) {
-    throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
-  }
-
-  const ongoingChecks = Object.keys(this.ongoingHealthChecks).map(Number)
-  for (const unansweredHealthCheck of ongoingChecks) {
-    // While replacing failed nodes, resume working
-    this.finishedWorking = false
-    // Adding the node to the list of nodes looking for backup
-    this.lookingForBackup[unansweredHealthCheck] = true
+  if (this.continueMulticast) {
+    // Not re-signing the contact request because we reuse the initial one
+    if (!this.node) {
+      throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+    }
+    if (receivedMessage.content.failedNode === undefined) {
+      throw new Error(`${this.id} did not receive failed node`)
+    }
 
     // Multicasting to a group of the backup list
     const sorterGenerator = createGenerator(this.id.toString())
-    const multicastTargets = this.backupList.sort(() => sorterGenerator() - 0.5).slice(0, this.config.multicastSize)
-
-    // Signing the contact request
-    this.localTime += this.config.averageCryptoTime
+    const multicastTargets = receivedMessage.content
+      .remainingBackups!.sort(() => sorterGenerator() - 0.5)
+      .slice(0, this.config.multicastSize)
 
     for (const backup of multicastTargets) {
-      const targetGroup = this.node.children.find(e => e.members.includes(unansweredHealthCheck))
+      const targetGroup = this.node.children.filter(e => e.members.includes(receivedMessage.content.failedNode!))[0]
 
       messages.push(
         new Message(
@@ -34,8 +31,8 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
           this.id,
           backup,
           {
-            failedNode: unansweredHealthCheck,
-            targetGroup: targetGroup?.copy()
+            failedNode: receivedMessage.content.failedNode,
+            targetGroup
           }
         )
       )
@@ -54,7 +51,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
           this.id,
           {
             remainingBackups,
-            failedNode: unansweredHealthCheck
+            failedNode: receivedMessage.content.failedNode
           }
         )
       )
@@ -62,9 +59,6 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
       throw new Error('Ran out of backups...')
     }
   }
-
-  // Remove handled checks
-  ongoingChecks.forEach(node => delete this.ongoingHealthChecks[node])
 
   return messages
 }

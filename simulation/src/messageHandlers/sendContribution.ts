@@ -1,5 +1,6 @@
+import { arrayEquals } from '../helpers'
 import { Message, MessageType } from '../message'
-import { arrayEquals, Node } from '../node'
+import { Node } from '../node'
 
 export function handleSendContribution(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -11,12 +12,22 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
     throw new Error(`#${this.id} received a contribution without a share`)
   }
 
-  this.contributorsList[this.id].push(receivedMessage.emitterId) // The first item is the local list
+  // Verifying the child's certificate, signature and decrypt the symmetric key
+  this.localTime += 3 * this.config.averageCryptoTime
+
+  if (!this.contributorsList[this.id].includes(receivedMessage.emitterId)) {
+    this.contributorsList[this.id].push(receivedMessage.emitterId)
+  }
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
 
-  if (this.expectedContributors.length !== 0 && arrayEquals(this.expectedContributors, this.contributorsList[this.id]) && !this.finishedWorking) {
+  if (
+    this.expectedContributors.length !== 0 &&
+    arrayEquals(this.expectedContributors, this.contributorsList[this.id]) &&
+    !this.finishedWorking
+  ) {
     // The node received all expected contributions and can continue the protocole
     // No need to tell the members because they have the same contributors
+    this.lastSentAggregateId = this.aggregationId(this.expectedContributors.map(String))
     messages.push(
       new Message(
         MessageType.SendAggregate,
@@ -27,9 +38,8 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
         {
           aggregate: {
             counter: this.contributorsList[this.id].length,
-            data: Object.values(this.contributions).reduce(
-              (prev, curr) => prev + curr
-            )
+            data: Object.values(this.contributions).reduce((prev, curr) => prev + curr),
+            id: this.aggregationId(this.expectedContributors.map(String))
           }
         }
       )

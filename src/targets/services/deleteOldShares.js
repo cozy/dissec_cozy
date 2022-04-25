@@ -21,11 +21,7 @@ export const deleteOldShares = async () => {
   )
 
   const oldFileIds = unfilteredFiles
-    .filter(
-      file =>
-        (Date.now() - new Date(file.updated_at).valueOf()) / 1000 >
-        config.secondsBeforeDeletion
-    )
+    .filter(file => (Date.now() - new Date(file.updated_at).valueOf()) / 1000 > config.secondsBeforeDeletion)
     .map(file => file.id)
 
   await deleteFilesById(client, oldFileIds)

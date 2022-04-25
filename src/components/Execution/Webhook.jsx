@@ -79,13 +79,7 @@ export const Webhook = ({ hook, onUpdate }) => {
         <>
           <FormControlLabel
             label="Use pretrained model?"
-            control={
-              <Switch
-                checked={pretrained}
-                onChange={handlePretrained}
-                name="Use pretrained model?"
-              />
-            }
+            control={<Switch checked={pretrained} onChange={handlePretrained} name="Use pretrained model?" />}
           />
         </>
       ) : name === 'aggregation' ? (

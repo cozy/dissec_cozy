@@ -43,9 +43,7 @@ export const aggregation = async () => {
   // Fetch all stored shares
   const compressedShares = []
   for (let s of receivedShares) {
-    const response = await client
-      .collection('io.cozy.files')
-      .fetchFileContentById(s._id)
+    const response = await client.collection('io.cozy.files').fetchFileContentById(s._id)
     const receivedShare = await response.text()
     compressedShares.push(receivedShare)
   }
@@ -59,10 +57,7 @@ export const aggregation = async () => {
 
   if (finalize) {
     // Write a file that will be used as a remote asset by the stack
-    fs.writeFileSync(
-      dissecConfig.localModelPath,
-      model.getCompressedAggregate()
-    )
+    fs.writeFileSync(dissecConfig.localModelPath, model.getCompressedAggregate())
     log('Model has been written to the disk')
   } else {
     // Store the aggregate as a file to be shared
