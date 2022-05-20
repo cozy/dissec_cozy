@@ -94,6 +94,13 @@ if __name__ == "__main__":
         points="all",
     )
     messages_histogram = px.histogram(data, x="receiver_time")
+    length_scatter = px.scatter(
+        data.groupby(["run_id", "status"], as_index=False).max(),
+        x="receiver_time",
+        y="observed_failure_rate",
+        color="status",
+        hover_name="run_id",
+    )
     failure_histogram = px.histogram(
         data[data["delivered"] == True],
         x="failure_rate",
@@ -253,6 +260,7 @@ if __name__ == "__main__":
                     ),
                 ],
             ),
+            dcc.Graph(id="length_scatter_plot", figure=length_scatter),
             html.Div(
                 style={
                     "display": "flex",

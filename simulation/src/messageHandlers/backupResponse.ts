@@ -20,12 +20,17 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
     this.lookingForBackup[receivedMessage.content.failedNode] = false
     this.continueMulticast = false
 
-    const child = this.node.children.filter(e => e.members.includes(receivedMessage.content.failedNode!))[0] // The group that the backup will join
+    const child = this.node.children.filter((e) => e.members.includes(receivedMessage.content.failedNode!))[0] // The group that the backup will join
     const failedPosition = child.members.indexOf(receivedMessage.content.failedNode)
 
     // Update child group
     child.members[failedPosition] = receivedMessage.emitterId
     child.parents = this.node.members
+
+    // Assign the failed node's aggregate as this node's aggregate
+    // Provides a default value usable to forward the result quickly
+    this.contributions[receivedMessage.emitterId] = this.contributions[receivedMessage.content.failedNode]
+    this.aggregates[receivedMessage.emitterId] = this.aggregates[receivedMessage.content.failedNode]
 
     // The backup needs to receive a confirmation before continue the protocol
     messages.push(
@@ -38,7 +43,8 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
         {
           useAsBackup: true,
           targetGroup: cloneDeep(child),
-          failedNode: receivedMessage.content.failedNode
+          failedNode: receivedMessage.content.failedNode,
+          lastReceivedAggregateId: this.aggregates[receivedMessage.content.failedNode]?.id,
         }
       )
     )
@@ -52,7 +58,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
         this.id,
         receivedMessage.emitterId,
         {
-          useAsBackup: false
+          useAsBackup: false,
         }
       )
     )

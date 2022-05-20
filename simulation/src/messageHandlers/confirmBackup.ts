@@ -14,6 +14,9 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
       throw new Error(`Backup ${this.id} did not receive the group member to needs to be replaced`)
     }
 
+    this.replacedNode = receivedMessage.content.failedNode
+    this.lastReceivedAggregateId = receivedMessage.content.lastReceivedAggregateId
+
     // Open the encryted channel with the parent and sign the notification for members
     this.localTime += 2 * this.config.averageCryptoTime
 
@@ -23,7 +26,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup
 
     // Contact its members to know the children
-    for (const member of this.node.members.filter(e => e !== this.id)) {
+    for (const member of this.node.members.filter((e) => e !== this.id)) {
       messages.push(
         new Message(
           MessageType.NotifyGroup,
@@ -33,7 +36,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
           member,
           {
             targetGroup: receivedMessage.content.targetGroup,
-            failedNode: receivedMessage.content.failedNode
+            failedNode: receivedMessage.content.failedNode,
           }
         )
       )
@@ -47,7 +50,10 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
         this.localTime + 2 * this.config.averageLatency * this.config.maxToAverageRatio,
         this.id,
         this.id,
-        {}
+        {
+          targetGroup: receivedMessage.content.targetGroup,
+          failedNode: receivedMessage.content.failedNode,
+        }
       )
     )
   } else {

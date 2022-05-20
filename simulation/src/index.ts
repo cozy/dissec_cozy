@@ -12,13 +12,13 @@ if (debug) {
       averageComputeTime: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
-      deadline: 100000,
-      failureRate: 0.0004,
+      deadline: 1000000,
+      failureRate: 0.0007,
       depth: 3,
       fanout: 4,
       groupSize: 3,
-      seed: '4-7'
-    }
+      seed: '7-2',
+    },
   ]
 } else {
   configs = Array(10)
@@ -33,12 +33,12 @@ if (debug) {
           averageComputeTime: 100,
           healthCheckPeriod: 3,
           multicastSize: 5,
-          deadline: 100 * 1000,
+          deadline: 100 * 10000,
           failureRate: 0.0001 * failure,
           depth: 3,
           fanout: 4,
           groupSize: 3,
-          seed: `${failure}-${retries}`
+          seed: `${failure}-${retries}`,
         }))
     )
 }

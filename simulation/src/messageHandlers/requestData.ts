@@ -33,14 +33,14 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     )
   } else if (this.role === NodeRole.LeafAggregator) {
     // The node has not finished receiving contributions, it will answer later
-    if (!this.finishedWorking) {
+    if (!this.finishedWorking || !this.contributorsList[this.id]) {
       return messages
     }
 
     // Verifying the parent's certificate, signature and open an encrypted channel
     this.localTime += 3 * this.config.averageCryptoTime
 
-    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id].map(String))
+    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
     messages.push(
       new Message(
         MessageType.SendAggregate,
@@ -50,27 +50,27 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
         receivedMessage.emitterId,
         {
           aggregate: {
-            counter: this.contributorsList[this.id].length,
-            data: this.contributorsList[this.id].map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(this.contributorsList[this.id].map(String))
-          }
+            counter: this.contributorsList[this.id]!.length,
+            data: this.contributorsList[this.id]!.map((e) => this.contributions[e]).reduce((prev, curr) => prev + curr),
+            id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+          },
         }
       )
     )
   } else {
     const position = this.node.members.indexOf(this.id)
-    const children = this.node.children.map(child => child.members[position])
+    const children = this.node.children.map((child) => child.members[position])
 
     // Do not send data if they have not yet been received
     // Occurs when the node is a backup that has not yet received data from its children
-    if (children.length === 0 || children.map(child => this.aggregates[child]).some(e => !e)) {
+    if (children.length === 0 || children.map((child) => this.aggregates[child]).some((e) => !e)) {
       return messages
     }
 
     // Verifying the parent's certificate, signature and open an encrypted channel
     this.localTime += 3 * this.config.averageCryptoTime
 
-    const aggregationId = this.aggregationId(children.map(child => this.aggregates[child].id))
+    const aggregationId = this.aggregationId(children.map((child) => this.aggregates[child].id))
     this.lastSentAggregateId = aggregationId
     messages.push(
       new Message(
@@ -81,12 +81,12 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
         receivedMessage.emitterId,
         {
           aggregate: children
-            .map(child => this.aggregates[child])
+            .map((child) => this.aggregates[child])
             .reduce((prev, curr) => ({
               counter: prev.counter + curr.counter,
               data: prev.data + curr.data,
-              id: aggregationId
-            }))
+              id: aggregationId,
+            })),
         }
       )
     )

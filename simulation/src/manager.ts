@@ -25,7 +25,7 @@ export class NodesManager {
   status: StopStatus
   generator: () => number
 
-  constructor (options: ManagerArguments) {
+  constructor(options: ManagerArguments) {
     this.debug = options.debug
     this.nodes = []
     this.querier = 0
@@ -71,27 +71,32 @@ export class NodesManager {
           node.alive = false
           if (newFailure) {
             node.deathTime = this.globalTime
-            if (node.node && node.node.children.length !== 0 && node.node.members
-              .map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking)
-              .every(Boolean)
+            if (
+              node.node &&
+              node.node.children.length !== 0 &&
+              node.node.members.map((id) => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
             ) {
               // All members of the group are dead, stop the run because it's dead
               this.messages.push(
-                new Message(MessageType.StopSimulator, 0, -1, this.querier, this.querier, { status: StopStatus.GroupDead, targetGroup: node.node })
+                new Message(MessageType.StopSimulator, 0, -1, this.querier, this.querier, {
+                  status: StopStatus.GroupDead,
+                  targetGroup: node.node,
+                })
               )
             }
           }
         }
       }
-      if (!node.alive && node.deathTime === 0) node.deathTime = this.globalTime
+      if (!node.alive && node.deathTime === 0) {
+        node.deathTime = this.globalTime
+      }
     }
   }
 
   transmitMessage(unsentMessage: Message) {
     // Messages wtihout arrival date are added a standard latency
     if (unsentMessage.receptionTime === 0)
-      unsentMessage.receptionTime =
-        unsentMessage.emissionTime + this.standardLatency()
+      unsentMessage.receptionTime = unsentMessage.emissionTime + this.standardLatency()
 
     if (this.nodes[unsentMessage.emitterId].alive) {
       this.messages.push(cloneDeep(unsentMessage))
@@ -100,7 +105,41 @@ export class NodesManager {
   }
 
   handleNextMessage() {
-    this.messages.sort((a, b) => b.receptionTime - a.receptionTime)
+    this.messages.sort((a, b) => {
+      // Use priorities to order message arriving at the same time
+      if (b.receptionTime === a.receptionTime) {
+        const priorityBonus = (type: MessageType) => {
+          switch (type) {
+            case MessageType.PingTimeout:
+              return 1000
+            case MessageType.ContributionTimeout:
+              return 1000
+            case MessageType.SynchronizationTimeout:
+              return 1000
+            case MessageType.NotifyGroupTimeout:
+              return 1000
+            case MessageType.CheckHealth:
+              return 900
+            case MessageType.NotifyGroup:
+              return 800
+            case MessageType.ContactBackup:
+              return 800
+            case MessageType.ConfirmBackup:
+              return 800
+            case MessageType.BackupResponse:
+              return 800
+            case MessageType.ContributorPing:
+              return 800
+            default:
+              return 0
+          }
+        }
+
+        return priorityBonus(a.type) - priorityBonus(b.type)
+      } else {
+        return b.receptionTime - a.receptionTime
+      }
+    })
     const message = this.messages.pop()!
     this.oldMessages.push(message)
 
@@ -119,20 +158,28 @@ export class NodesManager {
 
       switch (this.status) {
         case StopStatus.SimultaneousFailures:
-          console.log(`#${message.content.targetGroup?.id} did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(e => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`)}]; children = [${message.content.targetGroup!.children}]`)
+          console.log(
+            `#${
+              message.content.targetGroup?.id
+            } did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(
+              (e) => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`
+            )}]; children = [${message.content.targetGroup!.children}]`
+          )
           break
         case StopStatus.GroupDead:
-          console.log(`Group of node [${message.content.targetGroup!.members}]) died at [${message.content.targetGroup!.members.map(m => this.nodes[m].deathTime)}]`)
-          break;
+          console.log(
+            `Group of node [${
+              message.content.targetGroup!.members
+            }]) died at [${message.content.targetGroup!.members.map((m) => this.nodes[m].deathTime)}]`
+          )
+          break
       }
     } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
       this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
     } else if (this.nodes[message.receiverId].alive) {
       this.globalTime = message?.receptionTime
       // Receiving a message creates new ones
-      const resultingMessages = this.nodes[message.receiverId].receiveMessage(
-        message
-      )
+      const resultingMessages = this.nodes[message.receiverId].receiveMessage(message)
       for (const msg of resultingMessages) {
         this.transmitMessage(msg)
       }
@@ -140,10 +187,15 @@ export class NodesManager {
   }
 
   displayAggregateId() {
-    const querier = Object.values(this.nodes).filter(e => e.role === NodeRole.Querier)[0]
+    const querier = Object.values(this.nodes).filter((e) => e.role === NodeRole.Querier)[0]
 
     const log = (node: Node) => {
-      (node.node?.children.length || 0) > 0 && console.log(`Node #${node.id} (members=${node.node!.members}) ID=[${node.node!.members.map(e => this.nodes[e].lastSentAggregateId)}]`)
+      ;(node.node?.children.length || 0) > 0 &&
+        console.log(
+          `Node #${node.id} (members=${node.node!.members}) ID=[${node.node!.members.map(
+            (e) => this.nodes[e].lastSentAggregateId
+          )}]`
+        )
       for (const child of node.node!.children) {
         console.group()
         log(this.nodes[child.id])
