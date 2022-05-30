@@ -27,6 +27,11 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
     child.members[failedPosition] = receivedMessage.emitterId
     child.parents = this.node.members
 
+    // Assign the failed node's aggregate as this node's aggregate
+    // Provides a default value usable to forward the result quickly
+    this.contributions[receivedMessage.emitterId] = this.contributions[receivedMessage.content.failedNode]
+    this.aggregates[receivedMessage.emitterId] = this.aggregates[receivedMessage.content.failedNode]
+
     // The backup needs to receive a confirmation before continue the protocol
     messages.push(
       new Message(
@@ -38,7 +43,8 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
         {
           useAsBackup: true,
           targetGroup: cloneDeep(child),
-          failedNode: receivedMessage.content.failedNode
+          failedNode: receivedMessage.content.failedNode,
+          lastReceivedAggregateId: this.aggregates[receivedMessage.content.failedNode]?.id,
         }
       )
     )
@@ -52,7 +58,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
         this.id,
         receivedMessage.emitterId,
         {
-          useAsBackup: false
+          useAsBackup: false,
         }
       )
     )

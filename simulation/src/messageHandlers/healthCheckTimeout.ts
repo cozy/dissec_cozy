@@ -35,7 +35,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
           backup,
           {
             failedNode: unansweredHealthCheck,
-            targetGroup: targetGroup?.copy()
+            targetGroup: targetGroup?.copy(),
           }
         )
       )
@@ -54,7 +54,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
           this.id,
           {
             remainingBackups,
-            failedNode: unansweredHealthCheck
+            failedNode: unansweredHealthCheck,
           }
         )
       )

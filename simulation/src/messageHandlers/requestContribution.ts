@@ -1,5 +1,5 @@
 import { Message, MessageType } from '../message'
-import { Node, NodeRole } from '../node'
+import { Node } from '../node'
 import { Generator } from '../random'
 
 const generator = Generator.get()
@@ -14,11 +14,22 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   const messages: Message[] = []
 
-  // TODO: Set contributors during initialization
-  this.role = NodeRole.Contributor
+  // Retransmit and answer to pings without verifications because it's does not leak info
+  // TODO: Account for DHT hops in the broadcast
+  for (const parent of receivedMessage.content.parents) {
+    messages.push(
+      new Message(
+        MessageType.ContributorPing,
+        this.localTime,
+        0, // Don't specify time to let the manager add the latency
+        this.id,
+        parent,
+        {}
+      )
+    )
+  }
 
-  // Verifying the parent's certificate and signature
-  this.localTime += 2 * this.config.averageCryptoTime
+  // Verifying the parent's certificate and signature when sending the data
   // Prepare shares
   this.localTime += this.config.averageComputeTime
   this.shares = Array(this.node.members.length).fill(0)
@@ -32,18 +43,15 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   this.shares[this.shares.length - 1] = this.secretValue - accumulator
 
   for (const parent of receivedMessage.content.parents) {
-    // Open a secure channel
-    this.localTime += this.config.averageCryptoTime
-
     // Send data to parent
     messages.push(
       new Message(
-        MessageType.SendContribution,
+        MessageType.PrepareContribution,
         this.localTime,
         0, // Don't specify time to let the manager add the latency
         this.id,
-        parent,
-        { share: this.shares[this.node.parents.indexOf(parent)] }
+        this.id,
+        { share: this.shares[this.node.parents.indexOf(parent)], targetNode: parent }
       )
     )
   }

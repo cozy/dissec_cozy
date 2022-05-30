@@ -1,4 +1,3 @@
-import { arrayEquals } from '../helpers'
 import { Message, MessageType } from '../message'
 import { Node } from '../node'
 
@@ -15,36 +14,50 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
   // Verifying the child's certificate, signature and decrypt the symmetric key
   this.localTime += 3 * this.config.averageCryptoTime
 
-  if (!this.contributorsList[this.id].includes(receivedMessage.emitterId)) {
-    this.contributorsList[this.id].push(receivedMessage.emitterId)
-  }
+  // Store the share
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
 
-  if (
-    this.expectedContributors.length !== 0 &&
-    arrayEquals(this.expectedContributors, this.contributorsList[this.id]) &&
-    !this.finishedWorking
-  ) {
+  // Check if we received shares from all contributors
+  if (this.contributorsList[this.id]?.map((contributor) => this.contributions[contributor]).every(Boolean)) {
     // The node received all expected contributions and can continue the protocole
-    // No need to tell the members because they have the same contributors
-    this.lastSentAggregateId = this.aggregationId(this.expectedContributors.map(String))
-    messages.push(
-      new Message(
-        MessageType.SendAggregate,
-        this.localTime,
-        0, // Don't specify time to let the manager add the latency
-        this.id,
-        this.node.parents[this.node.members.indexOf(this.id)],
-        {
-          aggregate: {
-            counter: this.contributorsList[this.id].length,
-            data: Object.values(this.contributions).reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(this.expectedContributors.map(String))
-          }
-        }
-      )
-    )
-    this.finishedWorking = true
+
+    const parent = this.node.parents[this.node.members.indexOf(this.id)]
+
+    if (!this.confirmContributors) {
+      // Send data to the parent if the node is a backup joining
+      this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+      if (this.lastReceivedAggregateId === this.lastSentAggregateId) {
+        // Do not send if the parent already has the same aggregate
+        messages.push(
+          new Message(
+            MessageType.SendAggregate,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            parent,
+            {
+              aggregate: {
+                counter: this.contributorsList[this.id]!.length,
+                data: this.contributorsList[this.id]!.map((contributor) => this.contributions[contributor]).reduce(
+                  (prev, curr) => prev + curr
+                ),
+                id: this.lastSentAggregateId,
+              },
+            }
+          )
+        )
+      }
+      this.finishedWorking = true
+    } else {
+      // Tell other members if the current node is in synchronization
+      for (const member of this.node.members.filter((e) => this.id !== e)) {
+        messages.push(
+          new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+            contributors: this.contributorsList[this.id],
+          })
+        )
+      }
+    }
   }
 
   return messages

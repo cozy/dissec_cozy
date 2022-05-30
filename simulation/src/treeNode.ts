@@ -5,9 +5,11 @@ class TreeNode {
   parents: number[]
   members: number[]
   children: TreeNode[]
+  depth: number
 
-  constructor(id: number) {
+  constructor(id: number, depth: number) {
     this.id = id
+    this.depth = depth
     this.parents = []
     this.members = []
     this.children = []
@@ -15,7 +17,7 @@ class TreeNode {
 
   static fromCopy(source: TreeNode, id: number): TreeNode {
     const copy = JSON.parse(JSON.stringify(source))
-    const node = new TreeNode(id)
+    const node = new TreeNode(id, source.depth)
     node.parents = copy.parents
     node.members = copy.members
     node.children = source.children.map(e => this.fromCopy(e, e.id))
@@ -36,7 +38,7 @@ class TreeNode {
    * @returns The number of node created and the root of the tree
    */
   static createTree(depth: number, fanout: number, groupSize: number, id: number): { nextId: number; node: TreeNode } {
-    const node = new TreeNode(id)
+    const node = new TreeNode(id, depth)
     node.members = Array(groupSize)
       .fill(id)
       .map((e, i) => e + i)

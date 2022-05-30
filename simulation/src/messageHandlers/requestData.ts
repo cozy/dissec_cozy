@@ -33,14 +33,14 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     )
   } else if (this.role === NodeRole.LeafAggregator) {
     // The node has not finished receiving contributions, it will answer later
-    if (!this.finishedWorking) {
+    if (!this.finishedWorking || !this.contributorsList[this.id]) {
       return messages
     }
 
     // Verifying the parent's certificate, signature and open an encrypted channel
     this.localTime += 3 * this.config.averageCryptoTime
 
-    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id].map(String))
+    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
     messages.push(
       new Message(
         MessageType.SendAggregate,
@@ -50,10 +50,10 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
         receivedMessage.emitterId,
         {
           aggregate: {
-            counter: this.contributorsList[this.id].length,
-            data: this.contributorsList[this.id].map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(this.contributorsList[this.id].map(String))
-          }
+            counter: this.contributorsList[this.id]!.length,
+            data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
+            id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+          },
         }
       )
     )
@@ -85,8 +85,8 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
             .reduce((prev, curr) => ({
               counter: prev.counter + curr.counter,
               data: prev.data + curr.data,
-              id: aggregationId
-            }))
+              id: aggregationId,
+            })),
         }
       )
     )

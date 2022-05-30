@@ -49,7 +49,7 @@ export class ExperimentRunner {
     if (!fs.existsSync(outputPath)) {
       const components = outputPath.split('/')
       fs.mkdirSync(outputPath.replace(components[components.length - 1], ''), {
-        recursive: true
+        recursive: true,
       })
     }
     fs.writeFileSync(outputPath, JSON.stringify(results))
@@ -63,14 +63,14 @@ export class ExperimentRunner {
     const { nextId, node: root } = TreeNode.createTree(run.depth, run.fanout, run.groupSize, 0)
 
     // Adding the querier group
-    const querierGroup = new TreeNode(nextId)
+    const querierGroup = new TreeNode(nextId, run.depth + 1)
     querierGroup.children.push(root)
     querierGroup.members = Array(run.groupSize).fill(nextId)
     root.parents = querierGroup.members
 
     const manager = NodesManager.createFromTree(root, {
       ...run,
-      debug: this.debug
+      debug: this.debug,
     })
     const n = manager.addNode(querierGroup, querierGroup.id)
     n.role = NodeRole.Querier
@@ -101,7 +101,7 @@ export class ExperimentRunner {
         // Only the node with the lowest ID sends the message
         manager.transmitMessage(
           new Message(MessageType.RequestContribution, 0, 0, aggregator.id, child, {
-            parents: aggregator.members
+            parents: aggregator.members,
           })
         )
       }
@@ -109,27 +109,30 @@ export class ExperimentRunner {
       // Setting contribution collection timeouts on the leaves aggregators
       for (const member of aggregator.members) {
         // TODO: Timeouts should take into account the broadcasts.
-        const contributorLatency =
-          (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio
         // Currently supposes that contributors are reached in 1 hop
-        if (member === aggregator.id) {
-          // The first member of the group also waits for the rest of the group
-          // Hence the additional latency
-          manager.transmitMessage(
-            new Message(
-              MessageType.ContributionTimeout,
-              0,
-              contributorLatency + run.averageLatency * run.maxToAverageRatio,
-              aggregator.id,
-              aggregator.id,
-              {}
-            )
+
+        // Contributors respond with a ping and then the contribution, await both
+        manager.transmitMessage(
+          new Message(MessageType.PingTimeout, 0, 2 * run.averageLatency * run.maxToAverageRatio, member, member, {})
+        )
+        manager.transmitMessage(
+          new Message(
+            MessageType.ContributionTimeout,
+            0,
+            (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio,
+            member,
+            member,
+            {}
           )
-        } else {
-          manager.transmitMessage(
-            new Message(MessageType.ContributionTimeout, 0, contributorLatency, member, member, {})
-          )
-        }
+        )
+      }
+    }
+
+    // Set contributors role
+    const contributors = root.selectNodesByDepth(run.depth)
+    for (const contributorGroup of contributors) {
+      for (const contributor of contributorGroup.members) {
+        manager.nodes[contributor].role = NodeRole.Contributor
       }
     }
 
@@ -149,8 +152,9 @@ export class ExperimentRunner {
 
     console.log(`Simulation finished with status ${manager.status}`)
     console.log(
-      `${(Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) *
-        100}% of nodes failed (${Object.values(manager.nodes).filter(e => !e.alive).length} / ${
+      `${
+        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100
+      }% of nodes failed (${Object.values(manager.nodes).filter(e => !e.alive).length} / ${
         Object.values(manager.nodes).length
       })`
     )
@@ -172,7 +176,7 @@ export class ExperimentRunner {
       failureRate: manager.failureRate,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
-      messages: oldMessages
+      messages: oldMessages,
     }
   }
 }

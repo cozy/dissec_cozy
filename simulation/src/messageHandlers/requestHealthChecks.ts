@@ -22,16 +22,17 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
   }
 
   for (const child of children) {
-    const msg = new Message(
-      MessageType.CheckHealth,
-      this.localTime,
-      0, // Don't specify time to let the manager add the latency
-      this.id,
-      child,
-      { parents: this.node.members }
+    messages.push(
+      new Message(
+        MessageType.CheckHealth,
+        this.localTime,
+        0, // Don't specify time to let the manager add the latency
+        this.id,
+        child,
+        { parents: this.node.members }
+      )
     )
-    messages.push(msg)
-    this.ongoingHealthChecks[msg.receiverId] = true
+    this.ongoingHealthChecks[child] = true
   }
 
   // Set a timeout to trigger the recovery procedure for not responding nodes
