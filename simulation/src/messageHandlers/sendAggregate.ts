@@ -17,11 +17,11 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
 
     // Expecting one aggregate from each member of the child group
-    const expectedAggregates = this.node.children[0].members.map((child) => this.aggregates[child]).filter(Boolean)
+    const expectedAggregates = this.node.children[0].members.map(child => this.aggregates[child]).filter(Boolean)
 
     // Compute unique IDs
     const uniqueIds: string[] = []
-    expectedAggregates.forEach((e) => {
+    expectedAggregates.forEach(e => {
       if (!uniqueIds.includes(e.id)) uniqueIds.push(e.id)
     })
 
@@ -49,12 +49,12 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     // If none was ever sent, it changes each time a new aggregate is received
     // It prevents sending the same aggregate twice
     const oldAggregationId = this.aggregationId(
-      this.node.children.map((e) => this.aggregates[e.members[position]]?.id || '')
+      this.node.children.map(e => this.aggregates[e.members[position]]?.id || '')
     )
 
     this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
-    const aggregates = this.node.children.map((e) => this.aggregates[e.members[position]])
-    const newAggregationId = this.aggregationId(aggregates.map((e) => e?.id || ''))
+    const aggregates = this.node.children.map(e => this.aggregates[e.members[position]])
+    const newAggregationId = this.aggregationId(aggregates.map(e => e?.id || ''))
 
     if (
       aggregates.every(Boolean) &&
@@ -65,7 +65,7 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       const aggregate = aggregates.reduce((prev, curr) => ({
         counter: prev.counter + curr.counter,
         data: prev.data + curr.data,
-        id: this.aggregationId(aggregates.map((e) => e.id)),
+        id: this.aggregationId(aggregates.map(e => e.id)),
       }))
 
       // Stop regularly checking children's health

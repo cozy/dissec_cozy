@@ -14,11 +14,11 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
   if (this.role === NodeRole.Querier) {
     // Check the health of all node in the children group who haven't sent data
     // Do not request from nodes we're already trying to replace to avoid conflicting requests
-    children = this.node.children[0].members.filter((e) => !this.lookingForBackup[e])
+    children = this.node.children[0].members.filter(e => !this.lookingForBackup[e])
   } else if (this.role === NodeRole.Aggregator) {
     // Check the health of the node in the same position in each child
     // Do not request from nodes we're already trying to replace to avoid conflicting requests
-    children = this.node.children.map((child) => child.members[position]).filter((e) => !this.lookingForBackup[e])
+    children = this.node.children.map(child => child.members[position]).filter(e => !this.lookingForBackup[e])
   }
 
   for (const child of children) {

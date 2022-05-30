@@ -32,7 +32,7 @@ export function handleContinueMulticast(this: Node, receivedMessage: Message): M
           backup,
           {
             failedNode: receivedMessage.content.failedNode,
-            targetGroup
+            targetGroup,
           }
         )
       )
@@ -51,7 +51,7 @@ export function handleContinueMulticast(this: Node, receivedMessage: Message): M
           this.id,
           {
             remainingBackups,
-            failedNode: receivedMessage.content.failedNode
+            failedNode: receivedMessage.content.failedNode,
           }
         )
       )

@@ -106,21 +106,21 @@ export class Message {
       receiver.role === NodeRole.Querier
         ? receiver.node?.children[0].members
         : (receiver.node?.children
-            .map((e) => (position ? e.members[position] : undefined))
-            .filter((e) => e !== undefined) as any)
+            .map(e => (position ? e.members[position] : undefined))
+            .filter(e => e !== undefined) as any)
 
     switch (receiver.role) {
       case NodeRole.Querier:
         children = receiver.node!.children[0].members
         break
       case NodeRole.LeafAggregator:
-        children = receiver.node!.children.flatMap((e) => e.members)
+        children = receiver.node!.children.flatMap(e => e.members)
         break
       case NodeRole.Backup:
         children = []
         break
       default:
-        children = receiver.node!.children.map((e) => e.members[position!])
+        children = receiver.node!.children.map(e => e.members[position!])
         break
     }
 
@@ -153,7 +153,7 @@ export class Message {
           `${tag} timed out waiting for contribution pings, found ${receiver.pingList.length}: [${receiver.pingList
             .slice()
             .sort()
-            .map((e) => '#' + e)}]`
+            .map(e => '#' + e)}]`
         )
         break
       case MessageType.ConfirmContributors:
@@ -175,20 +175,20 @@ export class Message {
         const contributors = receiver.contributorsList[receiver.id] || []
         console.log(
           `${tag} timed out waiting for confirmations of contributors and is missing ${
-            contributors.length - contributors.map((e) => receiver.contributions[e]).filter(Boolean).length
+            contributors.length - contributors.map(e => receiver.contributions[e]).filter(Boolean).length
           } contributors`
         )
         break
       case MessageType.SendAggregate:
         console.log(
           `${tag} received an aggregate (ID=${this.content.aggregate!.id}) from child #${this.emitterId}. [${children
-            ?.filter((child) => Boolean(receiver.aggregates[child]))
-            .map((e) => '#' + e)}] out of [${children.map((e) => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
+            ?.filter(child => Boolean(receiver.aggregates[child]))
+            .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
         )
         break
       case MessageType.RequestHealthChecks:
         console.log(
-          `${tag} is requesting health checks from his children [${children.map((e) => '#' + e)}]. ${
+          `${tag} is requesting health checks from his children [${children.map(e => '#' + e)}]. ${
             receiver.finishedWorking ? 'Not rescheduling' : 'Rescheduling'
           }`
         )
@@ -204,11 +204,11 @@ export class Message {
             receiver.role !== NodeRole.Querier &&
             this.content.members &&
             !arrayEquals(
-              receiver.node!.children.find((e) => e.members.includes(this.emitterId))!.members,
+              receiver.node!.children.find(e => e.members.includes(this.emitterId))!.members,
               this.content.members!
             )
               ? ` Child updated its members: [${
-                  receiver.node!.children.find((e) => e.members.includes(this.emitterId))!.members
+                  receiver.node!.children.find(e => e.members.includes(this.emitterId))!.members
                 }] -> [${this.content.members}]`
               : ''
           }`
@@ -262,7 +262,7 @@ export class Message {
         console.log(
           `${tag} has timed out on the group notification. ${
             receiver.node?.children.length
-              ? `New children are [${receiver.node?.children.map((e) => e.members[position!])}]`
+              ? `New children are [${receiver.node?.children.map(e => e.members[position!])}]`
               : 'No known children'
           }`
         )
@@ -270,13 +270,13 @@ export class Message {
       case MessageType.ContributorsPolling:
         console.log(
           `${tag} has timed out on the group notification. New children are [${receiver.node?.children.map(
-            (e) => e.members[position!]
+            e => e.members[position!]
           )}] ${!receiver.node?.children.length ? 'No known children' : 'Ignored'}`
         )
         break
       case MessageType.SendChildren:
         console.log(
-          `${tag} received its children from node #${this.emitterId}: [${this.content.children?.map((e) => e.members)}]`
+          `${tag} received its children from node #${this.emitterId}: [${this.content.children?.map(e => e.members)}]`
         )
         break
       case MessageType.RequestData:

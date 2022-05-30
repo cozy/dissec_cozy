@@ -24,7 +24,7 @@ export function handleContactBackup(this: Node, receivedMessage: Message): Messa
         receivedMessage.emitterId,
         {
           backupIsAvailable: false,
-          failedNode: receivedMessage.content.failedNode
+          failedNode: receivedMessage.content.failedNode,
         }
       )
     )
@@ -41,7 +41,7 @@ export function handleContactBackup(this: Node, receivedMessage: Message): Messa
         {
           backupIsAvailable: true,
           failedNode: receivedMessage.content.failedNode,
-          targetGroup: receivedMessage.content.targetGroup
+          targetGroup: receivedMessage.content.targetGroup,
         }
       )
     )

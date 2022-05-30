@@ -44,7 +44,7 @@ export class ExperimentRunner {
       console.log()
     }
 
-    console.log('Success rate:', results.filter((e) => e.status === StopStatus.Success).length, '/', results.length)
+    console.log('Success rate:', results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
 
     if (!fs.existsSync(outputPath)) {
       const components = outputPath.split('/')
@@ -87,7 +87,7 @@ export class ExperimentRunner {
       backups.push(backup)
     }
     for (let i = 0; i < backupListStart; i++) {
-      manager.nodes[i].backupList = backups.map((e) => e.id)
+      manager.nodes[i].backupList = backups.map(e => e.id)
     }
 
     // All leaves aggregator request data from contributors
@@ -97,7 +97,7 @@ export class ExperimentRunner {
         manager.nodes[member].role = NodeRole.LeafAggregator
       }
       // Requesting contributions
-      for (const child of aggregator.children.flatMap((e) => e.members)) {
+      for (const child of aggregator.children.flatMap(e => e.members)) {
         // Only the node with the lowest ID sends the message
         manager.transmitMessage(
           new Message(MessageType.RequestContribution, 0, 0, aggregator.id, child, {
@@ -153,8 +153,8 @@ export class ExperimentRunner {
     console.log(`Simulation finished with status ${manager.status}`)
     console.log(
       `${
-        (Object.values(manager.nodes).filter((e) => !e.alive).length / Object.values(manager.nodes).length) * 100
-      }% of nodes failed (${Object.values(manager.nodes).filter((e) => !e.alive).length} / ${
+        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100
+      }% of nodes failed (${Object.values(manager.nodes).filter(e => !e.alive).length} / ${
         Object.values(manager.nodes).length
       })`
     )
@@ -165,7 +165,7 @@ export class ExperimentRunner {
 
     const oldMessages: Message[] = []
     const oldIds: number[] = []
-    manager.oldMessages.forEach((m) => {
+    manager.oldMessages.forEach(m => {
       if (!oldIds.includes(m.id)) {
         oldIds.push(m.id)
         oldMessages.push(m)
@@ -175,7 +175,7 @@ export class ExperimentRunner {
       status: manager.status,
       failureRate: manager.failureRate,
       observedFailureRate:
-        Object.values(manager.nodes).filter((e) => !e.alive).length / Object.values(manager.nodes).length,
+        Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
       messages: oldMessages,
     }
   }

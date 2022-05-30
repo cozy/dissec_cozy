@@ -26,7 +26,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup
 
     // Contact its members to know the children
-    for (const member of this.node.members.filter((e) => e !== this.id)) {
+    for (const member of this.node.members.filter(e => e !== this.id)) {
       messages.push(
         new Message(
           MessageType.NotifyGroup,

@@ -20,7 +20,7 @@ class TreeNode {
     const node = new TreeNode(id, source.depth)
     node.parents = copy.parents
     node.members = copy.members
-    node.children = source.children.map((e) => this.fromCopy(e, e.id))
+    node.children = source.children.map(e => this.fromCopy(e, e.id))
     return node
   }
 
@@ -68,7 +68,7 @@ class TreeNode {
       return this
     } else if ((index = this.members.indexOf(id)) >= 0) {
       return TreeNode.fromCopy(this, this.members[index])
-    } else if ((index = this.children.map((e) => e.id).indexOf(id)) >= 0) {
+    } else if ((index = this.children.map(e => e.id).indexOf(id)) >= 0) {
       return this.children[index]
     } else {
       for (const child of this.children) {
@@ -85,7 +85,7 @@ class TreeNode {
     if (depth === 0) {
       return [this]
     } else {
-      return this.children.flatMap((child) => child.selectNodesByDepth(depth - 1))
+      return this.children.flatMap(child => child.selectNodesByDepth(depth - 1))
     }
   }
 

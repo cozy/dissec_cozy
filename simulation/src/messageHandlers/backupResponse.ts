@@ -20,7 +20,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
     this.lookingForBackup[receivedMessage.content.failedNode] = false
     this.continueMulticast = false
 
-    const child = this.node.children.filter((e) => e.members.includes(receivedMessage.content.failedNode!))[0] // The group that the backup will join
+    const child = this.node.children.filter(e => e.members.includes(receivedMessage.content.failedNode!))[0] // The group that the backup will join
     const failedPosition = child.members.indexOf(receivedMessage.content.failedNode)
 
     // Update child group

@@ -74,7 +74,7 @@ export class NodesManager {
             if (
               node.node &&
               node.node.children.length !== 0 &&
-              node.node.members.map((id) => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
+              node.node.members.map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
             ) {
               // All members of the group are dead, stop the run because it's dead
               this.messages.push(
@@ -162,7 +162,7 @@ export class NodesManager {
             `#${
               message.content.targetGroup?.id
             } did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(
-              (e) => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`
+              e => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`
             )}]; children = [${message.content.targetGroup!.children}]`
           )
           break
@@ -170,7 +170,7 @@ export class NodesManager {
           console.log(
             `Group of node [${
               message.content.targetGroup!.members
-            }]) died at [${message.content.targetGroup!.members.map((m) => this.nodes[m].deathTime)}]`
+            }]) died at [${message.content.targetGroup!.members.map(m => this.nodes[m].deathTime)}]`
           )
           break
       }
@@ -187,15 +187,16 @@ export class NodesManager {
   }
 
   displayAggregateId() {
-    const querier = Object.values(this.nodes).filter((e) => e.role === NodeRole.Querier)[0]
+    const querier = Object.values(this.nodes).filter(e => e.role === NodeRole.Querier)[0]
 
     const log = (node: Node) => {
-      ;(node.node?.children.length || 0) > 0 &&
+      if ((node.node?.children.length || 0) > 0) {
         console.log(
           `Node #${node.id} (members=${node.node!.members}) ID=[${node.node!.members.map(
-            (e) => this.nodes[e].lastSentAggregateId
+            e => this.nodes[e].lastSentAggregateId
           )}]`
         )
+      }
       for (const child of node.node!.children) {
         console.group()
         log(this.nodes[child.id])

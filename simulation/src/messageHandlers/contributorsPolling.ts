@@ -9,7 +9,7 @@ export function handleContributorsPolling(this: Node, receivedMessage: Message):
   }
 
   const receivedContributions =
-    this.contributorsList[this.id]?.map((contributor) => this.contributions[contributor]) || []
+    this.contributorsList[this.id]?.map(contributor => this.contributions[contributor]) || []
 
   if (!receivedContributions.every(Boolean)) {
     // The timeout triggered and some contributions are still missing
@@ -28,7 +28,7 @@ export function handleContributorsPolling(this: Node, receivedMessage: Message):
         {
           aggregate: {
             counter: this.contributorsList[this.id]!.length,
-            data: this.contributorsList[this.id]!.map((contributor) => this.contributions[contributor]).reduce(
+            data: this.contributorsList[this.id]!.map(contributor => this.contributions[contributor]).reduce(
               (prev, curr) => prev + curr
             ),
             id: this.aggregationId(this.contributorsList[this.id]!.map(String)),

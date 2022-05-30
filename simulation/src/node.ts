@@ -196,7 +196,7 @@ export class Node {
         // Update the group of the child
         if (this.role !== NodeRole.Querier && receivedMessage.content.members) {
           // Prevent Querier from updating its group
-          this.node!.children.find((e) => e.members.includes(receivedMessage.emitterId))!.members =
+          this.node!.children.find(e => e.members.includes(receivedMessage.emitterId))!.members =
             receivedMessage.content.members!
         }
         break

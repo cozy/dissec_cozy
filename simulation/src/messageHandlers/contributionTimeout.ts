@@ -10,16 +10,16 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
 
   // Update local list with received contributors
   this.contributorsList[this.id] = this.contributorsList[this.id]?.filter(
-    (contributor) => this.contributions[contributor]
+    contributor => this.contributions[contributor]
   )
 
   // The timeout triggered, share with other members
   // TODO: This is pessimistic, do optimistic version
   // Share received contributors with other members and await a reply
-  for (const member of this.node.members.filter((e) => e !== this.id)) {
+  for (const member of this.node.members.filter(e => e !== this.id)) {
     messages.push(
       new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
-        contributors: this.contributorsList[this.id]?.filter((e) => this.contributions[e]),
+        contributors: this.contributorsList[this.id]?.filter(e => this.contributions[e]),
       })
     )
   }

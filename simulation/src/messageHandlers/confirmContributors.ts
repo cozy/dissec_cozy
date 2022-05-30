@@ -20,7 +20,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     // Contributors have changed
     // Query previously unknown contributors for their data
     const newContributors = intersection.filter(
-      (e) => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
+      e => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
     )
     this.contributorsList[this.id] = intersection
     if (!this.queriedNode) {
@@ -48,7 +48,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
           {
             aggregate: {
               counter: this.contributorsList[this.id]!.length,
-              data: this.contributorsList[this.id]!.map((e) => this.contributions[e]).reduce(
+              data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
                 (prev, curr) => prev + curr,
                 0
               ),
@@ -62,8 +62,8 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
 
   if (
     !this.finishedWorking &&
-    this.node.members.map((member) => this.contributorsList[member]).every(Boolean) &&
-    this.contributorsList[this.id]?.map((e) => this.contributions[e]).every(Boolean)
+    this.node.members.map(member => this.contributorsList[member]).every(Boolean) &&
+    this.contributorsList[this.id]?.map(e => this.contributions[e]).every(Boolean)
   ) {
     // The node has received a list from each member and knows the contributions, send the aggregate
     this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
@@ -77,7 +77,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
         {
           aggregate: {
             counter: this.contributorsList[this.id]!.length,
-            data: this.contributorsList[this.id]!.map((e) => this.contributions[e]).reduce(
+            data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
               (prev, curr) => prev + curr,
               0
             ),
