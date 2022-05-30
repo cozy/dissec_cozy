@@ -12,7 +12,9 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
 
     // The node has been notified by a backup that it is joining the group
     // Compare the local members with the received one, keep the newest version
-    this.node.members = receivedMessage.content.targetGroup?.members || this.node.members
+    this.node.members = this.node.members
+      .slice()
+      .map((e) => (e !== receivedMessage.content.failedNode ? e : receivedMessage.emitterId || e))
     this.node.parents = receivedMessage.content.targetGroup?.parents || this.node.parents
 
     // The backup will ask again later if the list is not yet known

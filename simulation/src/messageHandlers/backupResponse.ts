@@ -21,6 +21,7 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
     this.continueMulticast = false
 
     const child = this.node.children.filter(e => e.members.includes(receivedMessage.content.failedNode!))[0] // The group that the backup will join
+    const targetGroup = cloneDeep(child)
     const failedPosition = child.members.indexOf(receivedMessage.content.failedNode)
 
     // Update child group
@@ -42,9 +43,9 @@ export function handleBackupResponse(this: Node, receivedMessage: Message): Mess
         receivedMessage.emitterId,
         {
           useAsBackup: true,
-          targetGroup: cloneDeep(child),
+          targetGroup,
           failedNode: receivedMessage.content.failedNode,
-          lastReceivedAggregateId: this.aggregates[receivedMessage.content.failedNode]?.id,
+          parentLastReceivedAggregateId: this.aggregates[receivedMessage.content.failedNode]?.id,
         }
       )
     )

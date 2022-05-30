@@ -1,4 +1,5 @@
-import { Message } from '../message'
+import { ProtocolStrategy } from '../experimentRunner'
+import { Message, MessageType } from '../message'
 import { Node } from '../node'
 
 export function handlePingTimeout(this: Node): Message[] {
@@ -9,6 +10,17 @@ export function handlePingTimeout(this: Node): Message[] {
 
   // Initialize the list of queried note
   this.queriedNode = this.contributorsList[this.id]?.slice()
+
+  if (this.config.strategy === ProtocolStrategy.Optimistic) {
+    // The first member forwards the list of contributors to its members
+    for (const member of this.node!.members.filter((e) => e !== this.id)) {
+      messages.push(
+        new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+          contributors: this.contributorsList[this.id],
+        })
+      )
+    }
+  }
 
   return messages
 }

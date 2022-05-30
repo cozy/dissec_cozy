@@ -58,7 +58,8 @@ export class Node {
   confirmContributors: boolean = true
   aggregates: { [nodeId: number]: Aggregate }
   lastSentAggregateId: string
-  lastReceivedAggregateId?: string
+  parentLastReceivedAggregateId?: string
+  finalAggregates: { [aggregateId: string]: { [nodeId: number]: Aggregate } } = {}
 
   handleRequestContribution = handleRequestContribution
   handleContributorPing = handleContributorPing
@@ -132,8 +133,9 @@ export class Node {
 
     if (this.config.debug) {
       const nodesOfInterest: number[] = [
-        255, 0, 1, 2, 3, 4, 5, 6, 8, 37, 38, 51, 53, 52, 66, 99, 114, 115, 129, 134, 147, 148, 149, 162, 192, 194, 195,
-        196, 197, 269, 284, 290, 305, 306, 339, 354, 359, 362, 364, 372, 393, 395, 415, 401, 426, 429, 446,
+        255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 37, 38, 51, 53, 52, 66, 67, 68, 71, 99, 100, 101, 114, 115, 129, 134, 147, 148,
+        149, 162, 192, 194, 195, 196, 197, 226, 269, 278, 284, 290, 305, 306, 339, 354, 359, 360, 362, 364, 372, 393,
+        395, 415, 401, 426, 429, 446,
       ]
       const filters: MessageType[] = []
       if (

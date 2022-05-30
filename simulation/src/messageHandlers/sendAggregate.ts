@@ -11,10 +11,17 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     throw new Error('Received an empty aggregate')
   }
 
+  const aggregate = receivedMessage.content.aggregate
+
   // Cryptographic verification have been executed during the tree setup except for backups
 
   if (this.role === NodeRole.Querier) {
-    this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
+    this.aggregates[receivedMessage.emitterId] = aggregate
+
+    if (!this.finalAggregates[aggregate.id]) {
+      this.finalAggregates[aggregate.id] = {}
+    }
+    this.finalAggregates[aggregate.id][receivedMessage.emitterId] = aggregate
 
     // Expecting one aggregate from each member of the child group
     const expectedAggregates = this.node.children[0].members.map(child => this.aggregates[child]).filter(Boolean)
@@ -25,11 +32,13 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       if (!uniqueIds.includes(e.id)) uniqueIds.push(e.id)
     })
 
-    if (expectedAggregates.length === this.node.members.length && uniqueIds.length === 1) {
+    const finalAggregates = Object.values(this.finalAggregates[aggregate.id])
+    if (finalAggregates.length === this.config.groupSize) {
+      // if (expectedAggregates.length === this.config.groupSize && uniqueIds.length === 1) {
       // Received all shares
       this.finishedWorking = true
 
-      const result = expectedAggregates.reduce((prev, curr) => ({
+      const result = finalAggregates.reduce((prev, curr) => ({
         counter: prev.counter + curr.counter,
         data: prev.data + curr.data,
         id: uniqueIds[0],
@@ -52,14 +61,14 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       this.node.children.map(e => this.aggregates[e.members[position]]?.id || '')
     )
 
-    this.aggregates[receivedMessage.emitterId] = receivedMessage.content.aggregate
+    this.aggregates[receivedMessage.emitterId] = aggregate
     const aggregates = this.node.children.map(e => this.aggregates[e.members[position]])
     const newAggregationId = this.aggregationId(aggregates.map(e => e?.id || ''))
 
     if (
       aggregates.every(Boolean) &&
       newAggregationId !== oldAggregationId &&
-      this.lastReceivedAggregateId !== newAggregationId
+      this.parentLastReceivedAggregateId !== newAggregationId
     ) {
       // Forwarding the new aggregate to the parent if it was never sent before
       const aggregate = aggregates.reduce((prev, curr) => ({

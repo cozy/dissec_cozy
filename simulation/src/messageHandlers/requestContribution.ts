@@ -1,3 +1,4 @@
+import { ProtocolStrategy } from '../experimentRunner'
 import { Message, MessageType } from '../message'
 import { Node } from '../node'
 import { Generator } from '../random'
@@ -15,15 +16,29 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   const messages: Message[] = []
 
   // Retransmit and answer to pings without verifications because it's does not leak info
-  // TODO: Account for DHT hops in the broadcast
-  for (const parent of receivedMessage.content.parents) {
+  if (this.config.strategy === ProtocolStrategy.Pessimistic) {
+    // Pessimists inform every parent that they will contribute
+    for (const parent of receivedMessage.content.parents) {
+      messages.push(
+        new Message(
+          MessageType.ContributorPing,
+          this.localTime,
+          0, // Don't specify time to let the manager add the latency
+          this.id,
+          parent,
+          {}
+        )
+      )
+    }
+  } else {
+    // Optimists only inform the first parent that they will contribute
     messages.push(
       new Message(
         MessageType.ContributorPing,
         this.localTime,
         0, // Don't specify time to let the manager add the latency
         this.id,
-        parent,
+        receivedMessage.content.parents[0],
         {}
       )
     )
