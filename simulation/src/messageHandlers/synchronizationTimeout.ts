@@ -61,6 +61,7 @@ export function handleSynchronizationTimeout(this: Node, receivedMessage: Messag
             )
           }
           this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+          this.finishedWorking = true
           messages.push(
             new Message(
               MessageType.SendAggregate,

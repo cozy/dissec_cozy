@@ -13,13 +13,15 @@ export function handlePingTimeout(this: Node): Message[] {
 
   if (this.config.strategy === ProtocolStrategy.Optimistic) {
     // The first member forwards the list of contributors to its members
-    for (const member of this.node!.members.filter((e) => e !== this.id)) {
+    for (const member of this.node!.members) {
       messages.push(
         new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
           contributors: this.contributorsList[this.id],
         })
       )
     }
+    // HACK: Forget the list and resend it to self
+    delete this.contributorsList[this.id]
   }
 
   return messages

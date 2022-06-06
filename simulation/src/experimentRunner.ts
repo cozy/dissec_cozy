@@ -6,8 +6,8 @@ import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
 
 export enum ProtocolStrategy {
-  Pessimistic = 'Pessimistic',
-  Optimistic = 'Optimistic',
+  Pessimistic = 'PESS',
+  Optimistic = 'OPTI',
 }
 
 export interface RunConfig {
@@ -63,7 +63,23 @@ export class ExperimentRunner {
     }
 
     // Splitting the array in smaller pieces to prevent running out of memory
-    fs.writeFileSync(outputPath, '[' + results.map(e => JSON.stringify(e)).join(',') + ']')
+    fs.writeFileSync(outputPath, '[') // Default mode is w
+    for (let i = 0; i < results.length; i++) {
+      const output: { [key: string]: any[] } = {}
+      const { messages, ...items } = results[i]
+
+      // Initializing arrays for each stat
+      Object.entries(items).forEach(([key, value]) => (output[key] = Array(messages.length).fill(value)))
+      Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
+
+      messages.forEach((message, j) => Object.entries(message).forEach(([key, value]) => (output[key][j] = value)))
+
+      fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
+      if (i !== results.length - 1) {
+        fs.writeFileSync(outputPath, ',', { flag: 'a' })
+      }
+    }
+    fs.writeFileSync(outputPath, ']', { flag: 'a' })
   }
 
   singleRun(run: RunConfig): RunResult {

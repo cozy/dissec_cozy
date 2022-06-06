@@ -36,8 +36,8 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
       )
     )
   } else {
-    if (this.node.members[0] === this.id) {
-      // This node is the member responsible of informing its members
+    if (this.node.members[0] === this.id || this.contactedAsABackup) {
+      // This node is the member responsible of informing its members or a joining backup
       if (!arrayEquals(this.contributorsList[this.id] || [], newContributors || [])) {
         // Inform members if contributors changed
         this.contributorsList[this.id] = newContributors

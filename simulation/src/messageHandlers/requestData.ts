@@ -32,8 +32,8 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
       )
     )
   } else if (this.role === NodeRole.LeafAggregator) {
-    // The node has not finished receiving contributions, it will answer later
     if (!this.finishedWorking || !this.contributorsList[this.id]) {
+      // The node has not finished receiving contributions, it will answer later
       return messages
     }
 

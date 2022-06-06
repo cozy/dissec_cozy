@@ -2,7 +2,7 @@ import config from '../dissec.config.json'
 import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
 
 let configs: RunConfig[] = []
-const debug = true
+const debug = false
 if (debug) {
   configs = [
     {
@@ -13,20 +13,20 @@ if (debug) {
       averageComputeTime: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
-      deadline: 1000000,
-      failureRate: 0.0004,
+      deadline: 500000,
+      failureRate: 0.0005,
       depth: 3,
       fanout: 4,
       groupSize: 3,
-      seed: 'Optimistic:4-1',
+      seed: 'OPTI:0-29',
     },
   ]
 } else {
-  configs = [ProtocolStrategy.Optimistic].flatMap(strategy =>
-    Array(10)
+  configs = [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic].flatMap(strategy =>
+    Array(1)
       .fill(0)
       .flatMap((_, failure) =>
-        Array(10)
+        Array(100)
           .fill(0)
           .map((_, retries) => ({
             strategy: strategy,
@@ -36,8 +36,8 @@ if (debug) {
             averageComputeTime: 100,
             healthCheckPeriod: 3,
             multicastSize: 5,
-            deadline: 100 * 10000,
-            failureRate: 0.0001 * failure,
+            deadline: 100 * 5000,
+            failureRate: 0.0005 * (failure + 1),
             depth: 3,
             fanout: 4,
             groupSize: 3,

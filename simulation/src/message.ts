@@ -5,43 +5,43 @@ import TreeNode from './treeNode'
 
 export enum MessageType {
   // System
-  StopSimulator = 'StopSimulator',
+  StopSimulator = 'STOP',
   // Contribution
-  RequestContribution = 'RequestContribution',
-  ContributorPing = 'ContributorPing',
-  PingTimeout = 'PingTimeout',
-  PrepareContribution = 'PrepareContribution',
-  SendContribution = 'SendContribution',
-  ContributionTimeout = 'ContributionTimeout',
+  RequestContribution = 'ReqContrib',
+  ContributorPing = 'ContribPing',
+  PingTimeout = 'PingTO',
+  PrepareContribution = 'PrepareContrib',
+  SendContribution = 'SendContrib',
+  ContributionTimeout = 'ContribTO',
   // Synchronization
-  ConfirmContributors = 'ConfirmContributors',
-  SynchronizationTimeout = 'SynchronizationTimeout',
-  SendAggregate = 'SendAggregate',
+  ConfirmContributors = 'ConfContrib',
+  SynchronizationTimeout = 'SynchroTO',
+  SendAggregate = 'SendAgg',
   // Failure detection
-  RequestHealthChecks = 'RequestHealthChecks',
-  CheckHealth = 'CheckHealth',
-  ConfirmHealth = 'ConfirmHealth',
-  HealthCheckTimeout = 'HealthCheckTimeout',
+  RequestHealthChecks = 'ReqHC',
+  CheckHealth = 'HC',
+  ConfirmHealth = 'ConfH',
+  HealthCheckTimeout = 'HCTO',
   // Failure handling
-  ContinueMulticast = 'ContinueMulticast',
-  ContactBackup = 'ContactBackup',
-  BackupResponse = 'BackupResponse',
-  ConfirmBackup = 'ConfirmBackup',
-  NotifyGroup = 'NotifyGroup',
-  NotifyGroupTimeout = 'NotifyGroupTimeout',
+  ContinueMulticast = 'ContMCast',
+  ContactBackup = 'ContactBU',
+  BackupResponse = 'BUResponse',
+  ConfirmBackup = 'ConfBU',
+  NotifyGroup = 'NotifGroup',
+  NotifyGroupTimeout = 'NotifGroupTO',
   ContributorsPolling = 'ContributorsPolling',
   SendChildren = 'SendChildren',
-  RequestData = 'RequestData',
+  RequestData = 'ReqData',
 }
 
 export enum StopStatus {
   Unfinished = 'Unfinished',
   Success = 'Success',
   GroupDead = 'GroupDead',
-  SimultaneousFailures = 'SimultaneousFailures',
-  ExceededDeadline = 'ExceededDeadline',
+  SimultaneousFailures = 'SimulFails',
+  ExceededDeadline = 'Deadline',
   BadResult = 'BadResult',
-  AllContributorsDead = 'AllContributorsDead',
+  AllContributorsDead = 'ContribDead',
 }
 
 export interface Aggregate {
@@ -77,7 +77,8 @@ export class Message {
   emitterId: number
   receiverId: number
   content: MessageContent
-  delivered: boolean
+  delivered: boolean = false
+  work: number = 0
 
   constructor(
     type: MessageType,
@@ -94,7 +95,6 @@ export class Message {
     this.emitterId = emitterId
     this.receiverId = receiverId
     this.content = content
-    this.delivered = false
   }
 
   log(receiver: Node, filter: MessageType[] = []) {

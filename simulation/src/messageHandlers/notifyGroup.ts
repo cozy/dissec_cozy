@@ -7,14 +7,14 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
   // NotifyGroup messages are ignored if the node does not know its part of the tree.
   // This occurs when 2 nodes are being replaced concurrently in the same group.
   if (this.node && (this.node.children.length > 0 || this.contributorsList[this.id])) {
-    // Verifying the backup's certificate and signature, then sign the current group and children
-    this.localTime += 2 * this.config.averageCryptoTime
+    // Verifying the backup's certificate + signature + sign the current group and children
+    this.localTime += 3 * this.config.averageCryptoTime
 
     // The node has been notified by a backup that it is joining the group
     // Compare the local members with the received one, keep the newest version
     this.node.members = this.node.members
       .slice()
-      .map((e) => (e !== receivedMessage.content.failedNode ? e : receivedMessage.emitterId || e))
+      .map(e => (e !== receivedMessage.content.failedNode ? e : receivedMessage.emitterId || e))
     this.node.parents = receivedMessage.content.targetGroup?.parents || this.node.parents
 
     // The backup will ask again later if the list is not yet known
