@@ -150,10 +150,6 @@ export class Node {
       }
     }
 
-    if (this.id === 311 && receivedMessage.type === MessageType.ContributionTimeout) {
-      console.log('ok')
-    }
-
     switch (receivedMessage.type) {
       case MessageType.RequestContribution:
         messages.push(...this.handleRequestContribution(receivedMessage))
