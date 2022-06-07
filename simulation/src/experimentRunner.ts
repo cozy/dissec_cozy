@@ -72,7 +72,13 @@ export class ExperimentRunner {
       Object.entries(items).forEach(([key, value]) => (output[key] = Array(messages.length).fill(value)))
       Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
 
-      messages.forEach((message, j) => Object.entries(message).forEach(([key, value]) => (output[key][j] = value)))
+      messages.forEach((message, j) =>
+        Object.entries(message).forEach(([key, value]) => {
+          // Exclude content because it's not used but takes a lot of space
+          if (key === 'content') return
+          output[key][j] = value
+        })
+      )
 
       fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
       if (i !== results.length - 1) {
