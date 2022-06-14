@@ -8,6 +8,7 @@ import TreeNode from './treeNode'
 export enum ProtocolStrategy {
   Pessimistic = 'PESS',
   Optimistic = 'OPTI',
+  Eager = 'EAGER',
 }
 
 export interface RunConfig {
@@ -29,6 +30,7 @@ export interface RunConfig {
 export interface RunResult extends RunConfig {
   status: StopStatus
   observedFailureRate: number
+  completeness: number
   messages: Message[]
 }
 
@@ -215,7 +217,13 @@ export class ExperimentRunner {
       manager.handleNextMessage()
     }
 
-    console.log(`Simulation finished with status ${manager.status}`)
+    const completeness =
+      ((manager.oldMessages.find(e => e.type === MessageType.StopSimulator)?.content.contributors?.length || 0) /
+        run.groupSize /
+        run.fanout ** run.depth) *
+      100
+
+    console.log(`Simulation finished with status ${manager.status} (${completeness}% completeness)`)
     console.log(
       `${
         (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100
@@ -239,6 +247,7 @@ export class ExperimentRunner {
     return {
       ...run,
       status: manager.status,
+      completeness,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
       messages: oldMessages,
