@@ -1,46 +1,50 @@
 import config from '../dissec.config.json'
-import { ExperimentRunner, RunConfig } from './experimentRunner'
+import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
 
 let configs: RunConfig[] = []
-const debug = true
+const debug = false
 if (debug) {
   configs = [
     {
+      strategy: ProtocolStrategy.Optimistic,
       averageLatency: 100,
       maxToAverageRatio: 10,
       averageCryptoTime: 100,
       averageComputeTime: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
-      deadline: 1000000,
-      failureRate: 0.0007,
+      deadline: 500000,
+      failureRate: 0.0005,
       depth: 3,
       fanout: 4,
       groupSize: 3,
-      seed: '7-2',
+      seed: 'OPTI:0-29',
     },
   ]
 } else {
-  configs = Array(10)
-    .fill(0)
-    .flatMap((_, failure) =>
-      Array(10)
-        .fill(0)
-        .map((_, retries) => ({
-          averageLatency: 100,
-          maxToAverageRatio: 10,
-          averageCryptoTime: 100,
-          averageComputeTime: 100,
-          healthCheckPeriod: 3,
-          multicastSize: 5,
-          deadline: 100 * 10000,
-          failureRate: 0.0001 * failure,
-          depth: 3,
-          fanout: 4,
-          groupSize: 3,
-          seed: `${failure}-${retries}`,
-        }))
-    )
+  configs = [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic].flatMap(strategy =>
+    Array(1)
+      .fill(0)
+      .flatMap((_, failure) =>
+        Array(100)
+          .fill(0)
+          .map((_, retries) => ({
+            strategy: strategy,
+            averageLatency: 100,
+            maxToAverageRatio: 10,
+            averageCryptoTime: 100,
+            averageComputeTime: 100,
+            healthCheckPeriod: 3,
+            multicastSize: 5,
+            deadline: 100 * 5000,
+            failureRate: 0.0005 * (failure + 1),
+            depth: 3,
+            fanout: 4,
+            groupSize: 3,
+            seed: `${strategy}:${failure}-${retries}`,
+          }))
+      )
+  )
 }
 
 const runner = new ExperimentRunner(configs, { debug })

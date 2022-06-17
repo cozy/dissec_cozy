@@ -114,8 +114,6 @@ export class NodesManager {
               return 1000
             case MessageType.ContributionTimeout:
               return 1000
-            case MessageType.SynchronizationTimeout:
-              return 1000
             case MessageType.NotifyGroupTimeout:
               return 1000
             case MessageType.CheckHealth:
@@ -130,6 +128,12 @@ export class NodesManager {
               return 800
             case MessageType.ContributorPing:
               return 800
+            case MessageType.ConfirmContributors:
+              return 800
+            case MessageType.SendContribution:
+              return 700
+            case MessageType.SynchronizationTimeout:
+              return 600 // The timeout triggers after receiving contributions
             default:
               return 0
           }
@@ -141,8 +145,11 @@ export class NodesManager {
       }
     })
     const message = this.messages.pop()!
+
+    // Save messages for exporting
     this.oldMessages.push(message)
 
+    // Update simulation time and failures
     while (this.lastFailureUpdate + this.config.averageLatency <= message.receptionTime) {
       this.updateFailures()
       // TODO: Find a smarter time step
@@ -180,8 +187,16 @@ export class NodesManager {
       this.globalTime = message?.receptionTime
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId].receiveMessage(message)
-      for (const msg of resultingMessages) {
-        this.transmitMessage(msg)
+
+      if (!resultingMessages) {
+        // The message bounced because the node was busy
+        // Remove the last message from old messages and put it back in the queue
+        this.oldMessages.pop()
+        this.messages.push(message)
+      } else {
+        for (const msg of resultingMessages) {
+          this.transmitMessage(msg)
+        }
       }
     }
   }

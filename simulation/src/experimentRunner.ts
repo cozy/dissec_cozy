@@ -5,7 +5,13 @@ import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
 
+export enum ProtocolStrategy {
+  Pessimistic = 'PESS',
+  Optimistic = 'OPTI',
+}
+
 export interface RunConfig {
+  strategy: ProtocolStrategy
   averageLatency: number
   maxToAverageRatio: number
   averageCryptoTime: number
@@ -20,9 +26,8 @@ export interface RunConfig {
   seed: string
 }
 
-export interface RunResult {
+export interface RunResult extends RunConfig {
   status: StopStatus
-  failureRate: number
   observedFailureRate: number
   messages: Message[]
 }
@@ -45,6 +50,10 @@ export class ExperimentRunner {
     }
 
     console.log('Success rate:', results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
+    console.log(
+      'Messages: ',
+      results.map(e => e.messages.length).reduce((prev, curr) => prev + curr)
+    )
 
     if (!fs.existsSync(outputPath)) {
       const components = outputPath.split('/')
@@ -52,7 +61,31 @@ export class ExperimentRunner {
         recursive: true,
       })
     }
-    fs.writeFileSync(outputPath, JSON.stringify(results))
+
+    // Splitting the array in smaller pieces to prevent running out of memory
+    fs.writeFileSync(outputPath, '[') // Default mode is w
+    for (let i = 0; i < results.length; i++) {
+      const output: { [key: string]: any[] } = {}
+      const { messages, ...items } = results[i]
+
+      // Initializing arrays for each stat
+      Object.entries(items).forEach(([key, value]) => (output[key] = Array(messages.length).fill(value)))
+      Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
+
+      messages.forEach((message, j) =>
+        Object.entries(message).forEach(([key, value]) => {
+          // Exclude content because it's not used but takes a lot of space
+          if (key === 'content') return
+          output[key][j] = value
+        })
+      )
+
+      fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
+      if (i !== results.length - 1) {
+        fs.writeFileSync(outputPath, ',', { flag: 'a' })
+      }
+    }
+    fs.writeFileSync(outputPath, ']', { flag: 'a' })
   }
 
   singleRun(run: RunConfig): RunResult {
@@ -106,25 +139,57 @@ export class ExperimentRunner {
         )
       }
 
-      // Setting contribution collection timeouts on the leaves aggregators
-      for (const member of aggregator.members) {
-        // TODO: Timeouts should take into account the broadcasts.
-        // Currently supposes that contributors are reached in 1 hop
+      if (run.strategy === ProtocolStrategy.Pessimistic) {
+        // Setting contribution collection timeouts on the leaves aggregators
+        for (const member of aggregator.members) {
+          // TODO: Timeouts should take into account the broadcasts.
+          // Currently supposes that contributors are reached in 1 hop
 
-        // Contributors respond with a ping and then the contribution, await both
-        manager.transmitMessage(
-          new Message(MessageType.PingTimeout, 0, 2 * run.averageLatency * run.maxToAverageRatio, member, member, {})
-        )
+          // Contributors respond with a ping and then the contribution, await both
+          manager.transmitMessage(
+            new Message(MessageType.PingTimeout, 0, 2 * run.averageLatency * run.maxToAverageRatio, member, member, {})
+          )
+          manager.transmitMessage(
+            new Message(
+              MessageType.ContributionTimeout,
+              0,
+              (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio,
+              member,
+              member,
+              {}
+            )
+          )
+        }
+      } else {
+        // TODO: Timeouts should take into account the broadcasts.
+        // Contributors respond with a ping to the first member
         manager.transmitMessage(
           new Message(
-            MessageType.ContributionTimeout,
+            MessageType.PingTimeout,
             0,
-            (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio,
-            member,
-            member,
+            2 * run.averageLatency * run.maxToAverageRatio,
+            aggregator.members[0],
+            aggregator.members[0],
             {}
           )
         )
+
+        // Setting contribution collection timeouts on the leaves aggregators
+        // The first member times out first to inform its members
+        for (const member of aggregator.members) {
+          manager.transmitMessage(
+            new Message(
+              MessageType.ContributionTimeout,
+              0,
+              ((aggregator.members.indexOf(member) === 0 ? 2 : 3) * run.averageLatency +
+                run.averageCryptoTime * run.groupSize * 3) *
+                run.maxToAverageRatio,
+              member,
+              member,
+              {}
+            )
+          )
+        }
       }
     }
 
@@ -172,8 +237,8 @@ export class ExperimentRunner {
       }
     })
     return {
+      ...run,
       status: manager.status,
-      failureRate: manager.failureRate,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
       messages: oldMessages,

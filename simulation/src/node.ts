@@ -58,7 +58,8 @@ export class Node {
   confirmContributors: boolean = true
   aggregates: { [nodeId: number]: Aggregate }
   lastSentAggregateId: string
-  lastReceivedAggregateId?: string
+  parentLastReceivedAggregateId?: string
+  finalAggregates: { [aggregateId: string]: { [nodeId: number]: Aggregate } } = {}
 
   handleRequestContribution = handleRequestContribution
   handleContributorPing = handleContributorPing
@@ -118,22 +119,26 @@ export class Node {
       .toString()
   }
 
-  receiveMessage(receivedMessage: Message): Message[] {
+  receiveMessage(receivedMessage: Message): Message[] | null {
     const messages: Message[] = []
 
-    // When the node is busy, messages are put back into the queue at the earliest available time
-    if (receivedMessage.receptionTime < this.localTime) {
+    // When the node is busy, messages are put back into the queue at the earliest available time, except for health checks
+    if (receivedMessage.receptionTime < this.localTime && receivedMessage.type !== MessageType.CheckHealth) {
       receivedMessage.receptionTime = this.localTime
-      return [receivedMessage]
+      return null
     }
 
     receivedMessage.delivered = true
     this.localTime = Math.max(this.localTime, receivedMessage.receptionTime)
 
+    // Used to measure the work incurred by the processing
+    const startTime = this.localTime
+
     if (this.config.debug) {
       const nodesOfInterest: number[] = [
-        255, 0, 1, 2, 3, 4, 5, 6, 8, 37, 38, 51, 53, 52, 66, 99, 114, 115, 129, 134, 147, 148, 149, 162, 192, 194, 195,
-        196, 197, 269, 284, 290, 305, 306, 339, 354, 359, 362, 364, 372, 393, 395, 415, 401, 426, 429, 446,
+        255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 37, 38, 51, 53, 52, 66, 67, 68, 71, 99, 100, 101, 114, 115, 129, 132,
+        134, 147, 148, 149, 162, 192, 194, 195, 196, 197, 226, 269, 278, 284, 290, 305, 306, 311, 312, 317, 326, 339,
+        354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446,
       ]
       const filters: MessageType[] = []
       if (
@@ -182,7 +187,7 @@ export class Node {
         messages.push(
           new Message(
             MessageType.ConfirmHealth,
-            this.localTime,
+            receivedMessage.receptionTime, // Reply to health check instantly
             0, // Don't specify time to let the manager add the latency
             this.id,
             receivedMessage.emitterId,
@@ -238,6 +243,8 @@ export class Node {
     if (this.node && !this.node.members.includes(this.id)) {
       throw new Error(`#${this.id} is not in its members ([${this.node.members}])`)
     }
+
+    receivedMessage.work = this.localTime - startTime
 
     return messages
   }

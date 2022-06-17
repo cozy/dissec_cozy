@@ -5,43 +5,43 @@ import TreeNode from './treeNode'
 
 export enum MessageType {
   // System
-  StopSimulator = 'StopSimulator',
+  StopSimulator = 'STOP',
   // Contribution
-  RequestContribution = 'RequestContribution',
-  ContributorPing = 'ContributorPing',
-  PingTimeout = 'PingTimeout',
-  PrepareContribution = 'PrepareContribution',
-  SendContribution = 'SendContribution',
-  ContributionTimeout = 'ContributionTimeout',
+  RequestContribution = 'ReqContrib',
+  ContributorPing = 'ContribPing',
+  PingTimeout = 'PingTO',
+  PrepareContribution = 'PrepareContrib',
+  SendContribution = 'SendContrib',
+  ContributionTimeout = 'ContribTO',
   // Synchronization
-  ConfirmContributors = 'ConfirmContributors',
-  SynchronizationTimeout = 'SynchronizationTimeout',
-  SendAggregate = 'SendAggregate',
+  ConfirmContributors = 'ConfContrib',
+  SynchronizationTimeout = 'SynchroTO',
+  SendAggregate = 'SendAgg',
   // Failure detection
-  RequestHealthChecks = 'RequestHealthChecks',
-  CheckHealth = 'CheckHealth',
-  ConfirmHealth = 'ConfirmHealth',
-  HealthCheckTimeout = 'HealthCheckTimeout',
+  RequestHealthChecks = 'ReqHC',
+  CheckHealth = 'HC',
+  ConfirmHealth = 'ConfH',
+  HealthCheckTimeout = 'HCTO',
   // Failure handling
-  ContinueMulticast = 'ContinueMulticast',
-  ContactBackup = 'ContactBackup',
-  BackupResponse = 'BackupResponse',
-  ConfirmBackup = 'ConfirmBackup',
-  NotifyGroup = 'NotifyGroup',
-  NotifyGroupTimeout = 'NotifyGroupTimeout',
+  ContinueMulticast = 'ContMCast',
+  ContactBackup = 'ContactBU',
+  BackupResponse = 'BUResponse',
+  ConfirmBackup = 'ConfBU',
+  NotifyGroup = 'NotifGroup',
+  NotifyGroupTimeout = 'NotifGroupTO',
   ContributorsPolling = 'ContributorsPolling',
   SendChildren = 'SendChildren',
-  RequestData = 'RequestData',
+  RequestData = 'ReqData',
 }
 
 export enum StopStatus {
   Unfinished = 'Unfinished',
   Success = 'Success',
   GroupDead = 'GroupDead',
-  SimultaneousFailures = 'SimultaneousFailures',
-  ExceededDeadline = 'ExceededDeadline',
+  SimultaneousFailures = 'SimulFails',
+  ExceededDeadline = 'Deadline',
   BadResult = 'BadResult',
-  AllContributorsDead = 'AllContributorsDead',
+  AllContributorsDead = 'ContribDead',
 }
 
 export interface Aggregate {
@@ -58,7 +58,7 @@ export interface MessageContent {
   share?: number
   contributors?: number[]
   aggregate?: Aggregate
-  lastReceivedAggregateId?: string
+  parentLastReceivedAggregateId?: string
   failedNode?: number
   targetGroup?: TreeNode
   remainingBackups?: number[]
@@ -77,7 +77,8 @@ export class Message {
   emitterId: number
   receiverId: number
   content: MessageContent
-  delivered: boolean
+  delivered: boolean = false
+  work: number = 0
 
   constructor(
     type: MessageType,
@@ -94,7 +95,6 @@ export class Message {
     this.emitterId = emitterId
     this.receiverId = receiverId
     this.content = content
-    this.delivered = false
   }
 
   log(receiver: Node, filter: MessageType[] = []) {
@@ -142,7 +142,10 @@ export class Message {
         console.log(
           `${tag} timed out waiting for contributions, received ${
             Object.values(receiver.contributions).length
-          } contributions, sending to others members`
+          } contributions from [${receiver.contributorsList[receiver.id]
+            ?.filter(e => receiver.contributions[e])
+            .slice()
+            .sort()}], sending to others [${receiver.node?.members.filter(e => e !== receiver.id).map(e => '#' + e)}]`
         )
         break
       case MessageType.ContributorPing:
@@ -244,14 +247,16 @@ export class Message {
         console.log(
           `${tag} received a ${this.content.useAsBackup ? 'positive' : 'negative'} response from the parent #${
             this.emitterId
-          } to join group [${this.content.targetGroup?.members}] to replace #${this.content.failedNode}`
+          } to join group [${this.content.targetGroup?.members.map(e => '#' + e)}] to replace #${
+            this.content.failedNode
+          }`
         )
         break
       case MessageType.NotifyGroup:
         console.log(
-          `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing ${
+          `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing #${
             this.content.failedNode
-          } in group [${this.content.targetGroup?.members}]${
+          } in group [${this.content.targetGroup?.members.map(e => '#' + e)}]${
             receiver.contributorsList[receiver.id] || receiver.node?.children.length
               ? '.'
               : ', but does not know child yet.'
@@ -262,7 +267,7 @@ export class Message {
         console.log(
           `${tag} has timed out on the group notification. ${
             receiver.node?.children.length
-              ? `New children are [${receiver.node?.children.map(e => e.members[position!])}]`
+              ? `New children are [${receiver.node?.children.map(e => '#' + e.members[position!])}]`
               : 'No known children'
           }`
         )
@@ -276,7 +281,9 @@ export class Message {
         break
       case MessageType.SendChildren:
         console.log(
-          `${tag} received its children from node #${this.emitterId}: [${this.content.children?.map(e => e.members)}]`
+          `${tag} received its children from node #${this.emitterId}: [${this.content.children?.map(
+            e => '#' + e.members
+          )}]`
         )
         break
       case MessageType.RequestData:
