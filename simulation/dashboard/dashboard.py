@@ -69,6 +69,7 @@ if __name__ == "__main__":
             "work_per_latency",
             "failure_probability",
             "failure_rate",
+            "completeness",
         ]
     ].max()
     grouped["failure_probability"] = grouped["failure_probability"].round(5)
@@ -140,6 +141,15 @@ if __name__ == "__main__":
         points="all",
         title="Taux de panne pour chaque statut d'exécution",
     )
+    completeness_per_failure_prob_fig = px.box(
+        data.groupby(["run_id", "status", "strategy"], as_index=False).mean(),
+        x="failure_probability",
+        y="completeness",
+        color="strategy",
+        hover_name="run_id",
+        points="all",
+        title="Complétude par proba de pannes",
+    )
 
     length_opti_scatter = px.scatter(
         grouped[grouped["strategy"] == "OPTI"],
@@ -149,8 +159,8 @@ if __name__ == "__main__":
         hover_name="run_id",
         title="Optimistic execution latency",
     )
-    length_pess_scatter = px.scatter(
-        grouped[grouped["strategy"] == "PESS"],
+    length_eager_scatter = px.scatter(
+        grouped[grouped["strategy"] == "EAGER"],
         x="simulation_length",
         y="failure_rate",
         color="status",
@@ -165,8 +175,8 @@ if __name__ == "__main__":
         hover_name="run_id",
         title="Optimistic total work",
     )
-    work_pess_scatter = px.scatter(
-        grouped[grouped["strategy"] == "PESS"],
+    work_eager_scatter = px.scatter(
+        grouped[grouped["strategy"] == "EAGER"],
         x="simulation_length",
         y="total_work",
         color="status",
@@ -177,18 +187,18 @@ if __name__ == "__main__":
     grouped_mean = grouped.groupby(
         ["failure_probability", "strategy"], as_index=False
     ).mean()
-    grouped_mean["total_work"] /= grouped_mean["total_work"].iloc[0]
-    grouped_mean["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
     grouped_upper = grouped.groupby(
         ["failure_probability", "strategy"], as_index=False
     ).max()
-    grouped_upper["total_work"] /= grouped_upper["total_work"].iloc[0]
-    grouped_upper["simulation_length"] /= grouped_upper["simulation_length"].iloc[0]
+    grouped_upper["total_work"] /= grouped_mean["total_work"].iloc[0]
+    grouped_upper["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
     grouped_lower = grouped.groupby(
         ["failure_probability", "strategy"], as_index=False
     ).min()
-    grouped_lower["total_work"] /= grouped_lower["total_work"].iloc[0]
-    grouped_lower["simulation_length"] /= grouped_lower["simulation_length"].iloc[0]
+    grouped_lower["total_work"] /= grouped_mean["total_work"].iloc[0]
+    grouped_lower["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
+    grouped_mean["total_work"] /= grouped_mean["total_work"].iloc[0]
+    grouped_mean["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
 
     optimistic_latency_amplification_fig = px.line(
         dict(
@@ -218,14 +228,14 @@ if __name__ == "__main__":
         markers=True,
         title="Optimistic Work amplification",
     )
-    pessimistic_latency_amplification_fig = px.line(
+    eager_latency_amplification_fig = px.line(
         dict(
             failure_probability=failure_probabilities,
-            mean=grouped_mean[grouped_mean["strategy"] == "PESS"]["simulation_length"],
-            upper=grouped_upper[grouped_upper["strategy"] == "PESS"][
+            mean=grouped_mean[grouped_mean["strategy"] == "EAGER"]["simulation_length"],
+            upper=grouped_upper[grouped_upper["strategy"] == "EAGER"][
                 "simulation_length"
             ],
-            lower=grouped_lower[grouped_lower["strategy"] == "PESS"][
+            lower=grouped_lower[grouped_lower["strategy"] == "EAGER"][
                 "simulation_length"
             ],
         ),
@@ -234,17 +244,34 @@ if __name__ == "__main__":
         markers=True,
         title="Pessimistic Latency amplification",
     )
-    pessimistic_work_amplification_fig = px.line(
+    eager_work_amplification_fig = px.line(
         dict(
             failure_probability=failure_probabilities,
-            mean=grouped_mean[grouped_mean["strategy"] == "PESS"]["total_work"],
-            upper=grouped_upper[grouped_upper["strategy"] == "PESS"]["total_work"],
-            lower=grouped_lower[grouped_lower["strategy"] == "PESS"]["total_work"],
+            mean=grouped_mean[grouped_mean["strategy"] == "EAGER"]["total_work"],
+            upper=grouped_upper[grouped_upper["strategy"] == "EAGER"]["total_work"],
+            lower=grouped_lower[grouped_lower["strategy"] == "EAGER"]["total_work"],
         ),
         x="failure_probability",
         y=["mean", "lower", "upper"],
         markers=True,
         title="Pessimistic Work amplification",
+    )
+
+    work_failure_prob_strategy_fig = px.line(
+        grouped.groupby(["failure_probability", "strategy"], as_index=False).mean(),
+        x="failure_probability",
+        y="simulation_length",
+        color="strategy",
+        markers=True,
+        title="Average latency per strategy",
+    )
+    completeness_failure_prob_strategy_fig = px.line(
+        grouped.groupby(["failure_probability", "strategy"], as_index=False).mean(),
+        x="failure_probability",
+        y="completeness",
+        color="strategy",
+        markers=True,
+        title="Average completeness per strategy",
     )
 
     app.layout = html.Div(
@@ -483,7 +510,7 @@ if __name__ == "__main__":
                         id="length_opti_scatter_plot", figure=length_opti_scatter
                     ),
                     dcc.Graph(
-                        id="length_pess_scatter_plot", figure=length_pess_scatter
+                        id="length_eager_scatter_plot", figure=length_eager_scatter
                     ),
                 ],
             ),
@@ -495,7 +522,7 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(id="work_opti_scatter_plot", figure=work_opti_scatter),
-                    dcc.Graph(id="work_pess_scatter_plot", figure=work_pess_scatter),
+                    dcc.Graph(id="work_eager_scatter_plot", figure=work_eager_scatter),
                 ],
             ),
             #
@@ -527,15 +554,33 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(
-                        id="pessimistic_work_amplification",
-                        figure=pessimistic_work_amplification_fig,
+                        id="completeness_failure_prob_strategy",
+                        figure=completeness_failure_prob_strategy_fig,
                     ),
                     dcc.Graph(
-                        id="pessimistic_latency_amplification",
-                        figure=pessimistic_latency_amplification_fig,
+                        id="work_failure_prob_strategy",
+                        figure=work_failure_prob_strategy_fig,
                     ),
                 ],
             ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id="eager_work_amplification",
+                        figure=eager_work_amplification_fig,
+                    ),
+                    dcc.Graph(
+                        id="eager_latency_amplification",
+                        figure=eager_latency_amplification_fig,
+                    ),
+                ],
+            ),
+            dcc.Graph(id="completeness", figure=completeness_per_failure_prob_fig),
         ]
     )
 
