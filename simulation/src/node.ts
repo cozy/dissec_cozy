@@ -118,6 +118,10 @@ export class Node {
       .toString()
   }
 
+  cryptoLatency(): number {
+    return this.config.averageCryptoTime
+  }
+
   receiveMessage(receivedMessage: Message): Message[] | null {
     const messages: Message[] = []
 

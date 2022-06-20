@@ -13,7 +13,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
   }
 
   // Verifying the child's certificate, signature and decrypt the symmetric key
-  this.localTime += 3 * this.config.averageCryptoTime
+  this.localTime += 3 * this.cryptoLatency()
 
   // Store the share
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share

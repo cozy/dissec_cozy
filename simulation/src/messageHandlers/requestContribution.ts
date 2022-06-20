@@ -47,7 +47,7 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   // Verifying the parent's certificate and signature when sending the data
   // Prepare shares
-  this.localTime += 2 * this.config.averageCryptoTime + this.config.averageComputeTime
+  this.localTime += 2 * this.cryptoLatency() + this.config.averageComputeTime
   this.shares = Array(this.node.members.length).fill(0)
   let accumulator = 0
   for (let i = 0; i < this.node.members.length - 1; i++) {

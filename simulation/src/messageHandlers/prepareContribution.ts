@@ -12,7 +12,7 @@ export function handlePrepareContribution(this: Node, receivedMessage: Message):
   const messages: Message[] = []
 
   // The query has been verified, just open the channel
-  this.localTime += this.config.averageCryptoTime
+  this.localTime += this.cryptoLatency()
 
   // Send the certificate, key and share
   messages.push(

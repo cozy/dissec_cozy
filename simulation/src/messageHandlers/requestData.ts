@@ -20,7 +20,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
 
   if (this.role === NodeRole.Contributor) {
     // Verifying the parent's certificate, signature and open an encrypted channel
-    this.localTime += 3 * this.config.averageCryptoTime
+    this.localTime += 3 * this.cryptoLatency()
     messages.push(
       new Message(
         MessageType.SendContribution,
@@ -38,7 +38,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     }
 
     // Verifying the parent's certificate, signature and open an encrypted channel
-    this.localTime += 3 * this.config.averageCryptoTime
+    this.localTime += 3 * this.cryptoLatency()
 
     this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
     messages.push(
@@ -68,7 +68,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     }
 
     // Verifying the parent's certificate, signature and open an encrypted channel
-    this.localTime += 3 * this.config.averageCryptoTime
+    this.localTime += 3 * this.cryptoLatency()
 
     const aggregationId = this.aggregationId(children.map(child => this.aggregates[child].id))
     this.lastSentAggregateId = aggregationId

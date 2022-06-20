@@ -155,7 +155,8 @@ export class ExperimentRunner {
             new Message(
               MessageType.ContributionTimeout,
               0,
-              (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio,
+              2 * run.averageLatency * run.maxToAverageRatio +
+                manager.nodes[member].cryptoLatency() * run.groupSize * 3,
               member,
               member,
               {}
@@ -183,9 +184,8 @@ export class ExperimentRunner {
             new Message(
               MessageType.ContributionTimeout,
               0,
-              ((aggregator.members.indexOf(member) === 0 ? 2 : 3) * run.averageLatency +
-                run.averageCryptoTime * run.groupSize * 3) *
-                run.maxToAverageRatio,
+              (aggregator.members.indexOf(member) === 0 ? 2 : 3) * run.averageLatency * run.maxToAverageRatio +
+                manager.nodes[member].cryptoLatency() * run.groupSize * 3,
               member,
               member,
               {}

@@ -16,7 +16,7 @@ describe('Request contribution', () => {
     depth: 3,
     fanout: 4,
     groupSize: 3,
-    seed: '4-7'
+    seed: '4-7',
   }
 
   let root: TreeNode
@@ -32,14 +32,14 @@ describe('Request contribution', () => {
     const receptionTime = 10
     const treenode = root.children[0]
     const message = new Message(MessageType.RequestContribution, 0, receptionTime, root.id, treenode.id, {
-      parents: manager.nodes[root.id].node!.members
+      parents: manager.nodes[root.id].node!.members,
     })
     const node = manager.nodes[treenode.id]
     const messages = node.receiveMessage(message)
 
     expect(node.role).toBe(NodeRole.Contributor)
     expect(node.localTime).toBe(
-      receptionTime + config.averageComputeTime + (config.groupSize + 2) * config.averageCryptoTime
+      receptionTime + config.averageComputeTime + (config.groupSize + 2) * node.cryptoLatency()
     )
     expect(node.shares.length).toBe(config.groupSize)
     expect(node.shares.reduce((prev, curr) => prev + curr)).toBe(node.secretValue * config.groupSize)
@@ -53,7 +53,7 @@ describe('Request contribution', () => {
     const receptionTime = 10
     const treenode = root.children[0]
     const message = new Message(MessageType.RequestContribution, 0, receptionTime, root.id, treenode.id, {
-      parents: manager.nodes[root.id].node!.members
+      parents: manager.nodes[root.id].node!.members,
     })
     const node = manager.nodes[treenode.id]
     node.node = undefined

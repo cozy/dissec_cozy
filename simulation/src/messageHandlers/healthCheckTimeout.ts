@@ -16,7 +16,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
       // In eager strategy, tell members to give up their child as well
 
       // Aggregators don't have secure channel, sign the request
-      this.localTime += this.config.averageCryptoTime
+      this.localTime += this.cryptoLatency()
 
       for (const member of this.node.members) {
         messages.push(
@@ -43,7 +43,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
       const multicastTargets = this.backupList.sort(() => sorterGenerator() - 0.5).slice(0, this.config.multicastSize)
 
       // Signing the contact request
-      this.localTime += this.config.averageCryptoTime
+      this.localTime += this.cryptoLatency()
 
       for (const backup of multicastTargets) {
         const targetGroup = this.node.children.find(e => e.members.includes(unansweredHealthCheck))

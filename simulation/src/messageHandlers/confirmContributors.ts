@@ -52,8 +52,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
         new Message(
           MessageType.SynchronizationTimeout,
           this.localTime,
-          this.localTime +
-            (3 * this.config.averageCryptoTime + this.config.averageLatency) * this.config.maxToAverageRatio,
+          this.localTime + this.config.averageLatency * this.config.maxToAverageRatio + 3 * this.cryptoLatency(),
           this.id,
           this.id,
           {}
