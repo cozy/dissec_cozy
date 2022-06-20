@@ -11,7 +11,7 @@ export function handlePingTimeout(this: Node): Message[] {
   // Initialize the list of queried note
   this.queriedNode = this.contributorsList[this.id]?.slice()
 
-  if (this.config.strategy === ProtocolStrategy.Optimistic) {
+  if (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager) {
     // The first member forwards the list of contributors to its members
     for (const member of this.node!.members) {
       messages.push(

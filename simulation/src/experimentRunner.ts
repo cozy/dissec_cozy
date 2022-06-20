@@ -162,7 +162,7 @@ export class ExperimentRunner {
             )
           )
         }
-      } else {
+      } else if (run.strategy === ProtocolStrategy.Optimistic || run.strategy === ProtocolStrategy.Eager) {
         // TODO: Timeouts should take into account the broadcasts.
         // Contributors respond with a ping to the first member
         manager.transmitMessage(

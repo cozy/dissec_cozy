@@ -16,6 +16,7 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   const messages: Message[] = []
 
   // Retransmit and answer to pings without verifications because it's does not leak info
+  // TODO: Split pings in separate messages
   if (this.config.strategy === ProtocolStrategy.Pessimistic) {
     // Pessimists inform every parent that they will contribute
     for (const parent of receivedMessage.content.parents) {

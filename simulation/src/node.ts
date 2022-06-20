@@ -11,6 +11,7 @@ import {
   handleContributionTimeout,
   handleContributorPing,
   handleContributorsPolling,
+  handleGiveUpChild,
   handleHealthCheckTimeout,
   handleNotifyGroup,
   handleNotifyGroupTimeout,
@@ -38,9 +39,9 @@ export class Node {
   id: number
   node?: TreeNode
   config: ManagerArguments
-  localTime: number
-  alive: boolean
-  deathTime: number
+  localTime: number = 0
+  alive: boolean = true
+  deathTime: number = 0
   role: NodeRole
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
@@ -81,6 +82,7 @@ export class Node {
   handleContributorsPolling = handleContributorsPolling
   handleSendChildren = handleSendChildren
   handleRequestData = handleRequestData
+  handleGiveUpChild = handleGiveUpChild
 
   constructor({ node, id, config }: { node?: TreeNode; id?: number; config: ManagerArguments }) {
     if (!node && !id) return //throw new Error("Initializing a node without id")
@@ -88,9 +90,6 @@ export class Node {
     this.id = (node ? node.id : id)!
     this.node = cloneDeep(node)
     this.config = config
-    this.localTime = 0
-    this.alive = true
-    this.deathTime = 0
     this.role = NodeRole.Aggregator
     this.secretValue = 50 // TODO: Better value, not always 50
     this.ongoingHealthChecks = {}
@@ -234,6 +233,9 @@ export class Node {
         break
       case MessageType.RequestData:
         messages.push(...this.handleRequestData(receivedMessage))
+        break
+      case MessageType.GiveUpChild:
+        messages.push(...this.handleGiveUpChild(receivedMessage))
         break
       default:
         throw new Error('Receiving unknown message type')

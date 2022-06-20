@@ -43,7 +43,10 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       )
     }
 
-    if (newContributors.length > 0 && this.config.strategy === ProtocolStrategy.Optimistic) {
+    if (
+      newContributors.length > 0 &&
+      (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager)
+    ) {
       // In the optimistic version, add a synchronization trigger when a backup asks for data
       messages.push(
         new Message(

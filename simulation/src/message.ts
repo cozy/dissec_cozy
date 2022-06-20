@@ -32,6 +32,7 @@ export enum MessageType {
   ContributorsPolling = 'ContributorsPolling',
   SendChildren = 'SendChildren',
   RequestData = 'ReqData',
+  GiveUpChild = 'GiveUp',
 }
 
 export enum StopStatus {
