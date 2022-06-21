@@ -141,15 +141,6 @@ if __name__ == "__main__":
         points="all",
         title="Taux de panne pour chaque statut d'exécution",
     )
-    completeness_per_failure_prob_fig = px.box(
-        data.groupby(["run_id", "status", "strategy"], as_index=False).mean(),
-        x="failure_probability",
-        y="completeness",
-        color="strategy",
-        hover_name="run_id",
-        points="all",
-        title="Complétude par proba de pannes",
-    )
 
     length_opti_scatter = px.scatter(
         grouped[grouped["strategy"] == "OPTI"],
@@ -257,21 +248,39 @@ if __name__ == "__main__":
         title="Pessimistic Work amplification",
     )
 
+    gmean = grouped.groupby(["failure_probability", "strategy"], as_index=False).mean()
+    tmp_std = grouped.groupby(["failure_probability", "strategy"], as_index=False).std()
+    gmean["total_work_std"] = tmp_std["total_work"]
+    gmean["simulation_length_std"] = tmp_std["simulation_length"]
+    gmean["completeness_std"] = tmp_std["completeness"]
+
     work_failure_prob_strategy_fig = px.line(
-        grouped.groupby(["failure_probability", "strategy"], as_index=False).mean(),
+        gmean,
         x="failure_probability",
         y="simulation_length",
+        error_y="simulation_length_std",
         color="strategy",
         markers=True,
         title="Average latency per strategy",
     )
     completeness_failure_prob_strategy_fig = px.line(
-        grouped.groupby(["failure_probability", "strategy"], as_index=False).mean(),
+        gmean,
         x="failure_probability",
         y="completeness",
+        error_y="completeness_std",
         color="strategy",
         markers=True,
         title="Average completeness per strategy",
+    )
+
+    completeness_per_failure_prob_fig = px.box(
+        data.groupby(["run_id", "status", "strategy"], as_index=False).mean(),
+        x="failure_probability",
+        y="completeness",
+        color="strategy",
+        hover_name="run_id",
+        points="all",
+        title="Complétude par proba de pannes",
     )
 
     app.layout = html.Div(
@@ -554,15 +563,19 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(
-                        id="completeness_failure_prob_strategy",
-                        figure=completeness_failure_prob_strategy_fig,
+                        id="eager_work_amplification",
+                        figure=eager_work_amplification_fig,
                     ),
                     dcc.Graph(
-                        id="work_failure_prob_strategy",
-                        figure=work_failure_prob_strategy_fig,
+                        id="eager_latency_amplification",
+                        figure=eager_latency_amplification_fig,
                     ),
                 ],
             ),
+            #
+            # Rest
+            #
+            html.H1("Other graphs"),
             html.Div(
                 style={
                     "display": "flex",
@@ -571,12 +584,12 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(
-                        id="eager_work_amplification",
-                        figure=eager_work_amplification_fig,
+                        id="completeness_failure_prob_strategy",
+                        figure=completeness_failure_prob_strategy_fig,
                     ),
                     dcc.Graph(
-                        id="eager_latency_amplification",
-                        figure=eager_latency_amplification_fig,
+                        id="work_failure_prob_strategy",
+                        figure=work_failure_prob_strategy_fig,
                     ),
                 ],
             ),
