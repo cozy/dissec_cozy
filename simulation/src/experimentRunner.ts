@@ -151,12 +151,20 @@ export class ExperimentRunner {
           manager.transmitMessage(
             new Message(MessageType.PingTimeout, 0, 2 * run.averageLatency * run.maxToAverageRatio, member, member, {})
           )
+
+          // Timeout is set at the max between the encryption latency for the contributor
+          // and the decryption time for the aggregator.
           manager.transmitMessage(
             new Message(
               MessageType.ContributionTimeout,
               0,
               2 * run.averageLatency * run.maxToAverageRatio +
-                manager.nodes[member].cryptoLatency() * run.groupSize * 3,
+                manager.nodes[member].cryptoLatency() *
+                  Math.max(
+                    run.groupSize,
+                    manager.nodes[member].node?.children.flatMap(e => e.members).length || run.groupSize * run.fanout
+                  ) *
+                  3,
               member,
               member,
               {}
@@ -185,7 +193,12 @@ export class ExperimentRunner {
               MessageType.ContributionTimeout,
               0,
               (aggregator.members.indexOf(member) === 0 ? 2 : 3) * run.averageLatency * run.maxToAverageRatio +
-                manager.nodes[member].cryptoLatency() * run.groupSize * 3,
+                manager.nodes[member].cryptoLatency() *
+                  Math.max(
+                    run.groupSize,
+                    manager.nodes[member].node?.children.flatMap(e => e.members).length || run.groupSize * run.fanout
+                  ) *
+                  3,
               member,
               member,
               {}
