@@ -1,9 +1,10 @@
 import cloneDeep from 'lodash/cloneDeep'
+import rayleigh from '@stdlib/random-base-rayleigh'
 
 import { RunConfig } from './experimentRunner'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
-import { Generator } from './random'
+import { Generator, xmur3 } from './random'
 import TreeNode from './treeNode'
 
 export interface ManagerArguments extends RunConfig {
@@ -24,6 +25,7 @@ export class NodesManager {
   lastFailureUpdate: number
   status: StopStatus
   generator: () => number
+  rayleigh = rayleigh.factory(1, { seed: 1 })
 
   constructor(options: ManagerArguments) {
     this.debug = options.debug
@@ -39,6 +41,10 @@ export class NodesManager {
     this.failureRate = options.failureRate
     this.status = StopStatus.Unfinished
     this.generator = Generator.get(options.seed)
+
+    // Sigma such that the median is the desired latency
+    const sigma = options.averageLatency / Math.sqrt(2 * Math.LN2)
+    this.rayleigh = rayleigh.factory(sigma, { seed: xmur3(options.seed)() })
   }
 
   static createFromTree(root: TreeNode, options: ManagerArguments): NodesManager {
@@ -223,7 +229,9 @@ export class NodesManager {
   }
 
   private standardLatency(): number {
-    return 2 * this.config.averageLatency * this.generator()
+    // TODO: Model latency
+    const latency = Math.max(0, Math.min(this.config.averageLatency * this.config.maxToAverageRatio, this.rayleigh()))
+    return latency
   }
 }
 

@@ -85,6 +85,14 @@ if __name__ == "__main__":
         hover_name="type",
         hover_data=["emitter_id"],
     )
+    message_stats_fig = px.box(
+        pd.DataFrame(columns=data.columns),
+        x="type",
+        y="latency",
+        hover_name="type",
+        hover_data=["emitter_id"],
+        points="all",
+    )
 
     # Boxes
     work_failure_rate_status_fig = px.box(
@@ -436,6 +444,7 @@ if __name__ == "__main__":
                 ]
             ),
             dcc.Graph(id="message_timeline", figure=message_timeline_fig),
+            dcc.Graph(id="message_stats", figure=message_stats_fig),
             #
             # Boxes
             #
@@ -598,7 +607,10 @@ if __name__ == "__main__":
     )
 
     @app.callback(
-        dash.Output(component_id="message_timeline", component_property="figure"),
+        [
+            dash.Output(component_id="message_timeline", component_property="figure"),
+            dash.Output(component_id="message_stats", component_property="figure"),
+        ],
         [
             dash.Input(component_id="y-axis", component_property="value"),
             dash.Input(component_id="runs-success", component_property="value"),
@@ -654,7 +666,15 @@ if __name__ == "__main__":
             hover_name="type",
             hover_data=["emitter_id"],
         )
-        return new_message_timeline
+        new_message_stats_fig = px.box(
+            df,
+            x="type",
+            y="latency",
+            hover_name="type",
+            hover_data=["emitter_id"],
+            points="all",
+        )
+        return [new_message_timeline, new_message_stats_fig]
 
     @app.callback(
         [

@@ -13,6 +13,7 @@ export enum ProtocolStrategy {
 
 export interface RunConfig {
   strategy: ProtocolStrategy
+  selectivity: number
   averageLatency: number
   maxToAverageRatio: number
   averageCryptoTime: number
@@ -126,6 +127,16 @@ export class ExperimentRunner {
     }
 
     // All leaves aggregator request data from contributors
+
+    // The number of hops needed on average to reach all the node in a zone
+    // const numberContributors = run.groupSize * run.fanout ** run.depth // TODO: Not accurate
+    // const totalNumberOfNodes = numberContributors / run.selectivity
+    // const nodesPerZone = totalNumberOfNodes / run.fanout ** run.depth
+    // // Nodes broadcast to all the nodes they know in their finger table
+    // const averageHopsPerBroadcast = Math.log2(Math.log2(nodesPerZone))
+    // TODO: Compute this value depending on the total number of nodes in the network
+    const averageHopsPerBroadcast = 1
+
     const leavesAggregators = root.selectNodesByDepth(run.depth - 1)
     for (const aggregator of leavesAggregators) {
       for (const member of aggregator.members) {
@@ -144,12 +155,16 @@ export class ExperimentRunner {
       if (run.strategy === ProtocolStrategy.Pessimistic) {
         // Setting contribution collection timeouts on the leaves aggregators
         for (const member of aggregator.members) {
-          // TODO: Timeouts should take into account the broadcasts.
-          // Currently supposes that contributors are reached in 1 hop
-
           // Contributors respond with a ping and then the contribution, await both
           manager.transmitMessage(
-            new Message(MessageType.PingTimeout, 0, 2 * run.averageLatency * run.maxToAverageRatio, member, member, {})
+            new Message(
+              MessageType.PingTimeout,
+              0,
+              (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
+              member,
+              member,
+              {}
+            )
           )
 
           // Timeout is set at the max between the encryption latency for the contributor
@@ -158,7 +173,7 @@ export class ExperimentRunner {
             new Message(
               MessageType.ContributionTimeout,
               0,
-              2 * run.averageLatency * run.maxToAverageRatio +
+              (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio +
                 manager.nodes[member].cryptoLatency() *
                   Math.max(
                     run.groupSize,
@@ -172,13 +187,12 @@ export class ExperimentRunner {
           )
         }
       } else if (run.strategy === ProtocolStrategy.Optimistic || run.strategy === ProtocolStrategy.Eager) {
-        // TODO: Timeouts should take into account the broadcasts.
         // Contributors respond with a ping to the first member
         manager.transmitMessage(
           new Message(
             MessageType.PingTimeout,
             0,
-            2 * run.averageLatency * run.maxToAverageRatio,
+            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
             aggregator.members[0],
             aggregator.members[0],
             {}
@@ -192,7 +206,9 @@ export class ExperimentRunner {
             new Message(
               MessageType.ContributionTimeout,
               0,
-              (aggregator.members.indexOf(member) === 0 ? 2 : 3) * run.averageLatency * run.maxToAverageRatio +
+              (averageHopsPerBroadcast + aggregator.members.indexOf(member) === 0 ? 1 : 2) *
+                run.averageLatency *
+                run.maxToAverageRatio +
                 manager.nodes[member].cryptoLatency() *
                   Math.max(
                     run.groupSize,

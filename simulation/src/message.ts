@@ -290,6 +290,9 @@ export class Message {
       case MessageType.RequestData:
         console.log(`${tag} has been requested data by backup #${this.emitterId} joining the tree`)
         break
+      case MessageType.GiveUpChild:
+        console.log(`${tag} has been told to give up child ${this.content.targetNode} by member ${this.emitterId}`)
+        break
     }
   }
 }

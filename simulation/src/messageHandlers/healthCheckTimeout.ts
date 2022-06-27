@@ -1,6 +1,6 @@
 import { ProtocolStrategy } from '../experimentRunner'
 import { Message, MessageType } from '../message'
-import { Node } from '../node'
+import { Node, NodeRole } from '../node'
 import { createGenerator } from '../random'
 
 export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): Message[] {
@@ -16,6 +16,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
       // In eager strategy, tell members to give up their child as well
 
       // Aggregators don't have secure channel, sign the request
+      // TODO: The node should contact itself instantly
       this.localTime += this.cryptoLatency()
 
       for (const member of this.node.members) {
@@ -31,6 +32,9 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
             }
           )
         )
+
+        // The querier only sends the message to himself
+        if (this.role === NodeRole.Querier) break
       }
     } else {
       // While replacing failed nodes, resume working

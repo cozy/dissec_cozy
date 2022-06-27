@@ -7,6 +7,7 @@ if (debug) {
   configs = [
     {
       strategy: ProtocolStrategy.Eager,
+      selectivity: 0.1,
       averageLatency: 100,
       maxToAverageRatio: 10,
       averageCryptoTime: 100,
@@ -14,11 +15,11 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 500000,
-      failureRate: 0.0001,
+      failureRate: 0.00045000000000000004,
       depth: 3,
       fanout: 4,
       groupSize: 3,
-      seed: 'EAGER:0-0',
+      seed: 'EAGER-9-2',
     },
   ]
 } else {
@@ -26,10 +27,11 @@ if (debug) {
     Array(10)
       .fill(0)
       .flatMap((_, failure) =>
-        Array(25)
+        Array(5)
           .fill(0)
           .map((_, retries) => ({
             strategy: strategy,
+            selectivity: 0.1,
             averageLatency: 100,
             maxToAverageRatio: 10,
             averageCryptoTime: 100,
