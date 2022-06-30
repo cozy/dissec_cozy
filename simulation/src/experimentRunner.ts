@@ -296,7 +296,7 @@ export class ExperimentRunner {
       completeness,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
-      messages: oldMessages,
+      messages: this.fullExport ? oldMessages : [],
     }
   }
 }
