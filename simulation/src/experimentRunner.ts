@@ -31,6 +31,8 @@ export interface RunConfig {
 export interface RunResult extends RunConfig {
   status: StopStatus
   observedFailureRate: number
+  work: number
+  latency: number
   completeness: number
   messages: Message[]
 }
@@ -38,10 +40,44 @@ export interface RunResult extends RunConfig {
 export class ExperimentRunner {
   runs: RunConfig[]
   debug?: boolean = false
+  fullExport?: boolean = false
 
-  constructor(runs: RunConfig[], options: { debug?: boolean } = {}) {
+  constructor(runs: RunConfig[], options: { debug?: boolean; fullExport?: boolean } = {}) {
     this.runs = runs
     this.debug = options.debug
+    this.fullExport = options.fullExport
+  }
+
+  writeResults(outputPath: string, results: RunResult[]) {
+    // Splitting the array in smaller pieces to prevent running out of memory
+    fs.writeFileSync(outputPath, '[') // Default mode is w
+    for (let i = 0; i < results.length; i++) {
+      const output: { [key: string]: any[] } = {}
+      const { messages, ...items } = results[i]
+
+      // Initializing arrays for each stat
+      Object.entries(items).forEach(
+        ([key, value]) => (output[key] = Array(this.fullExport ? messages.length : 1).fill(value))
+      )
+
+      if (this.fullExport) {
+        // Only export messages for full exports
+        Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
+        messages.forEach((message, j) =>
+          Object.entries(message).forEach(([key, value]) => {
+            // Exclude content because it's not used but takes a lot of space
+            if (key === 'content') return
+            output[key][j] = value
+          })
+        )
+      }
+
+      fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
+      if (i !== results.length - 1) {
+        fs.writeFileSync(outputPath, ',', { flag: 'a' })
+      }
+    }
+    fs.writeFileSync(outputPath, ']', { flag: 'a' })
   }
 
   run(outputPath: string) {
@@ -50,6 +86,8 @@ export class ExperimentRunner {
       console.log(JSON.stringify(run))
       results.push(this.singleRun(run))
       console.log()
+      // Writing intermediary results
+      this.writeResults(outputPath, results)
     }
 
     console.log('Success rate:', results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
@@ -65,30 +103,7 @@ export class ExperimentRunner {
       })
     }
 
-    // Splitting the array in smaller pieces to prevent running out of memory
-    fs.writeFileSync(outputPath, '[') // Default mode is w
-    for (let i = 0; i < results.length; i++) {
-      const output: { [key: string]: any[] } = {}
-      const { messages, ...items } = results[i]
-
-      // Initializing arrays for each stat
-      Object.entries(items).forEach(([key, value]) => (output[key] = Array(messages.length).fill(value)))
-      Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
-
-      messages.forEach((message, j) =>
-        Object.entries(message).forEach(([key, value]) => {
-          // Exclude content because it's not used but takes a lot of space
-          if (key === 'content') return
-          output[key][j] = value
-        })
-      )
-
-      fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
-      if (i !== results.length - 1) {
-        fs.writeFileSync(outputPath, ',', { flag: 'a' })
-      }
-    }
-    fs.writeFileSync(outputPath, ']', { flag: 'a' })
+    this.writeResults(outputPath, results)
   }
 
   singleRun(run: RunConfig): RunResult {
@@ -276,6 +291,8 @@ export class ExperimentRunner {
     return {
       ...run,
       status: manager.status,
+      work: oldMessages.map(e => e.work).reduce((previous, current) => previous + current),
+      latency: Math.max(...oldMessages.map(e => e.receptionTime)),
       completeness,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,

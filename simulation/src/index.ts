@@ -6,7 +6,7 @@ const debug = false
 if (debug) {
   configs = [
     {
-      strategy: ProtocolStrategy.Eager,
+      strategy: ProtocolStrategy.Pessimistic,
       selectivity: 0.1,
       averageLatency: 100,
       maxToAverageRatio: 10,
@@ -15,19 +15,19 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 500000,
-      failureRate: 0.00045000000000000004,
+      failureRate: 0.0016,
       depth: 3,
       fanout: 4,
       groupSize: 3,
-      seed: 'EAGER-9-2',
+      seed: 'PESS-4-9',
     },
   ]
 } else {
-  configs = [ProtocolStrategy.Eager, ProtocolStrategy.Optimistic].flatMap(strategy =>
-    Array(10)
+  configs = [ProtocolStrategy.Eager, ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic].flatMap(strategy =>
+    Array(5)
       .fill(0)
       .flatMap((_, failure) =>
-        Array(5)
+        Array(2)
           .fill(0)
           .map((_, retries) => ({
             strategy: strategy,
@@ -39,7 +39,7 @@ if (debug) {
             healthCheckPeriod: 3,
             multicastSize: 5,
             deadline: 100 * 5000,
-            failureRate: 0.00005 * failure,
+            failureRate: 0.0001 * 2 ** failure,
             depth: 3,
             fanout: 4,
             groupSize: 3,

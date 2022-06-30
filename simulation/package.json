@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "test": "jest",
-    "dashboard": "python3 dashboard/dashboard.py"
+    "dashboard": "python3 dashboard/dashboard.py",
+    "dashboard:full": "python3 dashboard/dashboard_full.py"
   },
   "devDependencies": {
     "@types/jest": "^27.4.0",
