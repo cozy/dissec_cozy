@@ -52,8 +52,7 @@ if __name__ == "__main__":
     with open("./dissec.config.json") as f:
         config = json.load(f)
 
-    # data = get_data(config["dataPath"])
-    data = get_data("outputs/1000.json")
+    data = get_data(config["dataPath"])
 
     run_ids = pd.unique(data["run_id"])
     strategies = pd.unique(data["strategy"])
