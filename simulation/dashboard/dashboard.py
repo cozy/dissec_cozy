@@ -52,7 +52,8 @@ if __name__ == "__main__":
     with open("./dissec.config.json") as f:
         config = json.load(f)
 
-    data = get_data(config["dataPath"])
+    # data = get_data(config["dataPath"])
+    data = get_data("outputs/1000.json")
 
     run_ids = pd.unique(data["run_id"])
     strategies = pd.unique(data["strategy"])
@@ -61,6 +62,11 @@ if __name__ == "__main__":
     data["failure_probability"] = data["failure_probability"].round(6)
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
+
+    # Remove strategies not present in the data
+    strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+    for k in set(strategies_map.keys()).difference(strategies):
+        del strategies_map[k]
 
     grouped = data.groupby(["run_id", "status", "strategy"], as_index=False)[
         [
@@ -150,38 +156,69 @@ if __name__ == "__main__":
         title="Taux de panne pour chaque statut d'exécution",
     )
 
-    length_opti_scatter = px.scatter(
-        grouped[grouped["strategy"] == "OPTI"],
-        x="simulation_length",
-        y="failure_rate",
-        color="status",
-        hover_name="run_id",
-        title="Optimistic execution latency",
-    )
-    length_eager_scatter = px.scatter(
-        grouped[grouped["strategy"] == "EAGER"],
-        x="simulation_length",
-        y="failure_rate",
-        color="status",
-        hover_name="run_id",
-        title="Pessimistic execution latency",
-    )
-    work_opti_scatter = px.scatter(
-        grouped[grouped["strategy"] == "OPTI"],
-        x="simulation_length",
-        y="total_work",
-        color="status",
-        hover_name="run_id",
-        title="Optimistic total work",
-    )
-    work_eager_scatter = px.scatter(
-        grouped[grouped["strategy"] == "EAGER"],
-        x="simulation_length",
-        y="total_work",
-        color="status",
-        hover_name="run_id",
-        title="Pessimistic total work",
-    )
+    length_scatters = [
+        px.scatter(
+            grouped[grouped["strategy"] == strat],
+            x="simulation_length",
+            y="failure_rate",
+            color="status",
+            hover_name="run_id",
+            title=f"{strategies_map[strat]} execution latency",
+        )
+        for strat in strategies_map
+    ]
+    work_scatters = [
+        px.scatter(
+            grouped[grouped["strategy"] == strat],
+            x="simulation_length",
+            y="total_work",
+            color="status",
+            hover_name="run_id",
+            title=f"{strategies_map[strat]} total work",
+        )
+        for strat in strategies_map
+    ]
+
+    amps = grouped.copy()
+    amps["total_work"] /= amps.groupby(
+        ["failure_probability", "strategy"], as_index=False
+    ).mean()["total_work"][0]
+    amps["simulation_length"] /= amps.groupby(
+        ["failure_probability", "strategy"], as_index=False
+    ).mean()["simulation_length"][0]
+    latency_amplification_scatters = [
+        px.scatter(
+            amps[amps["strategy"] == strat],
+            x="failure_probability",
+            y="simulation_length",
+            marginal_y="histogram",
+            trendline="ols",
+            title=f"{strategies_map[strat]} latency amplification",
+        )
+        for strat in strategies_map
+    ]
+    work_amplification_scatters = [
+        px.scatter(
+            amps[amps["strategy"] == strat],
+            x="failure_probability",
+            y="total_work",
+            marginal_y="histogram",
+            trendline="ols",
+            title=f"{strategies_map[strat]} work amplification",
+        )
+        for strat in strategies_map
+    ]
+    completeness_amplification_scatters = [
+        px.scatter(
+            amps[amps["strategy"] == strat],
+            x="failure_probability",
+            y="completeness",
+            marginal_y="histogram",
+            trendline="ols",
+            title=f"{strategies_map[strat]} completeness",
+        )
+        for strat in strategies_map
+    ]
 
     grouped_mean = grouped.groupby(
         ["failure_probability", "strategy"], as_index=False
@@ -199,62 +236,57 @@ if __name__ == "__main__":
     grouped_mean["total_work"] /= grouped_mean["total_work"].iloc[0]
     grouped_mean["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
 
-    optimistic_latency_amplification_fig = px.line(
-        dict(
-            failure_probability=failure_probabilities,
-            mean=grouped_mean[grouped_mean["strategy"] == "OPTI"]["simulation_length"],
-            upper=grouped_upper[grouped_upper["strategy"] == "OPTI"][
-                "simulation_length"
-            ],
-            lower=grouped_lower[grouped_lower["strategy"] == "OPTI"][
-                "simulation_length"
-            ],
-        ),
-        x="failure_probability",
-        y=["mean", "lower", "upper"],
-        markers=True,
-        title="Optimistic Latency amplification",
-    )
-    optimistic_work_amplification_fig = px.line(
-        dict(
-            failure_probability=failure_probabilities,
-            mean=grouped_mean[grouped_mean["strategy"] == "OPTI"]["total_work"],
-            upper=grouped_upper[grouped_upper["strategy"] == "OPTI"]["total_work"],
-            lower=grouped_lower[grouped_lower["strategy"] == "OPTI"]["total_work"],
-        ),
-        x="failure_probability",
-        y=["mean", "lower", "upper"],
-        markers=True,
-        title="Optimistic Work amplification",
-    )
-    eager_latency_amplification_fig = px.line(
-        dict(
-            failure_probability=failure_probabilities,
-            mean=grouped_mean[grouped_mean["strategy"] == "EAGER"]["simulation_length"],
-            upper=grouped_upper[grouped_upper["strategy"] == "EAGER"][
-                "simulation_length"
-            ],
-            lower=grouped_lower[grouped_lower["strategy"] == "EAGER"][
-                "simulation_length"
-            ],
-        ),
-        x="failure_probability",
-        y=["mean", "lower", "upper"],
-        markers=True,
-        title="Pessimistic Latency amplification",
-    )
-    eager_work_amplification_fig = px.line(
-        dict(
-            failure_probability=failure_probabilities,
-            mean=grouped_mean[grouped_mean["strategy"] == "EAGER"]["total_work"],
-            upper=grouped_upper[grouped_upper["strategy"] == "EAGER"]["total_work"],
-            lower=grouped_lower[grouped_lower["strategy"] == "EAGER"]["total_work"],
-        ),
-        x="failure_probability",
-        y=["mean", "lower", "upper"],
-        markers=True,
-        title="Pessimistic Work amplification",
-    )
+    latency_amplification_figs = [
+        px.line(
+            dict(
+                failure_probability=failure_probabilities,
+                mean=grouped_mean[grouped_mean["strategy"] == strat][
+                    "simulation_length"
+                ],
+                upper=grouped_upper[grouped_upper["strategy"] == strat][
+                    "simulation_length"
+                ],
+                lower=grouped_lower[grouped_lower["strategy"] == strat][
+                    "simulation_length"
+                ],
+            ),
+            x="failure_probability",
+            y=["mean", "lower", "upper"],
+            markers=True,
+            title=f"{strategies_map[strat]} latency amplification",
+        )
+        for strat in strategies_map
+    ]
+    work_amplification_figs = [
+        px.line(
+            dict(
+                failure_probability=failure_probabilities,
+                mean=grouped_mean[grouped_mean["strategy"] == strat]["total_work"],
+                upper=grouped_upper[grouped_upper["strategy"] == strat]["total_work"],
+                lower=grouped_lower[grouped_lower["strategy"] == strat]["total_work"],
+            ),
+            x="failure_probability",
+            y=["mean", "lower", "upper"],
+            markers=True,
+            title=f"{strategies_map[strat]} work amplification",
+        )
+        for strat in strategies_map
+    ]
+    completeness_amplification_figs = [
+        px.line(
+            dict(
+                failure_probability=failure_probabilities,
+                mean=grouped_mean[grouped_mean["strategy"] == strat]["completeness"],
+                upper=grouped_upper[grouped_upper["strategy"] == strat]["completeness"],
+                lower=grouped_lower[grouped_lower["strategy"] == strat]["completeness"],
+            ),
+            x="failure_probability",
+            y=["mean", "lower", "upper"],
+            markers=True,
+            title=f"{strategies_map[strat]} completeness amplification",
+        )
+        for strat in strategies_map
+    ]
 
     gmean = grouped.groupby(["failure_probability", "strategy"], as_index=False).mean()
     tmp_std = grouped.groupby(["failure_probability", "strategy"], as_index=False).std()
@@ -263,6 +295,15 @@ if __name__ == "__main__":
     gmean["completeness_std"] = tmp_std["completeness"]
 
     work_failure_prob_strategy_fig = px.line(
+        gmean,
+        x="failure_probability",
+        y="total_work",
+        error_y="total_work_std",
+        color="strategy",
+        markers=True,
+        title="Average work per strategy",
+    )
+    latency_failure_prob_strategy_fig = px.line(
         gmean,
         x="failure_probability",
         y="simulation_length",
@@ -525,11 +566,9 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(
-                        id="length_opti_scatter_plot", figure=length_opti_scatter
-                    ),
-                    dcc.Graph(
-                        id="length_eager_scatter_plot", figure=length_eager_scatter
-                    ),
+                        id=f"length_{strategies_map[key]}_scatter_plot", figure=scatter
+                    )
+                    for (key, scatter) in zip(strategies_map.keys(), length_scatters)
                 ],
             ),
             html.Div(
@@ -539,8 +578,10 @@ if __name__ == "__main__":
                     "justify-content": "center",
                 },
                 children=[
-                    dcc.Graph(id="work_opti_scatter_plot", figure=work_opti_scatter),
-                    dcc.Graph(id="work_eager_scatter_plot", figure=work_eager_scatter),
+                    dcc.Graph(
+                        id=f"work_{strategies_map[key]}_scatter_plot", figure=scatter
+                    )
+                    for (key, scatter) in zip(strategies_map.keys(), work_scatters)
                 ],
             ),
             #
@@ -555,13 +596,11 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(
-                        id="optimistic_work_amplification",
-                        figure=optimistic_work_amplification_fig,
-                    ),
-                    dcc.Graph(
-                        id="optimistic_latency_amplification",
-                        figure=optimistic_latency_amplification_fig,
-                    ),
+                        id=f"{strategies_map[key]}_work_amplification", figure=scatter
+                    )
+                    for (key, scatter) in zip(
+                        strategies_map.keys(), work_amplification_figs
+                    )
                 ],
             ),
             html.Div(
@@ -572,13 +611,76 @@ if __name__ == "__main__":
                 },
                 children=[
                     dcc.Graph(
-                        id="eager_work_amplification",
-                        figure=eager_work_amplification_fig,
-                    ),
+                        id=f"{strategies_map[key]}_latency_amplification",
+                        figure=scatter,
+                    )
+                    for (key, scatter) in zip(
+                        strategies_map.keys(), latency_amplification_figs
+                    )
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
                     dcc.Graph(
-                        id="eager_latency_amplification",
-                        figure=eager_latency_amplification_fig,
-                    ),
+                        id=f"{strategies_map[key]}_completeness_amplification",
+                        figure=scatter,
+                    )
+                    for (key, scatter) in zip(
+                        strategies_map.keys(), completeness_amplification_figs
+                    )
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strategies_map[key]}_latency_amplification_scatter",
+                        figure=scatter,
+                    )
+                    for (key, scatter) in zip(
+                        strategies_map.keys(), latency_amplification_scatters
+                    )
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strategies_map[key]}_work_amplification_scatter",
+                        figure=scatter,
+                    )
+                    for (key, scatter) in zip(
+                        strategies_map.keys(), work_amplification_scatters
+                    )
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strategies_map[key]}_completeness_amplification_scatter",
+                        figure=scatter,
+                    )
+                    for (key, scatter) in zip(
+                        strategies_map.keys(), completeness_amplification_scatters
+                    )
                 ],
             ),
             #
@@ -599,6 +701,10 @@ if __name__ == "__main__":
                     dcc.Graph(
                         id="work_failure_prob_strategy",
                         figure=work_failure_prob_strategy_fig,
+                    ),
+                    dcc.Graph(
+                        id="latency_failure_prob_strategy",
+                        figure=latency_failure_prob_strategy_fig,
                     ),
                 ],
             ),
