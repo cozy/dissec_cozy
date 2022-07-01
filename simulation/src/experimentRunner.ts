@@ -82,12 +82,14 @@ export class ExperimentRunner {
 
   run(outputPath: string) {
     const results: RunResult[] = []
-    for (const run of this.runs) {
-      console.log(JSON.stringify(run))
-      results.push(this.singleRun(run))
-      console.log()
+    for (let i = 0; i < this.runs.length; i++) {
+      console.log(JSON.stringify(this.runs[i]))
+      const startTime = Date.now()
+      results.push(this.singleRun(this.runs[i]))
       // Writing intermediary results
       this.writeResults(outputPath, results)
+      console.log(`Estimated time left: ${((Date.now() - startTime) * (this.runs.length - i - 1)) / 60000} minutes`)
+      console.log()
     }
 
     console.log('Success rate:', results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
@@ -292,7 +294,9 @@ export class ExperimentRunner {
       ...run,
       status: manager.status,
       work: oldMessages.map(e => e.work).reduce((previous, current) => previous + current),
-      latency: Math.max(...oldMessages.map(e => e.receptionTime)),
+      latency: oldMessages
+        .map(e => e.receptionTime)
+        .reduce((previous, current) => (previous > current ? previous : current), 0),
       completeness,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
