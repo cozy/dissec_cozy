@@ -17,5 +17,5 @@ It focuses on the part of the protocol after the tree has been constructed, so n
 
 ### Usage
 
-1. Run the simulation `npm start` or `yarn start`
-2. Run the dashboard `npm run dashboard` or `yarn dashboard`
+1. Run the simulation `npm start` or `yarn start`. To get the detailed data export, turn on the option in [index.ts](src/index.ts)
+2. Run the dashboard `npm run dashboard` or `yarn dashboard`. To get the detailed (but longer to load) dashboard, replace `dashboard` by `dashboard:full`

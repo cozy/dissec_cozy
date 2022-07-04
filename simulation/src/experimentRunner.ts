@@ -82,13 +82,15 @@ export class ExperimentRunner {
 
   run(outputPath: string) {
     const results: RunResult[] = []
+    const startTime = Date.now()
     for (let i = 0; i < this.runs.length; i++) {
       console.log(JSON.stringify(this.runs[i]))
-      const startTime = Date.now()
       results.push(this.singleRun(this.runs[i]))
       // Writing intermediary results
       this.writeResults(outputPath, results)
-      console.log(`Estimated time left: ${((Date.now() - startTime) * (this.runs.length - i - 1)) / 60000} minutes`)
+      const averageRunTime = (Date.now() - startTime) / (i + 1)
+      const runsLeft = this.runs.length - i
+      console.log(`Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes`)
       console.log()
     }
 

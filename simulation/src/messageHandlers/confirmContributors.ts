@@ -47,7 +47,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       newContributors.length > 0 &&
       (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager)
     ) {
-      // In the optimistic version, add a synchronization trigger when a backup asks for data
+      // In the optimistic versions, add a synchronization trigger if the backup asked for data
       messages.push(
         new Message(
           MessageType.SynchronizationTimeout,

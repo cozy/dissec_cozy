@@ -27,7 +27,7 @@ if (debug) {
     Array(5)
       .fill(0)
       .flatMap((_, failure) =>
-        Array(2)
+        Array(10)
           .fill(0)
           .map((_, retries) => ({
             strategy: strategy,
@@ -39,7 +39,7 @@ if (debug) {
             healthCheckPeriod: 3,
             multicastSize: 5,
             deadline: 100 * 5000,
-            failureRate: 0.0001 * 2 ** failure,
+            failureRate: 0.0005 * failure,
             depth: 3,
             fanout: 4,
             groupSize: 3,
@@ -50,4 +50,4 @@ if (debug) {
 }
 
 const runner = new ExperimentRunner(configs, { debug })
-runner.run(config.dataPath)
+runner.run(process.argv[2] || config.dataPath)
