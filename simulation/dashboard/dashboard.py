@@ -138,6 +138,7 @@ def generate_graphs(data, strategies_map):
             amps[amps["strategy"] == strat],
             x="failure_probability",
             y="simulation_length",
+            color="status",
             marginal_y="histogram",
             trendline="ols",
             title=f"{strategies_map[strat]} latency amplification",
@@ -146,6 +147,7 @@ def generate_graphs(data, strategies_map):
             amps[amps["strategy"] == strat],
             x="failure_probability",
             y="total_work",
+            color="status",
             marginal_y="histogram",
             trendline="ols",
             title=f"{strategies_map[strat]} work amplification",
@@ -154,6 +156,7 @@ def generate_graphs(data, strategies_map):
             amps[amps["strategy"] == strat],
             x="failure_probability",
             y="completeness",
+            color="status",
             marginal_y="histogram",
             trendline="ols",
             title=f"{strategies_map[strat]} completeness",
@@ -219,7 +222,7 @@ def generate_graphs(data, strategies_map):
             x="failure_probability",
             y=["mean", "lower", "upper"],
             markers=True,
-            title=f"{strategies_map[strat]} completeness amplification",
+            title=f"{strategies_map[strat]} completeness",
         )
 
     gmean = data.groupby(["failure_probability", "strategy"], as_index=False).mean()
@@ -589,17 +592,17 @@ if __name__ == "__main__":
         df = get_data(selected_file)
 
         df = df[
-            df["failure_probability"].isin(
-                [
-                    i
-                    for i in failure_probabilities
-                    if i <= selected_failures[1] and i >= selected_failures[0]
-                ]
-            )
+            (df["failure_probability"] >= selected_failures[0])
+            & (df["failure_probability"] <= selected_failures[1])
         ]
 
         graphs = generate_graphs(df, strategies_map)
 
         return [graphs[id] for id in graphs]
+
+    # Export figure as HTML
+    with open(config["defaultGraph"].replace(".json", ".html"), "a") as f:
+        for k in graphs:
+            f.write(graphs[k].to_html(full_html=False, include_plotlyjs="cdn"))
 
     app.run_server(debug=True)

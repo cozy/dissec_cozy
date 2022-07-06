@@ -1,4 +1,3 @@
-import config from '../dissec.config.json'
 import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
 
 let configs: RunConfig[] = []
@@ -50,4 +49,4 @@ if (debug) {
 }
 
 const runner = new ExperimentRunner(configs, { debug })
-runner.run(process.argv[2] || config.dataPath)
+runner.run()

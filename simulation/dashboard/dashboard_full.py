@@ -88,7 +88,7 @@ if __name__ == "__main__":
         y="receiver_id",
         color="type",
         hover_name="type",
-        hover_data=["emitter_id"],
+        hover_data=["emitter_id", "run_id"],
     )
     message_stats_fig = px.box(
         pd.DataFrame(columns=data.columns),

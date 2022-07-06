@@ -39,6 +39,7 @@ export interface RunResult extends RunConfig {
 
 export class ExperimentRunner {
   runs: RunConfig[]
+  outputPath: string
   debug?: boolean = false
   fullExport?: boolean = false
 
@@ -46,6 +47,44 @@ export class ExperimentRunner {
     this.runs = runs
     this.debug = options.debug
     this.fullExport = options.fullExport
+
+    // Compute output path based on run configs
+    const values: { [k: string]: any[] } = {}
+    const uniqueValues: { [k: string]: any[] } = {}
+    const labels: { [k: string]: string } = {}
+    // Put values for each keys in an array
+    runs.forEach(run =>
+      Object.entries(run).forEach(([k, v]) => {
+        if (k === 'seed') return
+        if (!uniqueValues[k]) uniqueValues[k] = []
+        if (values[k]) values[k].push(v)
+        else values[k] = [v]
+      })
+    )
+    // Keep unique values and range
+    for (const [k, arr] of Object.entries(values)) {
+      for (const v of arr) {
+        if (!uniqueValues[k].includes(v)) {
+          uniqueValues[k].push(v)
+        }
+      }
+      uniqueValues[k].sort()
+      labels[k] =
+        uniqueValues[k].length > 1
+          ? `${uniqueValues[k][0]}-${uniqueValues[k][uniqueValues[k].length - 1]}`
+          : `${uniqueValues[k][0]}`
+    }
+
+    new Date().toISOString().split('T')[0]
+    this.outputPath =
+      `./outputs/run${runs.length}_` +
+      JSON.stringify(labels)
+        .replaceAll('"', '')
+        .replaceAll(',', '_')
+        .replaceAll(':', '')
+        .replaceAll('{', '')
+        .replaceAll('}', '') +
+      '.json'
   }
 
   writeResults(outputPath: string, results: RunResult[]) {
@@ -80,14 +119,14 @@ export class ExperimentRunner {
     fs.writeFileSync(outputPath, ']', { flag: 'a' })
   }
 
-  run(outputPath: string) {
+  run() {
     const results: RunResult[] = []
     const startTime = Date.now()
     for (let i = 0; i < this.runs.length; i++) {
       console.log(JSON.stringify(this.runs[i]))
       results.push(this.singleRun(this.runs[i]))
       // Writing intermediary results
-      this.writeResults(outputPath, results)
+      this.writeResults(this.outputPath, results)
       const averageRunTime = (Date.now() - startTime) / (i + 1)
       const runsLeft = this.runs.length - i
       console.log(`Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes`)
@@ -100,14 +139,14 @@ export class ExperimentRunner {
       results.map(e => e.messages.length).reduce((prev, curr) => prev + curr)
     )
 
-    if (!fs.existsSync(outputPath)) {
-      const components = outputPath.split('/')
-      fs.mkdirSync(outputPath.replace(components[components.length - 1], ''), {
+    if (!fs.existsSync(this.outputPath)) {
+      const components = this.outputPath.split('/')
+      fs.mkdirSync(this.outputPath.replace(components[components.length - 1], ''), {
         recursive: true,
       })
     }
 
-    this.writeResults(outputPath, results)
+    this.writeResults(this.outputPath, results)
   }
 
   singleRun(run: RunConfig): RunResult {
