@@ -14,10 +14,11 @@ export enum ProtocolStrategy {
 export interface RunConfig {
   strategy: ProtocolStrategy
   selectivity: number
-  averageLatency: number
   maxToAverageRatio: number
+  averageLatency: number
   averageCryptoTime: number
   averageComputeTime: number
+  failCheckPeriod: number
   healthCheckPeriod: number
   multicastSize: number
   deadline: number
@@ -147,6 +148,7 @@ export class ExperimentRunner {
     }
 
     this.writeResults(this.outputPath, results)
+    console.log(`Total simulation time: ${(Date.now() - startTime) / 60000} minutes`)
   }
 
   singleRun(run: RunConfig): RunResult {
@@ -165,6 +167,7 @@ export class ExperimentRunner {
     const manager = NodesManager.createFromTree(root, {
       ...run,
       debug: this.debug,
+      fullExport: this.fullExport,
     })
     const n = manager.addNode(querierGroup, querierGroup.id)
     n.role = NodeRole.Querier
@@ -283,8 +286,8 @@ export class ExperimentRunner {
     }
 
     // Set contributors role
-    const contributors = root.selectNodesByDepth(run.depth)
-    for (const contributorGroup of contributors) {
+    const contributorsNodes = root.selectNodesByDepth(run.depth)
+    for (const contributorGroup of contributorsNodes) {
       for (const contributor of contributorGroup.members) {
         manager.nodes[contributor].role = NodeRole.Contributor
       }
@@ -300,15 +303,14 @@ export class ExperimentRunner {
       }
     }
 
+    // Running the simulator the end
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
     }
 
-    const completeness =
-      ((manager.oldMessages.find(e => e.type === MessageType.StopSimulator)?.content.contributors?.length || 0) /
-        run.groupSize /
-        run.fanout ** run.depth) *
-      100
+    const initialNumberContributors = contributorsNodes.flatMap(e => e.members).length
+    const receivedNumberContributors = contributorsNodes.flatMap(e => e.members).length
+    const completeness = (100 * receivedNumberContributors) / initialNumberContributors
 
     console.log(`Simulation finished with status ${manager.status} (${completeness}% completeness)`)
     console.log(
@@ -324,24 +326,24 @@ export class ExperimentRunner {
     }
 
     const oldMessages: Message[] = []
-    const oldIds: number[] = []
-    manager.oldMessages.forEach(m => {
-      if (!oldIds.includes(m.id)) {
-        oldIds.push(m.id)
-        oldMessages.push(m)
-      }
-    })
+    if (this.fullExport) {
+      const oldIds: number[] = []
+      manager.oldMessages.forEach(m => {
+        if (!oldIds.includes(m.id)) {
+          oldIds.push(m.id)
+          oldMessages.push(m)
+        }
+      })
+    }
     return {
       ...run,
       status: manager.status,
-      work: oldMessages.map(e => e.work).reduce((previous, current) => previous + current),
-      latency: oldMessages
-        .map(e => e.receptionTime)
-        .reduce((previous, current) => (previous > current ? previous : current), 0),
+      work: manager.totalWork,
+      latency: manager.globalTime,
       completeness,
       observedFailureRate:
         Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
-      messages: this.fullExport ? oldMessages : [],
+      messages: oldMessages,
     }
   }
 }

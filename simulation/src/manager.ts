@@ -9,35 +9,32 @@ import TreeNode from './treeNode'
 
 export interface ManagerArguments extends RunConfig {
   debug?: boolean
+  fullExport?: boolean
 }
 
 export class NodesManager {
   debug?: boolean
-  nodes: { [id: number]: Node }
-  querier: number
-  messages: Message[]
-  oldMessages: Message[]
-  messageCounter: number
-  globalTime: number
+  nodes: { [id: number]: Node } = {}
+  querier: number = 0
+  messages: Message[] = []
+  oldMessages: Message[] = []
+  messageCounter: number = 0
+  globalTime: number = 0
   config: ManagerArguments
   multicastSize: number
   failureRate: number
-  lastFailureUpdate: number
+  lastFailureUpdate: number = 0
   status: StopStatus
   generator: () => number
   rayleigh = rayleigh.factory(1, { seed: 1 })
+  // Statistics
+  totalWork = 0
+  finalNumberContributors = 0
 
   constructor(options: ManagerArguments) {
     this.debug = options.debug
-    this.nodes = []
-    this.querier = 0
-    this.messages = []
-    this.oldMessages = []
-    this.messageCounter = 0
-    this.globalTime = 0
-    this.lastFailureUpdate = 0
     this.config = options
-    this.multicastSize = 5
+    this.multicastSize = options.multicastSize
     this.failureRate = options.failureRate
     this.status = StopStatus.Unfinished
     this.generator = Generator.get(options.seed)
@@ -152,14 +149,15 @@ export class NodesManager {
     })
     const message = this.messages.pop()!
 
-    // Save messages for exporting
-    this.oldMessages.push(message)
+    if (this.config.fullExport) {
+      // Save messages for exporting
+      this.oldMessages.push(message)
+    }
 
     // Update simulation time and failures
-    while (this.lastFailureUpdate + this.config.averageLatency <= message.receptionTime) {
+    while (this.lastFailureUpdate + this.config.failCheckPeriod <= message.receptionTime) {
       this.updateFailures()
-      // TODO: Find a smarter time step
-      this.lastFailureUpdate += this.config.averageLatency
+      this.lastFailureUpdate += this.config.failCheckPeriod
       this.globalTime = this.lastFailureUpdate
     }
     this.globalTime = message.receptionTime
@@ -185,6 +183,8 @@ export class NodesManager {
               message.content.targetGroup!.members
             }]) died at [${message.content.targetGroup!.members.map(m => this.nodes[m].deathTime)}]`
           )
+        case StopStatus.Success:
+          this.finalNumberContributors = message.content.contributors?.length || 0
           break
       }
     } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
@@ -200,6 +200,9 @@ export class NodesManager {
         this.oldMessages.pop()
         this.messages.push(message)
       } else {
+        // Save stats for exporting
+        this.totalWork += message.work
+
         for (const msg of resultingMessages) {
           this.transmitMessage(msg)
         }

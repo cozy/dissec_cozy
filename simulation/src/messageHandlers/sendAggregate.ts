@@ -49,6 +49,7 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       if (finalResult < 50 * (1 - errorMargin) || finalResult > 50 * (1 + errorMargin)) {
         messages.push(new Message(MessageType.StopSimulator, 0, -1, this.id, this.id, { status: StopStatus.BadResult }))
       } else {
+        // TODO: Send the number of contributors differently
         messages.push(
           new Message(MessageType.StopSimulator, 0, -1, this.id, this.id, {
             status: StopStatus.Success,
