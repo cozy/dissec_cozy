@@ -168,7 +168,8 @@ export class ExperimentRunner {
   }
 
   singleRun(run: RunConfig): RunResult {
-    const nodesInTree = run.fanout ** run.depth * run.groupSize
+    // Exclude contributors (nodes at the last level)
+    const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
     const backupListSize = nodesInTree * 1
 
     // Create the tree structure
@@ -193,6 +194,7 @@ export class ExperimentRunner {
     // Create a backup list and give it to all the nodes
     const backupListStart = Object.keys(manager.nodes).length
     const backups = []
+    // Create as many backup as nodes in the tree
     for (let i = 0; i < backupListSize; i++) {
       const backup = new Node({ id: backupListStart + i, config: manager.config })
       backup.role = NodeRole.Backup
