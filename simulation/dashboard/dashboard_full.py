@@ -6,10 +6,14 @@ import json
 
 
 def get_data(path):
-    with open(path) as f:
-        data = json.load(f)
+    if ".json" in path:
+        with open(path) as f:
+            data = json.load(f)
 
-    df = pd.concat([pd.DataFrame(i) for i in data])
+        df = pd.concat([pd.DataFrame(i) for i in data])
+    else:
+        df = pd.read_csv(path, sep=";")
+
     df.rename(
         mapper={
             "seed": "run_id",

@@ -7,10 +7,14 @@ from glob import glob
 
 
 def get_data(path):
-    with open(path) as f:
-        data = json.load(f)
+    if ".json" in path:
+        with open(path) as f:
+            data = json.load(f)
 
-    df = pd.concat([pd.DataFrame(i) for i in data])
+        df = pd.concat([pd.DataFrame(i) for i in data])
+    else:
+        df = pd.read_csv(path, sep=";")
+
     df.rename(
         mapper={
             "seed": "run_id",
@@ -599,10 +603,5 @@ if __name__ == "__main__":
         graphs = generate_graphs(df, strategies_map)
 
         return [graphs[id] for id in graphs]
-
-    # Export figure as HTML
-    with open(config["defaultGraph"].replace(".json", ".html"), "a") as f:
-        for k in graphs:
-            f.write(graphs[k].to_html(full_html=False, include_plotlyjs="cdn"))
 
     app.run_server(debug=True)

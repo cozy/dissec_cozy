@@ -53,13 +53,28 @@ export class ExperimentRunner {
     const values: { [k: string]: any[] } = {}
     const uniqueValues: { [k: string]: any[] } = {}
     const labels: { [k: string]: string } = {}
+
+    // These keys will not be in the name
+    const skippedKeys = ['multicastSize', 'selectivity', 'deadline', 'seed', 'failCheckPeriod', 'healthCheckPeriod']
+
+    // Shorter names for keys
+    const translation: { [k: string]: string } = {
+      strategy: 'strat',
+      maxToAverageRatio: 'maxR',
+      averageLatency: 'lat',
+      averageCryptoTime: 'crypto',
+      averageComputeTime: 'compute',
+    }
+
     // Put values for each keys in an array
     runs.forEach(run =>
       Object.entries(run).forEach(([k, v]) => {
-        if (k === 'seed') return
-        if (!uniqueValues[k]) uniqueValues[k] = []
-        if (values[k]) values[k].push(v)
-        else values[k] = [v]
+        if (skippedKeys.includes(k)) return
+        const translatedKey = translation[k] ? translation[k] : k
+
+        if (!uniqueValues[translatedKey]) uniqueValues[translatedKey] = []
+        if (values[translatedKey]) values[translatedKey].push(v)
+        else values[translatedKey] = [v]
       })
     )
     // Keep unique values and range
@@ -72,7 +87,7 @@ export class ExperimentRunner {
       uniqueValues[k].sort()
       labels[k] =
         uniqueValues[k].length > 1
-          ? `${uniqueValues[k][0]}-${uniqueValues[k][uniqueValues[k].length - 1]}`
+          ? `${uniqueValues[k][0]}-${uniqueValues[k].length}-${uniqueValues[k][uniqueValues[k].length - 1]}`
           : `${uniqueValues[k][0]}`
     }
 
@@ -85,39 +100,40 @@ export class ExperimentRunner {
         .replaceAll(':', '')
         .replaceAll('{', '')
         .replaceAll('}', '') +
-      '.json'
+      '.csv'
   }
 
   writeResults(outputPath: string, results: RunResult[]) {
-    // Splitting the array in smaller pieces to prevent running out of memory
-    fs.writeFileSync(outputPath, '[') // Default mode is w
-    for (let i = 0; i < results.length; i++) {
-      const output: { [key: string]: any[] } = {}
-      const { messages, ...items } = results[i]
+    if (!this.fullExport) {
+      for (let i = 0; i < results.length; i++) {
+        const { messages, ...items } = results[i]
 
-      // Initializing arrays for each stat
-      Object.entries(items).forEach(
-        ([key, value]) => (output[key] = Array(this.fullExport ? messages.length : 1).fill(value))
-      )
+        if (i === 0) {
+          // Add columns titles
+          fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
+        }
 
-      if (this.fullExport) {
-        // Only export messages for full exports
-        Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
-        messages.forEach((message, j) =>
-          Object.entries(message).forEach(([key, value]) => {
-            // Exclude content because it's not used but takes a lot of space
-            if (key === 'content') return
-            output[key][j] = value
-          })
-        )
+        fs.writeFileSync(outputPath, Object.values(items).join(';') + '\n', { flag: 'a' })
       }
+    } else {
+      const { messages: _messages, ...items } = results[0]
+      const { content: _content, id: _id, ...restMessage } = _messages[0]
+      const columns = Object.keys(Object.assign(items, restMessage))
 
-      fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
-      if (i !== results.length - 1) {
-        fs.writeFileSync(outputPath, ',', { flag: 'a' })
+      for (let i = 0; i < results.length; i++) {
+        const { messages, ...items } = results[i]
+
+        if (i === 0) {
+          // Add columns titles
+          fs.writeFileSync(outputPath, columns.join(';') + '\n')
+        }
+
+        for (const message of messages) {
+          const assign: { [k: string]: any } = Object.assign(items, message)
+          fs.writeFileSync(outputPath, columns.map(e => assign[e]).join(';') + '\n', { flag: 'a' })
+        }
       }
     }
-    fs.writeFileSync(outputPath, ']', { flag: 'a' })
   }
 
   run() {
@@ -309,7 +325,7 @@ export class ExperimentRunner {
     }
 
     const initialNumberContributors = contributorsNodes.flatMap(e => e.members).length
-    const receivedNumberContributors = contributorsNodes.flatMap(e => e.members).length
+    const receivedNumberContributors = manager.finalNumberContributors
     const completeness = (100 * receivedNumberContributors) / initialNumberContributors
 
     console.log(`Simulation finished with status ${manager.status} (${completeness}% completeness)`)
