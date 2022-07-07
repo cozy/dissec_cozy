@@ -5,7 +5,7 @@ const debug = false
 if (debug) {
   configs = [
     {
-      strategy: ProtocolStrategy.Pessimistic,
+      strategy: ProtocolStrategy.Optimistic,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 100,
@@ -15,11 +15,11 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 500000,
-      failureRate: 0.0016,
+      failureRate: 0.001,
       depth: 3,
       fanout: 4,
       groupSize: 3,
-      seed: 'PESS-4-9',
+      seed: 'OPTI-2-8',
     },
   ]
 } else {

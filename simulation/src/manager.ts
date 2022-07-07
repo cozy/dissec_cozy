@@ -81,7 +81,7 @@ export class NodesManager {
             ) {
               // All members of the group are dead, stop the run because it's dead
               this.messages.push(
-                new Message(MessageType.StopSimulator, 0, -1, this.querier, this.querier, {
+                new Message(MessageType.StopSimulator, 0, this.globalTime, this.querier, this.querier, {
                   status: StopStatus.GroupDead,
                   targetGroup: node.node,
                 })
@@ -102,51 +102,12 @@ export class NodesManager {
       unsentMessage.receptionTime = unsentMessage.emissionTime + this.standardLatency()
 
     if (this.nodes[unsentMessage.emitterId].alive) {
-      this.messages.push(cloneDeep(unsentMessage))
+      this.insertMessage(cloneDeep(unsentMessage))
       this.messageCounter++
     }
   }
 
   handleNextMessage() {
-    this.messages.sort((a, b) => {
-      // Use priorities to order message arriving at the same time
-      if (b.receptionTime === a.receptionTime) {
-        const priorityBonus = (type: MessageType) => {
-          switch (type) {
-            case MessageType.PingTimeout:
-              return 1000
-            case MessageType.ContributionTimeout:
-              return 1000
-            case MessageType.NotifyGroupTimeout:
-              return 1000
-            case MessageType.CheckHealth:
-              return 900
-            case MessageType.NotifyGroup:
-              return 800
-            case MessageType.ContactBackup:
-              return 800
-            case MessageType.ConfirmBackup:
-              return 800
-            case MessageType.BackupResponse:
-              return 800
-            case MessageType.ContributorPing:
-              return 800
-            case MessageType.ConfirmContributors:
-              return 800
-            case MessageType.SendContribution:
-              return 700
-            case MessageType.SynchronizationTimeout:
-              return 600 // The timeout triggers after receiving contributions
-            default:
-              return 0
-          }
-        }
-
-        return priorityBonus(a.type) - priorityBonus(b.type)
-      } else {
-        return b.receptionTime - a.receptionTime
-      }
-    })
     const message = this.messages.pop()!
 
     if (this.config.fullExport) {
@@ -191,13 +152,20 @@ export class NodesManager {
     } else if (this.nodes[message.receiverId].alive) {
       this.globalTime = message.receptionTime
       // Receiving a message creates new ones
-      const resultingMessages = this.nodes[message.receiverId].receiveMessage(message)
+      const resultingMessages = this.nodes[message.receiverId]
+        .receiveMessage(message)
+        ?.map(e => {
+          // Add latency now to prepare sorting
+          if (e.receptionTime === 0) e.receptionTime = e.emissionTime + this.standardLatency()
+          return e
+        })
+        .sort((a, b) => (this.AIsBeforeB(a, b) ? 1 : 0))
 
       if (!resultingMessages) {
         // The message bounced because the node was busy
         // Remove the last message from old messages and put it back in the queue
         this.oldMessages.pop()
-        this.messages.push(message)
+        this.insertMessage(message)
       } else {
         // Save stats for exporting
         this.totalWork += message.work
@@ -234,6 +202,60 @@ export class NodesManager {
     // TODO: Model latency
     const latency = Math.max(0, Math.min(this.config.averageLatency * this.config.maxToAverageRatio, this.rayleigh()))
     return latency
+  }
+
+  private AIsBeforeB(a: Message, b: Message): boolean {
+    // Use priorities to order message arriving at the same time
+    if (b.receptionTime === a.receptionTime) {
+      const priorityBonus = (type: MessageType) => {
+        switch (type) {
+          case MessageType.PingTimeout:
+            return 1000
+          case MessageType.ContributionTimeout:
+            return 1000
+          case MessageType.NotifyGroupTimeout:
+            return 1000
+          case MessageType.CheckHealth:
+            return 900
+          case MessageType.NotifyGroup:
+            return 800
+          case MessageType.ContactBackup:
+            return 800
+          case MessageType.ConfirmBackup:
+            return 800
+          case MessageType.BackupResponse:
+            return 800
+          case MessageType.ContributorPing:
+            return 800
+          case MessageType.ConfirmContributors:
+            return 800
+          case MessageType.SendContribution:
+            return 700
+          case MessageType.SynchronizationTimeout:
+            return 600 // The timeout triggers after receiving contributions
+          default:
+            return 0
+        }
+      }
+
+      return priorityBonus(a.type) > priorityBonus(b.type)
+    } else {
+      return a.receptionTime < b.receptionTime
+    }
+  }
+
+  private insertMessage(message: Message) {
+    if (this.messages.length === 0) {
+      this.messages = [message]
+    } else {
+      for (let i = 0; i < this.messages.length; i++) {
+        if (!this.AIsBeforeB(message, this.messages[i])) {
+          this.messages.splice(i, 0, message)
+          return
+        }
+      }
+      this.messages.push(message)
+    }
   }
 }
 

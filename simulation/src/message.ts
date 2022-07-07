@@ -185,7 +185,7 @@ export class Message {
         break
       case MessageType.SendAggregate:
         console.log(
-          `${tag} received an aggregate (ID=${this.content.aggregate!.id}) from child #${this.emitterId}. [${children
+          `${tag} received an aggregate from child #${this.emitterId} (ID=${this.content.aggregate!.id}). [${children
             ?.filter(child => Boolean(receiver.aggregates[child]))
             .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
         )

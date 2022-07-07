@@ -112,6 +112,9 @@ export function handleContributionTimeout(this: Node, receivedMessage: Message):
           )
         )
       } else if (!arrayEquals(this.contributorsList[this.id] || [], newContributors || [])) {
+        // Update local contributors list
+        this.contributorsList[this.id] = newContributors
+
         // Some contributors died before sending their contribution
         // Inform member before sending the aggregate
         for (const member of this.node.members.filter(e => e !== this.id)) {

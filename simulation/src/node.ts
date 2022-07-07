@@ -102,26 +102,6 @@ export class Node {
     this.aggregates = {}
   }
 
-  /**
-   * Produces a simple non-cryptographic hash because JS does not have a default, easy to use hash function
-   * @param children ID for the aggregate sent by each child
-   * @returns A new unique ID
-   */
-  aggregationId(children: string[]): string {
-    const s = cloneDeep(children).sort().join('-')
-    return s
-      .split('')
-      .reduce((a, b) => {
-        a = (a << 5) - a + b.charCodeAt(0)
-        return a & a
-      }, 0)
-      .toString()
-  }
-
-  cryptoLatency(): number {
-    return this.config.averageCryptoTime
-  }
-
   receiveMessage(receivedMessage: Message): Message[] | null {
     const messages: Message[] = []
 
@@ -140,8 +120,8 @@ export class Node {
     if (this.config.debug) {
       const nodesOfInterest: number[] = [
         255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22, 37, 38, 51, 53, 52, 66, 67, 68, 71, 99, 100, 101, 114, 115, 129, 132,
-        134, 147, 148, 149, 162, 192, 194, 195, 196, 197, 226, 269, 278, 284, 290, 305, 306, 311, 312, 317, 326, 339,
-        354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446,
+        134, 147, 148, 149, 162, 164, 192, 194, 195, 196, 197, 226, 269, 278, 284, 287, 290, 305, 306, 311, 312, 317,
+        326, 339, 354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446,
       ]
       const filters: MessageType[] = []
       if (
@@ -253,6 +233,26 @@ export class Node {
     receivedMessage.work = this.localTime - startTime
 
     return messages
+  }
+
+  /**
+   * Produces a simple non-cryptographic hash because JS does not have a default, easy to use hash function
+   * @param children ID for the aggregate sent by each child
+   * @returns A new unique ID
+   */
+  aggregationId(children: string[]): string {
+    const s = cloneDeep(children).sort().join('-')
+    return s
+      .split('')
+      .reduce((a, b) => {
+        a = (a << 5) - a + b.charCodeAt(0)
+        return a & a
+      }, 0)
+      .toString()
+  }
+
+  cryptoLatency(): number {
+    return this.config.averageCryptoTime
   }
 }
 

@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "start:large": "NODE_OPTIONS='--max-old-space-size=16384' ts-node src/index.ts",
     "test": "jest",
     "dashboard": "python3 dashboard/dashboard.py",
     "dashboard:full": "python3 dashboard/dashboard_full.py"
