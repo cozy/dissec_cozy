@@ -248,13 +248,24 @@ export class NodesManager {
     if (this.messages.length === 0) {
       this.messages = [message]
     } else {
-      for (let i = 0; i < this.messages.length; i++) {
-        if (!this.AIsBeforeB(message, this.messages[i])) {
-          this.messages.splice(i, 0, message)
-          return
-        }
+      this.binaryInsertion(message, 0, this.messages.length - 1)
+    }
+  }
+
+  private binaryInsertion(element: Message, lower: number, upper: number) {
+    if (upper - lower <= 1) {
+      if (!this.AIsBeforeB(element, this.messages[lower])) {
+        this.messages.splice(lower, 0, element)
+      } else if (this.AIsBeforeB(element, this.messages[upper])) {
+        this.messages.splice(upper + 1, 0, element)
+      } else {
+        this.messages.splice(upper, 0, element)
       }
-      this.messages.push(message)
+    } else {
+      const mid = Math.floor((upper - lower) / 2) + lower
+      this.AIsBeforeB(element, this.messages[mid])
+        ? this.binaryInsertion(element, mid, upper)
+        : this.binaryInsertion(element, lower, mid)
     }
   }
 }
