@@ -26,6 +26,7 @@ def get_data(path):
             "receiverId": "receiver_id",
             "latency": "simulation_length",
             "work": "total_work",
+            "groupSize": "group_size",
         },
         axis=1,
         inplace=True,
@@ -35,56 +36,57 @@ def get_data(path):
     return df
 
 
-def generate_graphs(data, strategies_map):
+def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs = dict()
 
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
+    group_sizes = np.sort(pd.unique(data["group_size"]))
 
     # Boxes
     graphs["work_failure_rate_status"] = px.box(
         data,
-        x="failure_probability",
+        x=tab,
         y="total_work",
         color="status",
         hover_name="run_id",
         points="all",
-        title="Travail selon le taux de panne par status",
+        title="Travail selon la taille de groupe par status",
     )
     graphs["work_failure_rate_strategy"] = px.box(
         data,
-        x="failure_probability",
+        x=tab,
         y="total_work",
         color="strategy",
         hover_name="run_id",
         points="all",
-        title="Travail selon le taux de panne par stratégie",
+        title=f"Travail selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
     )
     graphs["latency_failure_rate_status"] = px.box(
         data,
-        x="failure_probability",
+        x=tab,
         y="simulation_length",
         color="status",
         hover_name="run_id",
         points="all",
-        title="Latence selon le taux de panne par status",
+        title=f"Latence selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par status",
     )
     graphs["latency_failure_rate_strategy"] = px.box(
         data,
-        x="failure_probability",
+        x=tab,
         y="simulation_length",
         color="strategy",
         hover_name="run_id",
         points="all",
-        title="Latence selon le taux de panne par stratégie",
+        title=f"Latence selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
     )
     graphs["observed_failure_rate_per_failure_prob"] = px.box(
         data,
-        x="failure_probability",
+        x=tab,
         y="failure_rate",
         color="strategy",
         hover_name="run_id",
         points="all",
-        title="Taux de panne pour chaque probabilité de panne",
+        title=f"Taux de panne pour chaque {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
     graphs["observed_failure_rate_per_status"] = px.box(
         data,
@@ -97,24 +99,18 @@ def generate_graphs(data, strategies_map):
     )
 
     amps = data.copy()
-    amps["total_work"] /= amps.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).mean()["total_work"][0]
-    amps["simulation_length"] /= amps.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).mean()["simulation_length"][0]
+    amps["total_work"] /= amps.groupby([tab, "strategy"], as_index=False).mean()[
+        "total_work"
+    ][0]
+    amps["simulation_length"] /= amps.groupby([tab, "strategy"], as_index=False).mean()[
+        "simulation_length"
+    ][0]
 
-    grouped_mean = data.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).mean()
-    grouped_upper = data.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).max()
+    grouped_mean = data.groupby([tab, "strategy"], as_index=False).mean()
+    grouped_upper = data.groupby([tab, "strategy"], as_index=False).max()
     grouped_upper["total_work"] /= grouped_mean["total_work"].iloc[0]
     grouped_upper["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
-    grouped_lower = data.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).min()
+    grouped_lower = data.groupby([tab, "strategy"], as_index=False).min()
     grouped_lower["total_work"] /= grouped_mean["total_work"].iloc[0]
     grouped_lower["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
     grouped_mean["total_work"] /= grouped_mean["total_work"].iloc[0]
@@ -140,7 +136,7 @@ def generate_graphs(data, strategies_map):
 
         graphs[f"{strategies_map[strat]}_latency_amplification_scatter"] = px.scatter(
             amps[amps["strategy"] == strat],
-            x="failure_probability",
+            x=tab,
             y="simulation_length",
             color="status",
             marginal_y="histogram",
@@ -149,7 +145,7 @@ def generate_graphs(data, strategies_map):
         )
         graphs[f"{strategies_map[strat]}_work_amplification_scatter"] = px.scatter(
             amps[amps["strategy"] == strat],
-            x="failure_probability",
+            x=tab,
             y="total_work",
             color="status",
             marginal_y="histogram",
@@ -158,7 +154,7 @@ def generate_graphs(data, strategies_map):
         )
         graphs[f"{strategies_map[strat]}_completeness_scatter"] = px.scatter(
             amps[amps["strategy"] == strat],
-            x="failure_probability",
+            x=tab,
             y="completeness",
             color="status",
             marginal_y="histogram",
@@ -168,76 +164,88 @@ def generate_graphs(data, strategies_map):
 
         not_empty = len(grouped_mean[grouped_mean["strategy"] == strat]) > 0
         fallback = [0 for _ in failure_probabilities]
+        d1 = {}
+        d1[tab] = failure_probabilities if tab == "failure_probability" else group_sizes
+        d1["mean"] = (
+            grouped_mean[grouped_mean["strategy"] == strat]["simulation_length"]
+            if not_empty
+            else fallback
+        )
+        d1["upper"] = (
+            grouped_upper[grouped_upper["strategy"] == strat]["simulation_length"]
+            if not_empty
+            else fallback
+        )
+        d1["lower"] = (
+            grouped_lower[grouped_lower["strategy"] == strat]["simulation_length"]
+            if not_empty
+            else fallback
+        )
         graphs[f"{strategies_map[strat]}_latency_amplification"] = px.line(
-            dict(
-                failure_probability=failure_probabilities,
-                mean=grouped_mean[grouped_mean["strategy"] == strat][
-                    "simulation_length"
-                ]
-                if not_empty
-                else fallback,
-                upper=grouped_upper[grouped_upper["strategy"] == strat][
-                    "simulation_length"
-                ]
-                if not_empty
-                else fallback,
-                lower=grouped_lower[grouped_lower["strategy"] == strat][
-                    "simulation_length"
-                ]
-                if not_empty
-                else fallback,
-            ),
-            x="failure_probability",
+            d1,
+            x=tab,
             y=["mean", "lower", "upper"],
             markers=True,
             title=f"{strategies_map[strat]} latency amplification",
         )
+        d2 = {}
+        d2[tab] = failure_probabilities if tab == "failure_probability" else group_sizes
+        d2["mean"] = (
+            grouped_mean[grouped_mean["strategy"] == strat]["total_work"]
+            if not_empty
+            else fallback
+        )
+        d2["upper"] = (
+            grouped_upper[grouped_upper["strategy"] == strat]["total_work"]
+            if not_empty
+            else fallback
+        )
+        d2["lower"] = (
+            grouped_lower[grouped_lower["strategy"] == strat]["total_work"]
+            if not_empty
+            else fallback
+        )
         graphs[f"{strategies_map[strat]}_work_amplification"] = px.line(
-            dict(
-                failure_probability=failure_probabilities,
-                mean=grouped_mean[grouped_mean["strategy"] == strat]["total_work"]
-                if not_empty
-                else fallback,
-                upper=grouped_upper[grouped_upper["strategy"] == strat]["total_work"]
-                if not_empty
-                else fallback,
-                lower=grouped_lower[grouped_lower["strategy"] == strat]["total_work"]
-                if not_empty
-                else fallback,
-            ),
-            x="failure_probability",
+            d2,
+            x=tab,
             y=["mean", "lower", "upper"],
             markers=True,
             title=f"{strategies_map[strat]} work amplification",
         )
+        d3 = {}
+        d3[tab] = failure_probabilities if tab == "failure_probability" else group_sizes
+        d3["mean"] = (
+            grouped_mean[grouped_mean["strategy"] == strat]["completeness"]
+            if not_empty
+            else fallback
+        )
+        d3["upper"] = (
+            grouped_upper[grouped_upper["strategy"] == strat]["completeness"]
+            if not_empty
+            else fallback
+        )
+        d3["lower"] = (
+            grouped_lower[grouped_lower["strategy"] == strat]["completeness"]
+            if not_empty
+            else fallback
+        )
         graphs[f"{strategies_map[strat]}_completeness"] = px.line(
-            dict(
-                failure_probability=failure_probabilities,
-                mean=grouped_mean[grouped_mean["strategy"] == strat]["completeness"]
-                if not_empty
-                else fallback,
-                upper=grouped_upper[grouped_upper["strategy"] == strat]["completeness"]
-                if not_empty
-                else fallback,
-                lower=grouped_lower[grouped_lower["strategy"] == strat]["completeness"]
-                if not_empty
-                else fallback,
-            ),
-            x="failure_probability",
+            d3,
+            x=tab,
             y=["mean", "lower", "upper"],
             markers=True,
             title=f"{strategies_map[strat]} completeness",
         )
 
-    gmean = data.groupby(["failure_probability", "strategy"], as_index=False).mean()
-    tmp_std = data.groupby(["failure_probability", "strategy"], as_index=False).std()
+    gmean = data.groupby([tab, "strategy"], as_index=False).mean()
+    tmp_std = data.groupby([tab, "strategy"], as_index=False).std()
     gmean["total_work_std"] = tmp_std["total_work"]
     gmean["simulation_length_std"] = tmp_std["simulation_length"]
     gmean["completeness_std"] = tmp_std["completeness"]
 
     graphs["work_failure_prob_strategy"] = px.line(
         gmean,
-        x="failure_probability",
+        x=tab,
         y="total_work",
         error_y="total_work_std",
         color="strategy",
@@ -246,7 +254,7 @@ def generate_graphs(data, strategies_map):
     )
     graphs["latency_failure_prob_strategy"] = px.line(
         gmean,
-        x="failure_probability",
+        x=tab,
         y="simulation_length",
         error_y="simulation_length_std",
         color="strategy",
@@ -255,7 +263,7 @@ def generate_graphs(data, strategies_map):
     )
     graphs["completeness_failure_prob_strategy"] = px.line(
         gmean,
-        x="failure_probability",
+        x=tab,
         y="completeness",
         error_y="completeness_std",
         color="strategy",
@@ -265,12 +273,12 @@ def generate_graphs(data, strategies_map):
 
     graphs["completeness_per_failure_prob"] = px.box(
         data,
-        x="failure_probability",
+        x=tab,
         y="completeness",
         color="strategy",
         hover_name="run_id",
         points="all",
-        title="Complétude par proba de pannes",
+        title=f"Complétude par {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
 
     return graphs
@@ -302,6 +310,14 @@ if __name__ == "__main__":
 
     app.layout = html.Div(
         children=[
+            dcc.Tabs(
+                id="tabs",
+                value="failure_probability",
+                children=[
+                    dcc.Tab(label="Probabilité de panne", value="failure_probability"),
+                    dcc.Tab(label="Taille de groupe", value="group_size"),
+                ],
+            ),
             html.Div(
                 children=[
                     html.H1(
@@ -590,9 +606,10 @@ if __name__ == "__main__":
                 component_id="failure-probabilities-range", component_property="value"
             ),
             dash.Input(component_id="file-select", component_property="value"),
+            dash.Input(component_id="tabs", component_property="value"),
         ],
     )
-    def update_graphs(selected_failures, selected_file):
+    def update_graphs(selected_failures, selected_file, tab):
         df = get_data(selected_file)
 
         df = df[
@@ -600,7 +617,7 @@ if __name__ == "__main__":
             & (df["failure_probability"] <= selected_failures[1])
         ]
 
-        graphs = generate_graphs(df, strategies_map)
+        graphs = generate_graphs(df, strategies_map, tab)
 
         return [graphs[id] for id in graphs]
 
