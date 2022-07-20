@@ -229,6 +229,8 @@ export class NodesManager {
             return 800
           case MessageType.ConfirmContributors:
             return 800
+          case MessageType.SendChildren:
+            return 800
           case MessageType.SendContribution:
             return 700
           case MessageType.SynchronizationTimeout:

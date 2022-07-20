@@ -36,6 +36,60 @@ def get_data(path):
     return df
 
 
+def generate_summary(data, status, strategies, file):
+    return (
+        html.Div(
+            style={"justifyContent": "center"},
+            children=[
+                html.H1("Overview:"),
+                html.Span(f"File: {file}"),
+                html.Ul(
+                    children=[
+                        html.Li(
+                            children=[
+                                f"There are {len(data.groupby('run_id'))} simulations. {len(data[data['status'] == 'Success'].groupby('run_id'))} success, {len(data[data['status'] != 'Success'].groupby('run_id'))} failures",
+                                html.Ul(
+                                    children=[
+                                        html.Li(
+                                            children=f"""
+                            {len(pd.unique(data[data['status'] == i]['run_id']))} have status {i}.
+                            Theoretical failure rate (min={round(data[data['status'] == i]['failure_probability'].min() * 100, 2)}%;
+                            avg={round(data[data['status'] == i]['failure_probability'].mean() * 100, 2)}%;
+                            med={round(data[data['status'] == i]['failure_probability'].median() * 100, 2)}%;
+                            max={round(data[data['status'] == i]['failure_probability'].max() * 100, 2)}%).
+                            Observed failure rate (min={round(data[data['status'] == i]['failure_rate'].min() * 100, 2)}%;
+                            avg={round(data[data['status'] == i]['failure_rate'].mean() * 100, 2)}%;
+                            med={round(data[data['status'] == i]['failure_rate'].median() * 100, 2)}%;
+                            max={round(data[data['status'] == i]['failure_rate'].max() * 100, 2)}%)
+                            """
+                                        )
+                                        for i in status
+                                    ]
+                                ),
+                            ]
+                        ),
+                        html.Li(
+                            children=[
+                                "Different strategies have been used:",
+                                html.Ul(
+                                    children=[
+                                        html.Li(
+                                            children=[
+                                                f"{len(data[data['strategy'] == i])} runs using {i} strategy, {len(data.loc[(data['status'] == 'Success') & (data['strategy'] == i)])} success"
+                                            ]
+                                        )
+                                        for i in strategies
+                                    ]
+                                ),
+                            ]
+                        ),
+                    ]
+                ),
+            ],
+        ),
+    )
+
+
 def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs = dict()
 
@@ -139,8 +193,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             x=tab,
             y="simulation_length",
             color="status",
+            marginal_x="histogram",
             marginal_y="histogram",
-            trendline="ols",
+            trendline="lowess",
             title=f"{strategies_map[strat]} latency amplification",
         )
         graphs[f"{strategies_map[strat]}_work_amplification_scatter"] = px.scatter(
@@ -148,8 +203,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             x=tab,
             y="total_work",
             color="status",
+            marginal_x="histogram",
             marginal_y="histogram",
-            trendline="ols",
+            trendline="lowess",
             title=f"{strategies_map[strat]} work amplification",
         )
         graphs[f"{strategies_map[strat]}_completeness_scatter"] = px.scatter(
@@ -157,8 +213,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             x=tab,
             y="completeness",
             color="status",
+            marginal_x="histogram",
             marginal_y="histogram",
-            trendline="ols",
+            trendline="lowess",
             title=f"{strategies_map[strat]} completeness",
         )
 
@@ -237,6 +294,34 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             title=f"{strategies_map[strat]} completeness",
         )
 
+    graphs[f"latency_amplification_scatter"] = px.scatter(
+        amps,
+        x=tab,
+        y="simulation_length",
+        color="strategy",
+        marginal_y="histogram",
+        trendline="lowess",
+        title=f"Latency amplification",
+    )
+    graphs[f"work_amplification_scatter"] = px.scatter(
+        amps,
+        x=tab,
+        y="total_work",
+        color="strategy",
+        marginal_y="histogram",
+        trendline="lowess",
+        title=f"Work amplification",
+    )
+    graphs[f"completeness_scatter"] = px.scatter(
+        amps,
+        x=tab,
+        y="completeness",
+        color="strategy",
+        marginal_y="histogram",
+        trendline="lowess",
+        title=f"Completeness",
+    )
+
     gmean = data.groupby([tab, "strategy"], as_index=False).mean()
     tmp_std = data.groupby([tab, "strategy"], as_index=False).std()
     gmean["total_work_std"] = tmp_std["total_work"]
@@ -305,6 +390,7 @@ if __name__ == "__main__":
         del strategies_map[k]
 
     graphs = generate_graphs(data, strategies_map)
+    summary = generate_summary(data, status, strategies, config["defaultGraph"])
 
     app = dash.Dash(__name__)
 
@@ -334,54 +420,7 @@ if __name__ == "__main__":
                     ),
                 ]
             ),
-            html.Div(
-                style={"justifyContent": "center"},
-                children=[
-                    html.H1("Overview:"),
-                    html.Ul(
-                        children=[
-                            html.Li(
-                                children=[
-                                    f"There are {len(data.groupby('run_id'))} simulations. {len(data[data['status'] == 'Success'].groupby('run_id'))} success, {len(data[data['status'] != 'Success'].groupby('run_id'))} failures",
-                                    html.Ul(
-                                        children=[
-                                            html.Li(
-                                                children=f"""
-                            {len(pd.unique(data[data['status'] == i]['run_id']))} have status {i}.
-                            Theoretical failure rate (min={round(data[data['status'] == i]['failure_probability'].min() * 100, 2)}%;
-                            avg={round(data[data['status'] == i]['failure_probability'].mean() * 100, 2)}%;
-                            med={round(data[data['status'] == i]['failure_probability'].median() * 100, 2)}%;
-                            max={round(data[data['status'] == i]['failure_probability'].max() * 100, 2)}%).
-                            Observed failure rate (min={round(data[data['status'] == i]['failure_rate'].min() * 100, 2)}%;
-                            avg={round(data[data['status'] == i]['failure_rate'].mean() * 100, 2)}%;
-                            med={round(data[data['status'] == i]['failure_rate'].median() * 100, 2)}%;
-                            max={round(data[data['status'] == i]['failure_rate'].max() * 100, 2)}%)
-                            """
-                                            )
-                                            for i in status
-                                        ]
-                                    ),
-                                ]
-                            ),
-                            html.Li(
-                                children=[
-                                    "Different strategies have been used:",
-                                    html.Ul(
-                                        children=[
-                                            html.Li(
-                                                children=[
-                                                    f"{len(data[data['strategy'] == i])} runs using {i} strategy, {len(data.loc[(data['status'] == 'Success') & (data['strategy'] == i)])} success"
-                                                ]
-                                            )
-                                            for i in strategies
-                                        ]
-                                    ),
-                                ]
-                            ),
-                        ]
-                    ),
-                ],
-            ),
+            html.Div(id="summary", children=summary),
             #
             # Boxes
             #
@@ -391,11 +430,9 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        failure_probabilities[-1],
-                        failure_probabilities[1] - failure_probabilities[0]
-                        if len(failure_probabilities) > 1
-                        else None,
-                        value=[0, failure_probabilities[-1]],
+                        0.001,
+                        0.00001,
+                        value=[0, 0.001],
                         id="failure-probabilities-range",
                     ),
                 ]
@@ -570,6 +607,22 @@ if __name__ == "__main__":
                     ]
                 ],
             ),
+            html.H1("Combined plots"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(id=id, figure=graphs[id])
+                    for id in [
+                        "completeness_scatter",
+                        "latency_amplification_scatter",
+                        "work_amplification_scatter",
+                    ]
+                ],
+            ),
             #
             # Rest
             #
@@ -600,7 +653,8 @@ if __name__ == "__main__":
     )
 
     @app.callback(
-        [dash.Output(component_id=id, component_property="figure") for id in graphs],
+        [dash.Output(component_id="summary", component_property="children")]
+        + [dash.Output(component_id=id, component_property="figure") for id in graphs],
         [
             dash.Input(
                 component_id="failure-probabilities-range", component_property="value"
@@ -612,6 +666,15 @@ if __name__ == "__main__":
     def update_graphs(selected_failures, selected_file, tab):
         df = get_data(selected_file)
 
+        strategies = pd.unique(df["strategy"])
+        status = pd.unique(df["status"])
+        df["failure_probability"] = df["failure_probability"].round(6)
+
+        # Remove strategies not present in the data
+        strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+        for k in set(strategies_map.keys()).difference(strategies):
+            del strategies_map[k]
+
         df = df[
             (df["failure_probability"] >= selected_failures[0])
             & (df["failure_probability"] <= selected_failures[1])
@@ -619,6 +682,8 @@ if __name__ == "__main__":
 
         graphs = generate_graphs(df, strategies_map, tab)
 
-        return [graphs[id] for id in graphs]
+        return [generate_summary(df, status, strategies, selected_file)] + [
+            graphs[id] for id in graphs
+        ]
 
     app.run_server(debug=True)
