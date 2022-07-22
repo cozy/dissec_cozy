@@ -173,7 +173,7 @@ export class ExperimentRunner {
     const backupListSize = nodesInTree * 1
 
     // Create the tree structure
-    const { nextId, node: root } = TreeNode.createTree(run.depth, run.fanout, run.groupSize, 0)
+    let { nextId, node: root } = TreeNode.createTree(run.depth, run.fanout, run.groupSize, 0, run.seed)
 
     // Adding the querier group
     const querierGroup = new TreeNode(nextId, run.depth + 1)
@@ -181,6 +181,7 @@ export class ExperimentRunner {
     querierGroup.members = Array(run.groupSize).fill(nextId)
     root.parents = querierGroup.members
 
+    // Initialize the manager and populate nodes
     const manager = NodesManager.createFromTree(root, {
       ...run,
       debug: this.debug,
@@ -202,7 +203,9 @@ export class ExperimentRunner {
       backups.push(backup)
     }
     for (let i = 0; i < backupListStart; i++) {
-      manager.nodes[i].backupList = backups.map(e => e.id)
+      if (manager.nodes[i]) {
+        manager.nodes[i].backupList = backups.map(e => e.id)
+      }
     }
 
     // All leaves aggregator request data from contributors

@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep'
+import { Generator } from './random'
 
 class TreeNode {
   id: number
@@ -37,7 +38,13 @@ class TreeNode {
    * @param id The id of the first member of the root
    * @returns The number of node created and the root of the tree
    */
-  static createTree(depth: number, fanout: number, groupSize: number, id: number): { nextId: number; node: TreeNode } {
+  static createTree(
+    depth: number,
+    fanout: number,
+    groupSize: number,
+    id: number,
+    seed: string
+  ): { nextId: number; node: TreeNode } {
     const node = new TreeNode(id, depth)
     node.members = Array(groupSize)
       .fill(id)
@@ -45,14 +52,32 @@ class TreeNode {
     if (depth > 0) {
       let currentId = id + groupSize
       for (let i = 0; i < fanout; i++) {
-        const { nextId, node: child } = TreeNode.createTree(depth - 1, fanout, groupSize, currentId)
+        const { nextId, node: child } = TreeNode.createTree(depth - 1, fanout, groupSize, currentId, seed)
         child.parents = node.members
         node.children.push(child)
         currentId = nextId
       }
       return { nextId: currentId, node }
     } else {
-      return { nextId: id + groupSize, node }
+      const generator = Generator.get(seed)
+      // Rebalance the number of members in this contributor group
+      const numberOfContributors = Math.round(Math.sqrt(fanout ** (generator() * 2)))
+
+      if (node.members.length > numberOfContributors) {
+        // Removing contributors from the group
+        const toRemove = node.members.length - numberOfContributors
+        for (let i = 0; i < toRemove; i++) {
+          node.members.splice(-1, 1)
+        }
+      } else if (node.members.length < numberOfContributors) {
+        // Adding contributors to the group
+        const toAdd = numberOfContributors - node.members.length
+        for (let i = 0; i < toAdd; i++) {
+          node.members.push(id + groupSize + i)
+        }
+      }
+
+      return { nextId: id + numberOfContributors, node }
     }
   }
 

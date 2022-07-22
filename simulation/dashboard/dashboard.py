@@ -5,6 +5,13 @@ import pandas as pd
 import json
 from glob import glob
 
+tabs = [
+    dict(label="Probabilité de panne", value="failure_probability"),
+    dict(label="Taille de groupe", value="group_size"),
+    dict(label="Fanout", value="fanout"),
+    dict(label="Profondeur", value="depth"),
+]
+
 
 def get_data(path):
     if ".json" in path:
@@ -95,6 +102,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     group_sizes = np.sort(pd.unique(data["group_size"]))
+    fanouts = np.sort(pd.unique(data["fanout"]))
+    depths = np.sort(pd.unique(data["depth"]))
 
     # Boxes
     graphs["work_failure_rate_status"] = px.box(
@@ -170,6 +179,15 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     grouped_mean["total_work"] /= grouped_mean["total_work"].iloc[0]
     grouped_mean["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
 
+    if tab == "failure_probability":
+        x_axis = failure_probabilities
+    elif tab == "group_size":
+        x_axis = group_sizes
+    elif tab == "fanout":
+        x_axis = fanouts
+    else:
+        x_axis = depths
+
     for strat in strategies_map:
         graphs[f"{strategies_map[strat]}_length_scatter"] = px.scatter(
             data[data["strategy"] == strat],
@@ -222,7 +240,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         not_empty = len(grouped_mean[grouped_mean["strategy"] == strat]) > 0
         fallback = [0 for _ in failure_probabilities]
         d1 = {}
-        d1[tab] = failure_probabilities if tab == "failure_probability" else group_sizes
+        d1[tab] = x_axis
         d1["mean"] = (
             grouped_mean[grouped_mean["strategy"] == strat]["simulation_length"]
             if not_empty
@@ -246,7 +264,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             title=f"{strategies_map[strat]} latency amplification",
         )
         d2 = {}
-        d2[tab] = failure_probabilities if tab == "failure_probability" else group_sizes
+        d2[tab] = x_axis
         d2["mean"] = (
             grouped_mean[grouped_mean["strategy"] == strat]["total_work"]
             if not_empty
@@ -270,7 +288,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             title=f"{strategies_map[strat]} work amplification",
         )
         d3 = {}
-        d3[tab] = failure_probabilities if tab == "failure_probability" else group_sizes
+        d3[tab] = x_axis
         d3["mean"] = (
             grouped_mean[grouped_mean["strategy"] == strat]["completeness"]
             if not_empty
@@ -399,10 +417,7 @@ if __name__ == "__main__":
             dcc.Tabs(
                 id="tabs",
                 value="failure_probability",
-                children=[
-                    dcc.Tab(label="Probabilité de panne", value="failure_probability"),
-                    dcc.Tab(label="Taille de groupe", value="group_size"),
-                ],
+                children=[dcc.Tab(label=t["label"], value=t["value"]) for t in tabs],
             ),
             html.Div(
                 children=[
