@@ -96,7 +96,7 @@ def generate_summary(data, status, strategies):
     )
 
 
-def generate_maps(df, x_axis, y_axis, strategies_map):
+def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
     work_min = df["total_work"].max()
     work_max = df["total_work"].min()
     latency_min = df["simulation_length"].max()
@@ -109,37 +109,60 @@ def generate_maps(df, x_axis, y_axis, strategies_map):
         data_failure = []
         data_success = []
         data_completeness = []
-        data_success_completeness = []
         data_work = []
         data_latency = []
         for (j, y) in enumerate(pd.unique(strat_df[y_axis])):
             data_failure.append([])
             data_success.append([])
             data_completeness.append([])
-            data_success_completeness.append([])
             data_work.append([])
             data_latency.append([])
             for x in pd.unique(strat_df[x_axis]):
                 tile = strat_df[(strat_df[y_axis] == y) & (strat_df[x_axis] == x)]
-                data_failure[j].append(tile["failure_rate"].mean())
+                success_tile = tile[tile["status"] == "Success"]
+
+                data_failure[j].append(
+                    success_tile["failure_rate"].mean()
+                    if display_failures
+                    else tile["failure_rate"].mean()
+                )
                 data_success[j].append(
                     len(tile[tile["status"] == "Success"]) / len(tile)
                 )
-                data_completeness[j].append(tile["completeness"].mean() / 100)
-                data_success_completeness[j].append(
-                    tile[tile["status"] == "Success"]["completeness"].mean() / 100
+                data_completeness[j].append(
+                    success_tile["completeness"].mean() / 100
+                    if display_failures
+                    else tile["completeness"].mean() / 100
                 )
-                data_work[j].append(tile["total_work"].mean())
-                data_latency[j].append(tile["simulation_length"].mean())
+                data_work[j].append(
+                    success_tile["total_work"].mean()
+                    if display_failures
+                    else tile["total_work"].mean()
+                )
+                data_latency[j].append(
+                    success_tile["simulation_length"].mean()
+                    if display_failures
+                    else tile["simulation_length"].mean()
+                )
 
-                if tile["total_work"].mean() < work_min:
-                    work_min = tile["total_work"].mean()
-                if tile["total_work"].mean() > work_max:
-                    work_max = tile["total_work"].mean()
-                if tile["simulation_length"].mean() < latency_min:
-                    latency_min = tile["simulation_length"].mean()
-                if tile["simulation_length"].mean() > latency_max:
-                    latency_max = tile["simulation_length"].mean()
+                if display_failures:
+                    if success_tile["total_work"].mean() < work_min:
+                        work_min = success_tile["total_work"].mean()
+                    if success_tile["total_work"].mean() > work_max:
+                        work_max = success_tile["total_work"].mean()
+                    if success_tile["simulation_length"].mean() < latency_min:
+                        latency_min = success_tile["simulation_length"].mean()
+                    if success_tile["simulation_length"].mean() > latency_max:
+                        latency_max = success_tile["simulation_length"].mean()
+                else:
+                    if tile["total_work"].mean() < work_min:
+                        work_min = tile["total_work"].mean()
+                    if tile["total_work"].mean() > work_max:
+                        work_max = tile["total_work"].mean()
+                    if tile["simulation_length"].mean() < latency_min:
+                        latency_min = tile["simulation_length"].mean()
+                    if tile["simulation_length"].mean() > latency_max:
+                        latency_max = tile["simulation_length"].mean()
 
         maps[f"{strat}_map_failure"] = pd.DataFrame(
             data_failure,
@@ -153,11 +176,6 @@ def generate_maps(df, x_axis, y_axis, strategies_map):
         )
         maps[f"{strat}_map_completeness"] = pd.DataFrame(
             data_completeness,
-            columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
-            index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
-        )
-        maps[f"{strat}_map_success_completeness"] = pd.DataFrame(
-            data_success_completeness,
             columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
             index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
         )
@@ -194,13 +212,6 @@ def generate_maps(df, x_axis, y_axis, strategies_map):
             zmin=0,
             zmax=1,
         )
-        maps[f"{strat}_map_success_completeness"] = px.imshow(
-            maps[f"{strat}_map_success_completeness"],
-            text_auto=True,
-            title=f"{strategies_map[strat]} Completeness",
-            zmin=0,
-            zmax=1,
-        )
         maps[f"{strat}_map_work"] = px.imshow(
             maps[f"{strat}_map_work"],
             text_auto=True,
@@ -218,21 +229,6 @@ def generate_maps(df, x_axis, y_axis, strategies_map):
 
     return html.Div(
         children=[
-            html.H1("Nodes failure rates"),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id=f"{strat}_map_failure",
-                        figure=maps[f"{strat}_map_failure"],
-                    )
-                    for strat in strategies_map
-                ],
-            ),
             html.H1("Protocol successes"),
             html.Div(
                 style={
@@ -248,6 +244,21 @@ def generate_maps(df, x_axis, y_axis, strategies_map):
                     for strat in strategies_map
                 ],
             ),
+            html.H1("Nodes failure rates"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_map_failure",
+                        figure=maps[f"{strat}_map_failure"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
             html.H1("Protocol completeness"),
             html.Div(
                 style={
@@ -259,21 +270,6 @@ def generate_maps(df, x_axis, y_axis, strategies_map):
                     dcc.Graph(
                         id=f"{strat}_map_completeness",
                         figure=maps[f"{strat}_map_completeness"],
-                    )
-                    for strat in strategies_map
-                ],
-            ),
-            html.H1("Protocol successes completeness"),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id=f"{strat}_map_success_completeness",
-                        figure=maps[f"{strat}_map_success_completeness"],
                     )
                     for strat in strategies_map
                 ],
@@ -398,7 +394,7 @@ if __name__ == "__main__":
                             "justify-content": "start",
                         },
                         children=[
-                            html.Span("X Axis:"),
+                            html.H3("X Axis:"),
                             dcc.Dropdown(
                                 style={"width": "100%"},
                                 id="x_axis_dropdown",
@@ -414,7 +410,7 @@ if __name__ == "__main__":
                             "justify-content": "start",
                         },
                         children=[
-                            html.Span("Y Axis:"),
+                            html.H3("Y Axis:"),
                             dcc.Dropdown(
                                 style={"width": "100%"},
                                 id="y_axis_dropdown",
@@ -424,6 +420,17 @@ if __name__ == "__main__":
                         ],
                     ),
                 ]
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "start",
+                },
+                children=[
+                    html.H3("Display failures"),
+                    dcc.Checklist(id="display_failures", options=["YES"], value=[]),
+                ],
             ),
             html.Div(id="maps", children=[maps]),
         ]
@@ -449,6 +456,7 @@ if __name__ == "__main__":
             dash.Input(component_id="depths-range", component_property="value"),
             dash.Input(component_id="x_axis_dropdown", component_property="value"),
             dash.Input(component_id="y_axis_dropdown", component_property="value"),
+            dash.Input(component_id="display_failures", component_property="value"),
         ],
         dash.State("store_file", "data"),
     )
@@ -458,6 +466,7 @@ if __name__ == "__main__":
         selected_depths,
         x_axis,
         y_axis,
+        display_failures,
         store_file,
     ):
         if not store_file:
@@ -486,7 +495,9 @@ if __name__ == "__main__":
             (df["depth"] >= selected_depths[0]) & (df["depth"] <= selected_depths[1])
         ]
 
-        maps = generate_maps(df, x_axis, y_axis, strategies_map)
+        maps = generate_maps(
+            df, x_axis, y_axis, strategies_map, "YES" in display_failures
+        )
 
         return [generate_summary(df, status, strategies), maps]
 
