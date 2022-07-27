@@ -43,13 +43,12 @@ def get_data(path):
     return df
 
 
-def generate_summary(data, status, strategies, file):
+def generate_summary(data, status, strategies):
     return (
         html.Div(
             style={"justifyContent": "center"},
             children=[
                 html.H1("Overview:"),
-                html.Span(f"File: {file}"),
                 html.Ul(
                     children=[
                         html.Li(
@@ -318,8 +317,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="simulation_length",
         color="strategy",
         marginal_y="histogram",
-        trendline="lowess",
         title=f"Latency amplification",
+        hover_name="run_id",
     )
     graphs[f"work_amplification_scatter"] = px.scatter(
         amps,
@@ -327,8 +326,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="total_work",
         color="strategy",
         marginal_y="histogram",
-        trendline="lowess",
         title=f"Work amplification",
+        hover_name="run_id",
     )
     graphs[f"completeness_scatter"] = px.scatter(
         amps,
@@ -336,8 +335,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="completeness",
         color="strategy",
         marginal_y="histogram",
-        trendline="lowess",
         title=f"Completeness",
+        hover_name="run_id",
     )
 
     gmean = data.groupby([tab, "strategy"], as_index=False).mean()
@@ -384,74 +383,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Complétude par {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
 
-    return graphs
-
-
-if __name__ == "__main__":
-    with open("./dissec.config.json") as f:
-        config = json.load(f)
-
-    data = get_data(config["defaultGraph"])
-
-    run_ids = pd.unique(data["run_id"])
-    strategies = pd.unique(data["strategy"])
-    status = pd.unique(data["status"])
-    data["failure_probability"] = data["failure_probability"].round(6)
-    failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
-    failure_rates = np.sort(pd.unique(data["failure_rate"]))
-
-    outputs = glob("./outputs/*")
-
-    # Remove strategies not present in the data
-    strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
-    for k in set(strategies_map.keys()).difference(strategies):
-        del strategies_map[k]
-
-    graphs = generate_graphs(data, strategies_map)
-    summary = generate_summary(data, status, strategies, config["defaultGraph"])
-
-    app = dash.Dash(__name__)
-
-    app.layout = html.Div(
+    return html.Div(
         children=[
-            dcc.Tabs(
-                id="tabs",
-                value="failure_probability",
-                children=[dcc.Tab(label=t["label"], value=t["value"]) for t in tabs],
-            ),
-            html.Div(
-                children=[
-                    html.H1(
-                        children=f"Simulation  task",
-                        style={"textAlign": "center", "color": "#7FDBFF"},
-                    ),
-                    dcc.Dropdown(
-                        id="file-select",
-                        options=[
-                            dict(label=output.split("/")[-1], value=output)
-                            for output in outputs
-                        ],
-                        value=config["defaultGraph"],
-                    ),
-                ]
-            ),
-            html.Div(id="summary", children=summary),
-            #
-            # Boxes
-            #
             html.H1("Boxes:"),
-            html.Div(
-                [
-                    html.H3("Failure Probabilities"),
-                    dcc.RangeSlider(
-                        0,
-                        0.001,
-                        0.00001,
-                        value=[0, 0.001],
-                        id="failure-probabilities-range",
-                    ),
-                ]
-            ),
             html.Div(
                 style={
                     "display": "flex",
@@ -667,19 +601,138 @@ if __name__ == "__main__":
         ]
     )
 
+
+if __name__ == "__main__":
+    with open("./dissec.config.json") as f:
+        config = json.load(f)
+
+    data = get_data(config["defaultGraph"])
+
+    run_ids = pd.unique(data["run_id"])
+    strategies = pd.unique(data["strategy"])
+    status = pd.unique(data["status"])
+    data["failure_probability"] = data["failure_probability"].round(6)
+    failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
+    failure_rates = np.sort(pd.unique(data["failure_rate"]))
+
+    outputs = glob("./outputs/*")
+
+    # Remove strategies not present in the data
+    strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+    for k in set(strategies_map.keys()).difference(strategies):
+        del strategies_map[k]
+
+    graphs = generate_graphs(data, strategies_map)
+    summary = generate_summary(data, status, strategies)
+
+    app = dash.Dash(__name__)
+
+    app.layout = html.Div(
+        children=[
+            dcc.Store(id="store_file"),
+            dcc.Tabs(
+                id="tabs",
+                value="failure_probability",
+                children=[dcc.Tab(label=t["label"], value=t["value"]) for t in tabs],
+            ),
+            html.Div(
+                children=[
+                    html.H1(
+                        children=f"Simulation  task",
+                        style={"textAlign": "center", "color": "#7FDBFF"},
+                    ),
+                    dcc.Dropdown(
+                        id="file-select",
+                        options=[
+                            dict(label=output.split("/")[-1], value=output)
+                            for output in outputs
+                        ],
+                        value=config["defaultGraph"],
+                    ),
+                    html.H1(id="file_span", children=f"{config['defaultGraph']}"),
+                ]
+            ),
+            html.Div(id="summary", children=summary),
+            #
+            # Boxes
+            #
+            html.Div(
+                [
+                    html.H3("Failure Probabilities"),
+                    dcc.RangeSlider(
+                        0,
+                        0.001,
+                        0.00001,
+                        value=[0, 0.001],
+                        id="failure-probabilities-range",
+                    ),
+                    html.H3("Group Sizes"),
+                    dcc.RangeSlider(
+                        3,
+                        7,
+                        2,
+                        value=[3, 7],
+                        id="group-sizes-range",
+                    ),
+                    html.H3("Depths"),
+                    dcc.RangeSlider(
+                        3,
+                        5,
+                        1,
+                        value=[3, 5],
+                        id="depths-range",
+                    ),
+                    html.H3("Activate graphs"),
+                    dcc.Checklist(id="activate_graphs", options=["Activate graphs"]),
+                ]
+            ),
+            html.Div(id="graphs", children=[]),
+        ]
+    )
+
     @app.callback(
-        [dash.Output(component_id="summary", component_property="children")]
-        + [dash.Output(component_id=id, component_property="figure") for id in graphs],
+        [dash.Output("store_file", "data"), dash.Output("file_span", "children")],
+        dash.Input(component_id="file-select", component_property="value"),
+    )
+    def update_file(selected_file):
+        return [get_data(selected_file).to_json(), selected_file]
+
+    @app.callback(
+        [
+            dash.Output(component_id="summary", component_property="children"),
+            dash.Output(component_id="graphs", component_property="children"),
+        ],
         [
             dash.Input(
                 component_id="failure-probabilities-range", component_property="value"
             ),
-            dash.Input(component_id="file-select", component_property="value"),
+            dash.Input(component_id="group-sizes-range", component_property="value"),
+            dash.Input(component_id="depths-range", component_property="value"),
             dash.Input(component_id="tabs", component_property="value"),
+            dash.Input(component_id="activate_graphs", component_property="value"),
         ],
+        dash.State("store_file", "data"),
     )
-    def update_graphs(selected_failures, selected_file, tab):
-        df = get_data(selected_file)
+    def update_graphs(
+        selected_failures,
+        selected_sizes,
+        selected_depths,
+        tab,
+        activate_graphs,
+        store_file,
+    ):
+        print(
+            "Update Arguments: ",
+            selected_failures,
+            selected_sizes,
+            selected_depths,
+            tab,
+            activate_graphs,
+        )
+        if not store_file:
+            df = get_data(config["defaultGraph"])
+        else:
+            df = pd.read_json(store_file)
 
         strategies = pd.unique(df["strategy"])
         status = pd.unique(df["status"])
@@ -694,11 +747,20 @@ if __name__ == "__main__":
             (df["failure_probability"] >= selected_failures[0])
             & (df["failure_probability"] <= selected_failures[1])
         ]
-
-        graphs = generate_graphs(df, strategies_map, tab)
-
-        return [generate_summary(df, status, strategies, selected_file)] + [
-            graphs[id] for id in graphs
+        df = df[
+            (df["group_size"] >= selected_sizes[0])
+            & (df["group_size"] <= selected_sizes[1])
         ]
+        df = df[
+            (df["depth"] >= selected_depths[0]) & (df["depth"] <= selected_depths[1])
+        ]
+
+        graphs = (
+            generate_graphs(df, strategies_map, tab)
+            if "Activate graphs" in activate_graphs
+            else html.Div()
+        )
+
+        return [generate_summary(df, status, strategies), graphs]
 
     app.run_server(debug=True)
