@@ -7,9 +7,10 @@ from glob import glob
 
 tabs = [
     dict(label="Probabilité de panne", value="failure_probability"),
+    dict(label="Profondeur", value="depth"),
     dict(label="Taille de groupe", value="group_size"),
     dict(label="Fanout", value="fanout"),
-    dict(label="Profondeur", value="depth"),
+    dict(label="Taux de panne", value="failure_rate"),
 ]
 
 
@@ -97,30 +98,53 @@ def generate_summary(data, status, strategies):
 
 
 def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
-    work_min = df["total_work"].max()
-    work_max = df["total_work"].min()
-    latency_min = df["simulation_length"].max()
+    copy_df = df.copy()
+    work_min = copy_df["total_work"].max()
+    work_max = copy_df["total_work"].min()
+    latency_min = copy_df["simulation_length"].max()
     latency_max = df["simulation_length"].min()
+
+    # Failure rate buckets
+    buckets = [0, 0.1, 0.2, 0.4, 0.6, 1]
+    for i in range(len(buckets) - 1):
+        copy_df.loc[
+            (copy_df["failure_rate"] >= buckets[i])
+            & (copy_df["failure_rate"] <= buckets[i + 1]),
+            "failure_rate",
+        ] = round(
+            copy_df[
+                (copy_df["failure_rate"] >= buckets[i])
+                & (copy_df["failure_rate"] <= buckets[i + 1])
+            ]["failure_rate"].mean(),
+            3,
+        )
+
+    print(pd.unique(copy_df[x_axis]), pd.unique(copy_df[y_axis]))
 
     # Map of protocol successes
     maps = dict()
     for strat in strategies_map:
-        strat_df = df[df["strategy"] == strat]
+        strat_df = copy_df[copy_df["strategy"] == strat]
+        data_runs = []
         data_failure = []
         data_success = []
         data_completeness = []
         data_work = []
         data_latency = []
-        for (j, y) in enumerate(pd.unique(strat_df[y_axis])):
+        for (j, y) in enumerate(pd.unique(copy_df[y_axis])):
+            data_runs.append([])
             data_failure.append([])
             data_success.append([])
             data_completeness.append([])
             data_work.append([])
             data_latency.append([])
-            for x in pd.unique(strat_df[x_axis]):
+            for x in pd.unique(copy_df[x_axis]):
                 tile = strat_df[(strat_df[y_axis] == y) & (strat_df[x_axis] == x)]
                 success_tile = tile[tile["status"] == "Success"]
 
+                data_runs[j].append(
+                    len(success_tile) if display_failures else len(tile)
+                )
                 data_failure[j].append(
                     success_tile["failure_rate"].mean()
                     if display_failures
@@ -128,6 +152,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                 )
                 data_success[j].append(
                     len(tile[tile["status"] == "Success"]) / len(tile)
+                    if len(tile) != 0
+                    else 0
                 )
                 data_completeness[j].append(
                     success_tile["completeness"].mean() / 100
@@ -164,33 +190,51 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     if tile["simulation_length"].mean() > latency_max:
                         latency_max = tile["simulation_length"].mean()
 
+        print(
+            np.array(data_runs).shape,
+            pd.unique(copy_df[x_axis]),
+            pd.unique(copy_df[y_axis]),
+            data_runs,
+        )
+        maps[f"{strat}_map_runs"] = pd.DataFrame(
+            data_runs,
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
         maps[f"{strat}_map_failure"] = pd.DataFrame(
             data_failure,
-            columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
-            index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
         maps[f"{strat}_map_successes"] = pd.DataFrame(
             data_success,
-            columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
-            index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
         maps[f"{strat}_map_completeness"] = pd.DataFrame(
             data_completeness,
-            columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
-            index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
         maps[f"{strat}_map_work"] = pd.DataFrame(
             data_work,
-            columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
-            index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
         maps[f"{strat}_map_latency"] = pd.DataFrame(
             data_latency,
-            columns=[f"{x_axis} {x}" for x in pd.unique(df[x_axis])],
-            index=[f"{y_axis} {y}" for y in pd.unique(df[y_axis])],
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
 
     for strat in strategies_map:
+        maps[f"{strat}_map_runs"] = px.imshow(
+            maps[f"{strat}_map_runs"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} number of runs",
+            zmin=0,
+            zmax=len(tile),
+        )
         maps[f"{strat}_map_failure"] = px.imshow(
             maps[f"{strat}_map_failure"],
             text_auto=True,
@@ -229,6 +273,21 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
 
     return html.Div(
         children=[
+            html.H1("Number of runs"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_map_runs",
+                        figure=maps[f"{strat}_map_runs"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
             html.H1("Protocol successes"),
             html.Div(
                 style={
@@ -428,8 +487,16 @@ if __name__ == "__main__":
                     "justify-content": "start",
                 },
                 children=[
-                    html.H3("Display failures"),
-                    dcc.Checklist(id="display_failures", options=["YES"], value=[]),
+                    html.H3("Only display successful runs"),
+                    dcc.Checklist(
+                        style={
+                            "display": "flex",
+                            "align-items": "center",
+                        },
+                        id="display_failures",
+                        options=["YES"],
+                        value=[],
+                    ),
                 ],
             ),
             html.Div(id="maps", children=[maps]),
