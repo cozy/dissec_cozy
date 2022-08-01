@@ -105,7 +105,7 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
     latency_max = df["simulation_length"].min()
 
     # Failure rate buckets
-    buckets = [0, 0.1, 0.2, 0.4, 0.6, 1]
+    buckets = [0, 0.05, 0.1, 0.2, 0.5, 1]
     for i in range(len(buckets) - 1):
         copy_df.loc[
             (copy_df["failure_rate"] >= buckets[i])
