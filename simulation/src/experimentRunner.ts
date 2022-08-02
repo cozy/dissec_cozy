@@ -77,6 +77,7 @@ export class ExperimentRunner {
         else values[translatedKey] = [v]
       })
     )
+
     // Keep unique values and range
     for (const [k, arr] of Object.entries(values)) {
       for (const v of arr) {
@@ -113,7 +114,14 @@ export class ExperimentRunner {
           fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
         }
 
-        fs.writeFileSync(outputPath, Object.values(items).join(';') + '\n', { flag: 'a' })
+        fs.writeFileSync(
+          outputPath,
+          Object.values(items)
+            .map(e => (typeof e === 'number' ? e.toFixed(2) : e))
+            .join(';')
+            .replaceAll('.', ',') + '\n',
+          { flag: 'a' }
+        )
       }
     } else {
       const { messages: _messages, ...items } = results[0]
@@ -130,7 +138,15 @@ export class ExperimentRunner {
 
         for (const message of messages) {
           const assign: { [k: string]: any } = Object.assign(items, message)
-          fs.writeFileSync(outputPath, columns.map(e => assign[e]).join(';') + '\n', { flag: 'a' })
+          fs.writeFileSync(
+            outputPath,
+            columns
+              .map(e => assign[e])
+              .map(e => (typeof e === 'number' ? e.toFixed(2) : e))
+              .join(';')
+              .replaceAll('.', ',') + '\n',
+            { flag: 'a' }
+          )
         }
       }
     }
@@ -192,19 +208,22 @@ export class ExperimentRunner {
     // Only the node with the lowest ID sends the message
     manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, querierGroup.id, querierGroup.id, {}))
 
-    // Create a backup list and give it to all the nodes
-    const backupListStart = Object.keys(manager.nodes).length
-    const backups = []
-    // Create as many backup as nodes in the tree
-    for (let i = 0; i < backupListSize; i++) {
-      const backup = new Node({ id: backupListStart + i, config: manager.config })
-      backup.role = NodeRole.Backup
-      manager.nodes[backupListStart + i] = backup
-      backups.push(backup)
-    }
-    for (let i = 0; i < backupListStart; i++) {
-      if (manager.nodes[i]) {
-        manager.nodes[i].backupList = backups.map(e => e.id)
+    // Eager does not use a backup list
+    if (run.strategy !== ProtocolStrategy.Eager) {
+      // Create a backup list and give it to all the nodes
+      const backupListStart = Object.keys(manager.nodes).length
+      const backups = []
+      // Create as many backup as nodes in the tree
+      for (let i = 0; i < backupListSize; i++) {
+        const backup = new Node({ id: backupListStart + i, config: manager.config })
+        backup.role = NodeRole.Backup
+        manager.nodes[backupListStart + i] = backup
+        backups.push(backup)
+      }
+      for (let i = 0; i < backupListStart; i++) {
+        if (manager.nodes[i]) {
+          manager.nodes[i].backupList = backups.map(e => e.id)
+        }
       }
     }
 
@@ -324,10 +343,14 @@ export class ExperimentRunner {
       }
     }
 
+    manager.initialNodeRoles = manager.countNodesPerRole()
+
     // Running the simulator the end
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
     }
+
+    manager.finalNodeRoles = manager.countNodesPerRole()
 
     const initialNumberContributors = contributorsNodes.flatMap(e => e.members).length
     const receivedNumberContributors = manager.finalNumberContributors
@@ -356,6 +379,7 @@ export class ExperimentRunner {
         }
       })
     }
+
     return {
       ...run,
       status: manager.status,
@@ -363,7 +387,8 @@ export class ExperimentRunner {
       latency: manager.globalTime,
       completeness,
       observedFailureRate:
-        Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
+        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100,
+      ...manager.statisticsPerRole(),
       messages: oldMessages,
     }
   }

@@ -28,6 +28,10 @@ export class NodesManager {
   generator: () => number
   rayleigh = rayleigh.factory(1, { seed: 1 })
   // Statistics
+  initialNodeRoles: { [role: string]: number } = {}
+  finalNodeRoles: { [role: string]: number } = {}
+  workPerRole: { [role: string]: number } = {}
+  failuresPerRole: { [role: string]: number } = {}
   totalWork = 0
   finalNumberContributors = 0
 
@@ -42,6 +46,14 @@ export class NodesManager {
     // Sigma such that the median is the desired latency
     const sigma = options.averageLatency / Math.sqrt(2 * Math.LN2)
     this.rayleigh = rayleigh.factory(sigma, { seed: xmur3(options.seed)() })
+
+    // Initialize stats
+    Object.values(NodeRole).forEach(e => {
+      this.initialNodeRoles[e] = 0
+      this.finalNodeRoles[e] = 0
+      this.workPerRole[e] = 0
+      this.failuresPerRole[e] = 0
+    })
   }
 
   static createFromTree(root: TreeNode, options: ManagerArguments): NodesManager {
@@ -56,6 +68,26 @@ export class NodesManager {
     }
 
     return manager
+  }
+
+  countNodesPerRole() {
+    const res: { [key: string]: number } = {}
+    for (const node of Object.values(this.nodes)) {
+      if (!res[node.role]) res[node.role] = 1
+      else res[node.role] += 1
+    }
+    return res
+  }
+
+  statisticsPerRole() {
+    const res: { [key: string]: number } = {}
+    for (const r of Object.values(NodeRole)) {
+      res[`work_${r}`] = this.workPerRole[r]
+      res[`failures_${r}`] = this.failuresPerRole[r]
+      res[`initial_nodes_${r}`] = this.initialNodeRoles[r]
+      res[`final_nodes_${r}`] = this.finalNodeRoles[r]
+    }
+    return res
   }
 
   addNode(node: TreeNode, querier?: number): Node {
@@ -74,6 +106,7 @@ export class NodesManager {
           node.alive = false
           if (newFailure) {
             node.deathTime = this.globalTime
+            this.failuresPerRole[node.role] += 1
             if (
               node.node &&
               node.node.children.length !== 0 &&
@@ -169,6 +202,7 @@ export class NodesManager {
       } else {
         // Save stats for exporting
         this.totalWork += message.work
+        this.workPerRole[this.nodes[message.emitterId].role] += message.work
 
         for (const msg of resultingMessages) {
           this.transmitMessage(msg)
