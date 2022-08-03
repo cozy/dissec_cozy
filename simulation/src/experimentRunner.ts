@@ -116,8 +116,8 @@ export class ExperimentRunner {
 
         fs.writeFileSync(
           outputPath,
-          Object.values(items)
-            .map(e => (typeof e === 'number' ? e.toFixed(2) : e))
+          Object.entries(items)
+            .map(([k, e]) => (typeof e === 'number' && k !== 'failureRate' ? e.toFixed(2) : e))
             .join(';')
             .replaceAll('.', ',') + '\n',
           { flag: 'a' }
@@ -141,8 +141,7 @@ export class ExperimentRunner {
           fs.writeFileSync(
             outputPath,
             columns
-              .map(e => assign[e])
-              .map(e => (typeof e === 'number' ? e.toFixed(2) : e))
+              .map(e => (typeof assign[e] === 'number' && e !== 'failureRate' ? assign[e].toFixed(2) : assign[e]))
               .join(';')
               .replaceAll('.', ',') + '\n',
             { flag: 'a' }

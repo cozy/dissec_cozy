@@ -21,7 +21,10 @@ def get_data(path):
 
         df = pd.concat([pd.DataFrame(i) for i in data])
     else:
-        df = pd.read_csv(path, sep=";")
+        df = pd.read_csv(path, sep=";", decimal=",")
+        # We used different decimal format, check which one we have
+        if "float64" not in df.dtypes.unique():
+            df = pd.read_csv(path, sep=";")
 
     df.rename(
         mapper={
@@ -146,9 +149,9 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     len(success_tile) if display_failures else len(tile)
                 )
                 data_failure[j].append(
-                    success_tile["failure_rate"].mean()
+                    success_tile["failure_rate"].mean() / 100
                     if display_failures
-                    else tile["failure_rate"].mean()
+                    else tile["failure_rate"].mean() / 100
                 )
                 data_success[j].append(
                     len(tile[tile["status"] == "Success"]) / len(tile)
@@ -190,12 +193,6 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     if tile["simulation_length"].mean() > latency_max:
                         latency_max = tile["simulation_length"].mean()
 
-        print(
-            np.array(data_runs).shape,
-            pd.unique(copy_df[x_axis]),
-            pd.unique(copy_df[y_axis]),
-            data_runs,
-        )
         maps[f"{strat}_map_runs"] = pd.DataFrame(
             data_runs,
             columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
@@ -376,7 +373,7 @@ if __name__ == "__main__":
     run_ids = pd.unique(data["run_id"])
     strategies = pd.unique(data["strategy"])
     status = pd.unique(data["status"])
-    data["failure_probability"] = data["failure_probability"].round(6)
+    data["failure_probability"] = data["failure_probability"].round(8)
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
 
