@@ -11,16 +11,29 @@ tabs = [
     dict(label="Fanout", value="fanout"),
     dict(label="Profondeur", value="depth"),
 ]
+roles = ["Aggregator", "LeafAggregator", "Contributor", "Backup", "Querier"]
+statistics = [
+    "initial_nodes",
+    "final_nodes",
+    "failures",
+    "work",
+    "messages",
+    "work_per_node",
+    "delta_nodes",
+]
 
 
-def get_data(path):
+def get_data(path, aggregate_message=True):
     if ".json" in path:
         with open(path) as f:
             data = json.load(f)
 
         df = pd.concat([pd.DataFrame(i) for i in data])
     else:
-        df = pd.read_csv(path, sep=";")
+        df = pd.read_csv(path, sep=";", decimal=",")
+        # We used different decimal format, check which one we have
+        if "float64" not in df.dtypes.unique():
+            df = pd.read_csv(path, sep=";")
 
     df.rename(
         mapper={
@@ -34,11 +47,31 @@ def get_data(path):
             "latency": "simulation_length",
             "work": "total_work",
             "groupSize": "group_size",
+            "circulatingAggregateIds": "circulating_aggregate_ids",
         },
         axis=1,
         inplace=True,
     )
     df.reset_index(inplace=True)
+    df.fillna(0, inplace=True)
+
+    for r in roles:
+        df[f"work_per_node_{r}"] = (
+            df[f"work_{r}"] / df[f"final_nodes_{r}"]
+            if (df[f"final_nodes_{r}"] != 0).any()
+            else 0
+        )
+        df[f"delta_nodes_{r}"] = df[f"final_nodes_{r}"] - df[f"initial_nodes_{r}"]
+
+    df.fillna(0, inplace=True)
+    for s in statistics:
+        df[f"{s}_total"] = 0
+        for r in roles:
+            df[f"{s}_total"] += df[f"{s}_{r}"]
+
+    if aggregate_message:
+        df = df.groupby(["run_id", "status", "strategy"]).mean()
+        df.reset_index(inplace=True)
 
     return df
 
@@ -108,7 +141,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs["work_failure_rate_status"] = px.box(
         data,
         x=tab,
-        y="total_work",
+        y="work_total",
         color="status",
         hover_name="run_id",
         points="all",
@@ -117,7 +150,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs["work_failure_rate_strategy"] = px.box(
         data,
         x=tab,
-        y="total_work",
+        y="work_total",
         color="strategy",
         hover_name="run_id",
         points="all",
@@ -161,21 +194,24 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     amps = data.copy()
-    amps["total_work"] /= amps.groupby([tab, "strategy"], as_index=False).mean()[
-        "total_work"
-    ][0]
-    amps["simulation_length"] /= amps.groupby([tab, "strategy"], as_index=False).mean()[
-        "simulation_length"
-    ][0]
+
+    for strat in strategies_map:
+        amps_strat = amps[amps["strategy"] == strat]
+        amps.loc[amps["strategy"] == strat, "work_total"] /= amps_strat.groupby(
+            [tab, "strategy"], as_index=False
+        ).mean()["work_total"][0]
+        amps.loc[amps["strategy"] == strat, "simulation_length"] /= amps_strat.groupby(
+            [tab, "simulation_length"], as_index=False
+        ).mean()["simulation_length"][0]
 
     grouped_mean = data.groupby([tab, "strategy"], as_index=False).mean()
     grouped_upper = data.groupby([tab, "strategy"], as_index=False).max()
-    grouped_upper["total_work"] /= grouped_mean["total_work"].iloc[0]
+    grouped_upper["work_total"] /= grouped_mean["work_total"].iloc[0]
     grouped_upper["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
     grouped_lower = data.groupby([tab, "strategy"], as_index=False).min()
-    grouped_lower["total_work"] /= grouped_mean["total_work"].iloc[0]
+    grouped_lower["work_total"] /= grouped_mean["work_total"].iloc[0]
     grouped_lower["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
-    grouped_mean["total_work"] /= grouped_mean["total_work"].iloc[0]
+    grouped_mean["work_total"] /= grouped_mean["work_total"].iloc[0]
     grouped_mean["simulation_length"] /= grouped_mean["simulation_length"].iloc[0]
 
     if tab == "failure_probability":
@@ -199,7 +235,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         graphs[f"{strategies_map[strat]}_work_scatter"] = px.scatter(
             data[data["strategy"] == strat],
             x="simulation_length",
-            y="total_work",
+            y="work_total",
             color="status",
             hover_name="run_id",
             title=f"{strategies_map[strat]} total work",
@@ -218,7 +254,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         graphs[f"{strategies_map[strat]}_work_amplification_scatter"] = px.scatter(
             amps[amps["strategy"] == strat],
             x=tab,
-            y="total_work",
+            y="work_total",
             color="status",
             marginal_x="histogram",
             marginal_y="histogram",
@@ -265,17 +301,17 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         d2 = {}
         d2[tab] = x_axis
         d2["mean"] = (
-            grouped_mean[grouped_mean["strategy"] == strat]["total_work"]
+            grouped_mean[grouped_mean["strategy"] == strat]["work_total"]
             if not_empty
             else fallback
         )
         d2["upper"] = (
-            grouped_upper[grouped_upper["strategy"] == strat]["total_work"]
+            grouped_upper[grouped_upper["strategy"] == strat]["work_total"]
             if not_empty
             else fallback
         )
         d2["lower"] = (
-            grouped_lower[grouped_lower["strategy"] == strat]["total_work"]
+            grouped_lower[grouped_lower["strategy"] == strat]["work_total"]
             if not_empty
             else fallback
         )
@@ -341,14 +377,14 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     gmean = data.groupby([tab, "strategy"], as_index=False).mean()
     tmp_std = data.groupby([tab, "strategy"], as_index=False).std()
-    gmean["total_work_std"] = tmp_std["total_work"]
+    gmean["total_work_std"] = tmp_std["work_total"]
     gmean["simulation_length_std"] = tmp_std["simulation_length"]
     gmean["completeness_std"] = tmp_std["completeness"]
 
     graphs["work_failure_prob_strategy"] = px.line(
         gmean,
         x=tab,
-        y="total_work",
+        y="work_total",
         error_y="total_work_std",
         color="strategy",
         markers=True,
@@ -683,7 +719,9 @@ if __name__ == "__main__":
                         id="depths-range",
                     ),
                     html.H3("Activate graphs"),
-                    dcc.Checklist(id="activate_graphs", options=["Activate graphs"]),
+                    dcc.Checklist(
+                        id="activate_graphs", options=["Activate graphs"], value=[]
+                    ),
                 ]
             ),
             html.Div(id="graphs", children=[]),

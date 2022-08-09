@@ -1,6 +1,6 @@
 import fs from 'fs'
 
-import NodesManager from './manager'
+import NodesManager, { AugmentedMessage } from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
@@ -10,6 +10,15 @@ export enum ProtocolStrategy {
   Optimistic = 'OPTI',
   Eager = 'EAGER',
 }
+
+// function theoreticalLatency(run: RunConfig) {
+//   switch (run.strategy) {
+//     case ProtocolStrategy.Pessimistic:
+//       return 0
+//     default:
+//       return 0
+//   }
+// }
 
 export interface RunConfig {
   strategy: ProtocolStrategy
@@ -26,16 +35,18 @@ export interface RunConfig {
   depth: number
   fanout: number
   groupSize: number
+  random: boolean
   seed: string
 }
 
 export interface RunResult extends RunConfig {
   status: StopStatus
-  observedFailureRate: number
   work: number
   latency: number
   completeness: number
-  messages: Message[]
+  circulatingAggregateIds: number
+  observedFailureRate: number
+  messages: AugmentedMessage[]
 }
 
 export class ExperimentRunner {
@@ -43,11 +54,16 @@ export class ExperimentRunner {
   outputPath: string
   debug?: boolean = false
   fullExport?: boolean = false
+  intermediateExport?: number = 0
 
-  constructor(runs: RunConfig[], options: { debug?: boolean; fullExport?: boolean } = {}) {
+  constructor(
+    runs: RunConfig[],
+    options: { debug?: boolean; fullExport?: boolean; intermediateExport?: number } = { intermediateExport: 0 }
+  ) {
     this.runs = runs
     this.debug = options.debug
     this.fullExport = options.fullExport
+    this.intermediateExport = options.intermediateExport
 
     // Compute output path based on run configs
     const values: { [k: string]: any[] } = {}
@@ -106,6 +122,7 @@ export class ExperimentRunner {
 
   writeResults(outputPath: string, results: RunResult[]) {
     if (!this.fullExport) {
+      // Write each run as a row
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
@@ -128,6 +145,7 @@ export class ExperimentRunner {
       const { content: _content, id: _id, ...restMessage } = _messages[0]
       const columns = Object.keys(Object.assign(items, restMessage))
 
+      // Write each message as a row
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
@@ -154,15 +172,21 @@ export class ExperimentRunner {
   run() {
     const results: RunResult[] = []
     const startTime = Date.now()
+    let exportCounter = 0
     for (let i = 0; i < this.runs.length; i++) {
       console.log(JSON.stringify(this.runs[i]))
       results.push(this.singleRun(this.runs[i]))
-      // Writing intermediary results
-      this.writeResults(this.outputPath, results)
+
       const averageRunTime = (Date.now() - startTime) / (i + 1)
       const runsLeft = this.runs.length - i
       console.log(`Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes`)
       console.log()
+
+      if (this.intermediateExport && ++exportCounter >= this.intermediateExport) {
+        exportCounter = 0
+        // Writing intermediary results
+        this.writeResults(this.outputPath, results)
+      }
     }
 
     console.log('Success rate:', results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
@@ -188,7 +212,7 @@ export class ExperimentRunner {
     const backupListSize = nodesInTree * 1
 
     // Create the tree structure
-    let { nextId, node: root } = TreeNode.createTree(run.depth, run.fanout, run.groupSize, 0, run.seed)
+    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
 
     // Adding the querier group
     const querierGroup = new TreeNode(nextId, run.depth + 1)
@@ -368,7 +392,7 @@ export class ExperimentRunner {
       manager.displayAggregateId()
     }
 
-    const oldMessages: Message[] = []
+    const oldMessages: AugmentedMessage[] = []
     if (this.fullExport) {
       const oldIds: number[] = []
       manager.oldMessages.forEach(m => {
@@ -385,6 +409,7 @@ export class ExperimentRunner {
       work: manager.totalWork,
       latency: manager.globalTime,
       completeness,
+      circulatingAggregateIds: Object.keys(manager.circulatingAggregateIds).length,
       observedFailureRate:
         (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100,
       ...manager.statisticsPerRole(),

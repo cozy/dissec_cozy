@@ -2,12 +2,13 @@ import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunne
 
 let configs: RunConfig[] = []
 const debug = false
+const fullExport = false
 if (debug) {
   configs = [
     {
-      strategy: ProtocolStrategy.Optimistic,
+      strategy: ProtocolStrategy.Pessimistic,
       selectivity: 0.1,
-      maxToAverageRatio: 3,
+      maxToAverageRatio: 10,
       averageLatency: 100,
       averageCryptoTime: 100,
       averageComputeTime: 100,
@@ -15,18 +16,19 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 200000,
-      failureRate: 0.00005,
+      failureRate: 0.0002,
       depth: 3,
       fanout: 4,
-      groupSize: 4,
-      seed: 'OPTI-f0.00005-s7-d5-45/90',
+      groupSize: 3,
+      random: false,
+      seed: 'PESS-f0.0002-s3-d3-0/1',
     },
   ]
 } else {
-  const failureRates = [0, 0.000025, 0.00005, 0.000075, 0.0001, 0.0002]
-  const sizes = [3, 4, 5, 6, 7]
+  const failureRates = [0, 0.00005, 0.0001, 0.00015, 0.0002]
+  const sizes = [4, 5, 6]
   const depths = [3, 4, 5]
-  const retries = 100
+  const retries = 1
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic, ProtocolStrategy.Eager]) {
     for (const failure of failureRates) {
@@ -48,6 +50,7 @@ if (debug) {
               depth: depth,
               fanout: 4,
               groupSize: size,
+              random: false,
               seed: `${strategy}-f${failure}-s${size}-d${depth}-${i}/${retries}`,
             })
           }
@@ -57,5 +60,5 @@ if (debug) {
   }
 }
 
-const runner = new ExperimentRunner(configs, { debug })
+const runner = new ExperimentRunner(configs, { debug, fullExport })
 runner.run()

@@ -12,12 +12,16 @@ export interface ManagerArguments extends RunConfig {
   fullExport?: boolean
 }
 
+export interface AugmentedMessage extends Omit<Message, 'log'> {
+  currentlyCirculatingVersions: number
+}
+
 export class NodesManager {
   debug?: boolean
   nodes: { [id: number]: Node } = {}
   querier: number = 0
   messages: Message[] = []
-  oldMessages: Message[] = []
+  oldMessages: AugmentedMessage[] = []
   messageCounter: number = 0
   globalTime: number = 0
   config: ManagerArguments
@@ -30,8 +34,10 @@ export class NodesManager {
   // Statistics
   initialNodeRoles: { [role: string]: number } = {}
   finalNodeRoles: { [role: string]: number } = {}
+  messagesPerRole: { [role: string]: number } = {}
   workPerRole: { [role: string]: number } = {}
   failuresPerRole: { [role: string]: number } = {}
+  circulatingAggregateIds: { [id: string]: boolean } = {}
   totalWork = 0
   finalNumberContributors = 0
 
@@ -44,7 +50,7 @@ export class NodesManager {
     this.generator = Generator.get(options.seed)
 
     // Sigma such that the median is the desired latency
-    const sigma = options.averageLatency / Math.sqrt(2 * Math.LN2)
+    const sigma = options.averageLatency / Math.sqrt(Math.PI / 2)
     this.rayleigh = rayleigh.factory(sigma, { seed: xmur3(options.seed)() })
 
     // Initialize stats
@@ -53,6 +59,7 @@ export class NodesManager {
       this.finalNodeRoles[e] = 0
       this.workPerRole[e] = 0
       this.failuresPerRole[e] = 0
+      this.messagesPerRole[e] = 0
     })
   }
 
@@ -84,6 +91,7 @@ export class NodesManager {
     for (const r of Object.values(NodeRole)) {
       res[`work_${r}`] = this.workPerRole[r]
       res[`failures_${r}`] = this.failuresPerRole[r]
+      res[`messages_${r}`] = this.messagesPerRole[r]
       res[`initial_nodes_${r}`] = this.initialNodeRoles[r]
       res[`final_nodes_${r}`] = this.finalNodeRoles[r]
     }
@@ -143,11 +151,6 @@ export class NodesManager {
   handleNextMessage() {
     const message = this.messages.pop()!
 
-    if (this.config.fullExport) {
-      // Save messages for exporting
-      this.oldMessages.push(message)
-    }
-
     // Update simulation time and failures
     while (this.lastFailureUpdate + this.config.failCheckPeriod <= message.receptionTime) {
       this.updateFailures()
@@ -202,7 +205,21 @@ export class NodesManager {
       } else {
         // Save stats for exporting
         this.totalWork += message.work
-        this.workPerRole[this.nodes[message.emitterId].role] += message.work
+        this.workPerRole[this.nodes[message.receiverId].role] += message.work
+        if (message.emitterId !== message.receiverId) {
+          this.messagesPerRole[this.nodes[message.receiverId].role] += 1
+        }
+        if (message.type === MessageType.SendAggregate) {
+          this.circulatingAggregateIds[message.content.aggregate!.id] = true
+        }
+
+        if (this.config.fullExport) {
+          // Save messages for exporting
+          this.oldMessages.push({
+            ...message,
+            currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
+          })
+        }
 
         for (const msg of resultingMessages) {
           this.transmitMessage(msg)
@@ -233,9 +250,12 @@ export class NodesManager {
   }
 
   private standardLatency(): number {
-    // TODO: Model latency
-    const latency = Math.max(0, Math.min(this.config.averageLatency * this.config.maxToAverageRatio, this.rayleigh()))
-    return latency
+    if (this.config.random) {
+      // TODO: Model latency
+      return Math.max(0, Math.min(this.config.averageLatency * this.config.maxToAverageRatio, this.rayleigh()))
+    } else {
+      return this.config.averageLatency
+    }
   }
 
   private AIsBeforeB(a: Message, b: Message): boolean {

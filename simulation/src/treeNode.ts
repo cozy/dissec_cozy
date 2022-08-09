@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep'
+import { RunConfig } from './experimentRunner'
 import { Generator } from './random'
 
 class TreeNode {
@@ -29,39 +30,24 @@ class TreeNode {
     return cloneDeep(this)
   }
 
-  /**
-   * Creates a regular tree
-   *
-   * @param depth The depth of the created tree
-   * @param fanout The number of children each parent has
-   * @param groupSize The number of members in each group
-   * @param id The id of the first member of the root
-   * @returns The number of node created and the root of the tree
-   */
-  static createTree(
-    depth: number,
-    fanout: number,
-    groupSize: number,
-    id: number,
-    seed: string
-  ): { nextId: number; node: TreeNode } {
-    const node = new TreeNode(id, depth)
-    node.members = Array(groupSize)
+  static createTree(run: RunConfig, depth: number, id: number): { nextId: number; node: TreeNode } {
+    const node = new TreeNode(id, run.depth)
+    node.members = Array(run.groupSize)
       .fill(id)
       .map((e, i) => e + i)
     if (depth > 0) {
-      let currentId = id + groupSize
-      for (let i = 0; i < fanout; i++) {
-        const { nextId, node: child } = TreeNode.createTree(depth - 1, fanout, groupSize, currentId, seed)
+      let currentId = id + run.groupSize
+      for (let i = 0; i < run.fanout; i++) {
+        const { nextId, node: child } = TreeNode.createTree(run, depth - 1, currentId)
         child.parents = node.members
         node.children.push(child)
         currentId = nextId
       }
       return { nextId: currentId, node }
     } else {
-      const generator = Generator.get(seed)
+      const generator = Generator.get(run.seed)
       // Rebalance the number of members in this contributor group
-      const numberOfContributors = Math.round(Math.sqrt(fanout ** (generator() * 2)))
+      const numberOfContributors = run.random ? Math.round(Math.sqrt(run.fanout ** (generator() * 2))) : 1
 
       if (node.members.length > numberOfContributors) {
         // Removing contributors from the group
@@ -73,7 +59,7 @@ class TreeNode {
         // Adding contributors to the group
         const toAdd = numberOfContributors - node.members.length
         for (let i = 0; i < toAdd; i++) {
-          node.members.push(id + groupSize + i)
+          node.members.push(id + run.groupSize + i)
         }
       }
 

@@ -12,6 +12,16 @@ tabs = [
     dict(label="Fanout", value="fanout"),
     dict(label="Taux de panne", value="failure_rate"),
 ]
+roles = ["Aggregator", "LeafAggregator", "Contributor", "Backup", "Querier"]
+statistics = [
+    "initial_nodes",
+    "final_nodes",
+    "failures",
+    "work",
+    "messages",
+    "work_per_node",
+    "delta_nodes",
+]
 
 
 def get_data(path):
@@ -38,11 +48,27 @@ def get_data(path):
             "latency": "simulation_length",
             "work": "total_work",
             "groupSize": "group_size",
+            "circulatingAggregateIds": "circulating_aggregate_ids",
         },
         axis=1,
         inplace=True,
     )
     df.reset_index(inplace=True)
+    df.fillna(0, inplace=True)
+
+    for r in roles:
+        df[f"work_per_node_{r}"] = (
+            df[f"work_{r}"] / df[f"final_nodes_{r}"]
+            if (df[f"final_nodes_{r}"] != 0).any()
+            else 0
+        )
+        df[f"delta_nodes_{r}"] = df[f"final_nodes_{r}"] - df[f"initial_nodes_{r}"]
+
+    df.fillna(0, inplace=True)
+    for s in statistics:
+        df[f"{s}_total"] = 0
+        for r in roles:
+            df[f"{s}_total"] += df[f"{s}_{r}"]
 
     return df
 
@@ -102,13 +128,16 @@ def generate_summary(data, status, strategies):
 
 def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
     copy_df = df.copy()
+
     work_min = copy_df["total_work"].max()
     work_max = copy_df["total_work"].min()
+    work_per_node_min = copy_df["work_per_node_total"].max()
+    work_per_node_max = copy_df["work_per_node_total"].min()
     latency_min = copy_df["simulation_length"].max()
-    latency_max = df["simulation_length"].min()
+    latency_max = copy_df["simulation_length"].min()
 
     # Failure rate buckets
-    buckets = [0, 0.05, 0.1, 0.2, 0.5, 1]
+    buckets = [0, 5, 10, 20, 50, 100]
     for i in range(len(buckets) - 1):
         copy_df.loc[
             (copy_df["failure_rate"] >= buckets[i])
@@ -133,14 +162,18 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
         data_success = []
         data_completeness = []
         data_work = []
+        data_work_per_node = []
         data_latency = []
+        data_versions = []
         for (j, y) in enumerate(pd.unique(copy_df[y_axis])):
             data_runs.append([])
             data_failure.append([])
             data_success.append([])
             data_completeness.append([])
             data_work.append([])
+            data_work_per_node.append([])
             data_latency.append([])
+            data_versions.append([])
             for x in pd.unique(copy_df[x_axis]):
                 tile = strat_df[(strat_df[y_axis] == y) & (strat_df[x_axis] == x)]
                 success_tile = tile[tile["status"] == "Success"]
@@ -168,10 +201,20 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     if display_failures
                     else tile["total_work"].mean()
                 )
+                data_work_per_node[j].append(
+                    success_tile["work_per_node_total"].mean()
+                    if display_failures
+                    else tile["work_per_node_total"].mean()
+                )
                 data_latency[j].append(
                     success_tile["simulation_length"].mean()
                     if display_failures
                     else tile["simulation_length"].mean()
+                )
+                data_versions[j].append(
+                    success_tile["circulating_aggregate_ids"].mean()
+                    if display_failures
+                    else tile["circulating_aggregate_ids"].mean()
                 )
 
                 if display_failures:
@@ -179,6 +222,10 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                         work_min = success_tile["total_work"].mean()
                     if success_tile["total_work"].mean() > work_max:
                         work_max = success_tile["total_work"].mean()
+                    if success_tile["total_work"].mean() < work_min:
+                        work_per_node_min = success_tile["work_per_node_total"].mean()
+                    if success_tile["total_work"].mean() > work_max:
+                        work_per_node_max = success_tile["work_per_node_total"].mean()
                     if success_tile["simulation_length"].mean() < latency_min:
                         latency_min = success_tile["simulation_length"].mean()
                     if success_tile["simulation_length"].mean() > latency_max:
@@ -188,6 +235,10 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                         work_min = tile["total_work"].mean()
                     if tile["total_work"].mean() > work_max:
                         work_max = tile["total_work"].mean()
+                    if tile["total_work"].mean() < work_min:
+                        work_per_node_min = tile["work_per_node_total"].mean()
+                    if tile["total_work"].mean() > work_max:
+                        work_per_node_max = tile["work_per_node_total"].mean()
                     if tile["simulation_length"].mean() < latency_min:
                         latency_min = tile["simulation_length"].mean()
                     if tile["simulation_length"].mean() > latency_max:
@@ -218,8 +269,18 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
             index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
+        maps[f"{strat}_map_work_per_node"] = pd.DataFrame(
+            data_work_per_node,
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
         maps[f"{strat}_map_latency"] = pd.DataFrame(
             data_latency,
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
+        maps[f"{strat}_map_versions"] = pd.DataFrame(
+            data_versions,
             columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
             index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
@@ -260,12 +321,120 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             zmin=work_min,
             zmax=work_max,
         )
+        maps[f"{strat}_map_work_per_node"] = px.imshow(
+            maps[f"{strat}_map_work_per_node"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} Work per node",
+            zmin=work_per_node_min,
+            zmax=work_per_node_max,
+        )
         maps[f"{strat}_map_latency"] = px.imshow(
             maps[f"{strat}_map_latency"],
             text_auto=True,
             title=f"{strategies_map[strat]} Latency",
             zmin=latency_min,
             zmax=latency_max,
+        )
+        maps[f"{strat}_map_versions"] = px.imshow(
+            maps[f"{strat}_map_versions"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} circulating versions",
+        )
+
+    # Per roles
+    work_per_role_min = copy_df["work_per_node_total"].max()
+    work_per_role_max = copy_df["work_per_node_total"].min()
+    delta_nodes_min = copy_df["delta_nodes_total"].max()
+    delta_nodes_max = copy_df["delta_nodes_total"].min()
+
+    maps_roles = dict()
+    for strat in strategies_map:
+        strat_df = copy_df[copy_df["strategy"] == strat]
+        data_work_per_role = []
+        data_delta_nodes = []
+        data_messages = []
+        for (j, y) in enumerate(pd.unique(copy_df[y_axis])):
+            data_work_per_role.append([])
+            data_delta_nodes.append([])
+            data_messages.append([])
+            for x in roles + ["total"]:
+                tile = (
+                    strat_df
+                    if display_failures
+                    else strat_df[strat_df["status"] == "Success"]
+                )[strat_df[y_axis] == y]
+
+                data_work_per_role[j].append(tile[f"work_per_node_{x}"].mean())
+                data_delta_nodes[j].append(tile[f"delta_nodes_{x}"].mean())
+                data_messages[j].append(tile[f"messages_{x}"].mean())
+
+                if tile[f"work_per_node_{x}"].mean() < work_per_role_min:
+                    work_per_role_min = tile[f"work_per_node_{x}"].mean()
+                if tile[f"work_per_node_{x}"].mean() > work_per_role_max:
+                    work_per_role_max = tile[f"work_per_node_{x}"].mean()
+                if tile[f"delta_nodes_{x}"].mean() < delta_nodes_min:
+                    delta_nodes_min = tile[f"delta_nodes_{x}"].mean()
+                if tile[f"delta_nodes_{x}"].mean() > delta_nodes_max:
+                    delta_nodes_max = tile[f"delta_nodes_{x}"].mean()
+
+        maps_roles[f"{strat}_work_per_role_total"] = pd.DataFrame(
+            data_work_per_role,
+            columns=[f"{x}" for x in roles + ["total"]],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
+        maps_roles[f"{strat}_delta_nodes_total"] = pd.DataFrame(
+            data_delta_nodes,
+            columns=[f"{x}" for x in roles + ["total"]],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
+        maps_roles[f"{strat}_messages_total"] = pd.DataFrame(
+            data_messages,
+            columns=[f"{x}" for x in roles + ["total"]],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
+
+    for strat in strategies_map:
+        maps_roles[f"{strat}_work_per_role_total"] = px.imshow(
+            maps_roles[f"{strat}_work_per_role_total"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} average work per node",
+            zmin=work_per_role_min,
+            zmax=work_per_role_max,
+        )
+        maps_roles[f"{strat}_delta_nodes_total"] = px.imshow(
+            maps_roles[f"{strat}_delta_nodes_total"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} nodes delta",
+            zmin=delta_nodes_min,
+            zmax=delta_nodes_max,
+        )
+        maps_roles[f"{strat}_messages_total"] = px.imshow(
+            maps_roles[f"{strat}_messages_total"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} messages",
+        )
+
+    # Courbes
+    curves = dict()
+    for strat in strategies_map:
+        df_strat = copy_df[copy_df["strategy"] == strat]
+        curves[f"{strat}_curve_completeness_depth"] = px.line(
+            df_strat.groupby(["depth", "failure_probability"], as_index=False).mean(),
+            x="failure_probability",
+            y="completeness",
+            color="depth",
+            range_y=[0, 100],
+            title=f"{strategies_map[strat]} Completeness per depth",
+        )
+        curves[f"{strat}_curve_completeness_size"] = px.line(
+            df_strat.groupby(
+                ["group_size", "failure_probability"], as_index=False
+            ).mean(),
+            x="failure_probability",
+            y="completeness",
+            color="group_size",
+            range_y=[0, 100],
+            title=f"{strategies_map[strat]} Completeness per group size",
         )
 
     return html.Div(
@@ -345,6 +514,21 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     for strat in strategies_map
                 ],
             ),
+            html.H1("Work per node"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_map_work_per_node",
+                        figure=maps[f"{strat}_map_work_per_node"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
             html.H1("Latency"),
             html.Div(
                 style={
@@ -356,6 +540,98 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     dcc.Graph(
                         id=f"{strat}_map_latency",
                         figure=maps[f"{strat}_map_latency"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Circulating versions"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_map_versions",
+                        figure=maps[f"{strat}_map_versions"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Maps per roles"),
+            html.H1("Average work per node"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_work_per_role_total",
+                        figure=maps_roles[f"{strat}_work_per_role_total"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Nodes delta"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_delta_nodes_total",
+                        figure=maps_roles[f"{strat}_delta_nodes_total"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Messages"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_messages_total",
+                        figure=maps_roles[f"{strat}_messages_total"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Curves"),
+            html.H1("Completeness per failures (depth)"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_curve_completeness_depth",
+                        figure=curves[f"{strat}_curve_completeness_depth"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Completeness per failures (group size)"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_curve_completeness_size",
+                        figure=curves[f"{strat}_curve_completeness_size"],
                     )
                     for strat in strategies_map
                 ],
