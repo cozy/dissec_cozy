@@ -110,7 +110,7 @@ export class ExperimentRunner {
 
     new Date().toISOString().split('T')[0]
     this.outputPath =
-      `./outputs/run${runs.length}_` +
+      `./outputs/run${runs.length}_${this.fullExport ? 'full' : ''}` +
       JSON.stringify(labels)
         .replaceAll('"', '')
         .replaceAll(',', '_')

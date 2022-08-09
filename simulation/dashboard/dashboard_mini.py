@@ -68,6 +68,8 @@ def get_data(path):
     for s in statistics:
         df[f"{s}_total"] = 0
         for r in roles:
+            if f"{s}_{r}" not in df.columns:
+                df[f"{s}_{r}"] = 0
             df[f"{s}_total"] += df[f"{s}_{r}"]
 
     return df
