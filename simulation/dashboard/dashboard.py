@@ -20,6 +20,7 @@ statistics = [
     "messages",
     "work_per_node",
     "delta_nodes",
+    "bandwidth",
 ]
 
 
@@ -48,6 +49,9 @@ def get_data(path, aggregate_message=True):
             "work": "total_work",
             "groupSize": "group_size",
             "circulatingAggregateIds": "circulating_aggregate_ids",
+            "currentlyCirculatingVersions": "currently_circulating_ids",
+            "usedBandwidth": "bandwidth",
+            "finalUsedBandwidth": "final_bandwidth",
         },
         axis=1,
         inplace=True,

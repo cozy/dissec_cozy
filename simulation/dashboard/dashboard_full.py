@@ -12,6 +12,7 @@ statistics = [
     "work",
     "work_per_node",
     "delta_nodes",
+    "bandwidth",
 ]
 
 
@@ -41,6 +42,8 @@ def get_data(path):
             "groupSize": "group_size",
             "circulatingAggregateIds": "circulating_ids",
             "currentlyCirculatingVersions": "currently_circulating_ids",
+            "usedBandwidth": "bandwidth",
+            "finalUsedBandwidth": "final_bandwidth",
         },
         axis=1,
         inplace=True,
@@ -110,14 +113,6 @@ if __name__ == "__main__":
         hover_name="type",
         hover_data=["receiver_id", "emitter_id", "run_id"],
     )
-    message_stats_fig = px.box(
-        pd.DataFrame(columns=data.columns),
-        x="type",
-        y="latency",
-        hover_name="type",
-        hover_data=["emitter_id"],
-        points="all",
-    )
     version_timeline_fig = px.scatter(
         pd.DataFrame(columns=data.columns),
         x="receiver_time",
@@ -125,6 +120,22 @@ if __name__ == "__main__":
         color="strategy",
         hover_name="type",
         hover_data=["receiver_id", "emitter_id", "run_id"],
+    )
+    bandwidth_timeline_fig = px.scatter(
+        pd.DataFrame(columns=data.columns),
+        x="receiver_time",
+        y="bandwidth",
+        color="strategy",
+        hover_name="type",
+        hover_data=["receiver_id", "emitter_id", "run_id"],
+    )
+    message_stats_fig = px.box(
+        pd.DataFrame(columns=data.columns),
+        x="type",
+        y="latency",
+        hover_name="type",
+        hover_data=["emitter_id"],
+        points="all",
     )
 
     app.layout = html.Div(
@@ -280,16 +291,18 @@ if __name__ == "__main__":
                 ]
             ),
             dcc.Graph(id="message_timeline", figure=message_timeline_fig),
-            dcc.Graph(id="message_stats", figure=message_stats_fig),
             dcc.Graph(id="version_timeline", figure=version_timeline_fig),
+            dcc.Graph(id="bandwidth_timeline", figure=version_timeline_fig),
+            dcc.Graph(id="message_stats", figure=message_stats_fig),
         ]
     )
 
     @app.callback(
         [
             dash.Output(component_id="message_timeline", component_property="figure"),
-            dash.Output(component_id="message_stats", component_property="figure"),
             dash.Output(component_id="version_timeline", component_property="figure"),
+            dash.Output(component_id="bandwidth_timeline", component_property="figure"),
+            dash.Output(component_id="message_stats", component_property="figure"),
         ],
         [
             dash.Input(component_id="y-axis", component_property="value"),
@@ -347,14 +360,6 @@ if __name__ == "__main__":
             hover_name="type",
             hover_data=["receiver_id", "emitter_id", "run_id"],
         )
-        new_message_stats_fig = px.box(
-            df,
-            x="type",
-            y="latency",
-            hover_name="type",
-            hover_data=["emitter_id"],
-            points="all",
-        )
         version_timeline_fig = px.scatter(
             df,
             x="receiver_time",
@@ -363,7 +368,28 @@ if __name__ == "__main__":
             hover_name="type",
             hover_data=["receiver_id", "emitter_id", "run_id"],
         )
+        bandwidth_timeline_fig = px.scatter(
+            df,
+            x="receiver_time",
+            y="bandwidth",
+            color="strategy",
+            hover_name="type",
+            hover_data=["receiver_id", "emitter_id", "run_id"],
+        )
+        new_message_stats_fig = px.box(
+            df,
+            x="type",
+            y="latency",
+            hover_name="type",
+            hover_data=["emitter_id"],
+            points="all",
+        )
 
-        return [new_message_timeline, new_message_stats_fig, version_timeline_fig]
+        return [
+            new_message_timeline,
+            version_timeline_fig,
+            bandwidth_timeline_fig,
+            new_message_stats_fig,
+        ]
 
     app.run_server(debug=True)
