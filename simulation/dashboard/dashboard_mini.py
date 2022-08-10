@@ -139,6 +139,10 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
     work_per_node_max = copy_df["work_per_node_total"].min()
     latency_min = copy_df["simulation_length"].max()
     latency_max = copy_df["simulation_length"].min()
+    bandwidth_min = copy_df["final_bandwidth"].max()
+    bandwidth_max = copy_df["final_bandwidth"].min()
+    versions_min = copy_df["circulating_aggregate_ids"].max()
+    versions_max = copy_df["circulating_aggregate_ids"].min()
 
     # Failure rate buckets
     buckets = [0, 5, 10, 20, 50, 100]
@@ -168,6 +172,7 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
         data_work = []
         data_work_per_node = []
         data_latency = []
+        data_bandwidth = []
         data_versions = []
         for (j, y) in enumerate(pd.unique(copy_df[y_axis])):
             data_runs.append([])
@@ -177,6 +182,7 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             data_work.append([])
             data_work_per_node.append([])
             data_latency.append([])
+            data_bandwidth.append([])
             data_versions.append([])
             for x in pd.unique(copy_df[x_axis]):
                 tile = strat_df[(strat_df[y_axis] == y) & (strat_df[x_axis] == x)]
@@ -215,6 +221,11 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     if display_failures
                     else tile["simulation_length"].mean()
                 )
+                data_bandwidth[j].append(
+                    success_tile["final_bandwidth"].mean()
+                    if display_failures
+                    else tile["final_bandwidth"].mean()
+                )
                 data_versions[j].append(
                     success_tile["circulating_aggregate_ids"].mean()
                     if display_failures
@@ -234,6 +245,14 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                         latency_min = success_tile["simulation_length"].mean()
                     if success_tile["simulation_length"].mean() > latency_max:
                         latency_max = success_tile["simulation_length"].mean()
+                    if success_tile["final_bandwidth"].mean() < bandwidth_min:
+                        bandwidth_min = success_tile["final_bandwidth"].mean()
+                    if success_tile["final_bandwidth"].mean() > bandwidth_max:
+                        bandwidth_max = success_tile["final_bandwidth"].mean()
+                    if success_tile["circulating_aggregate_ids"].mean() < versions_min:
+                        versions_min = success_tile["circulating_aggregate_ids"].mean()
+                    if success_tile["circulating_aggregate_ids"].mean() > versions_max:
+                        versions_max = success_tile["circulating_aggregate_ids"].mean()
                 else:
                     if tile["total_work"].mean() < work_min:
                         work_min = tile["total_work"].mean()
@@ -247,6 +266,14 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                         latency_min = tile["simulation_length"].mean()
                     if tile["simulation_length"].mean() > latency_max:
                         latency_max = tile["simulation_length"].mean()
+                    if tile["final_bandwidth"].mean() < bandwidth_min:
+                        bandwidth_min = tile["final_bandwidth"].mean()
+                    if tile["final_bandwidth"].mean() > bandwidth_max:
+                        bandwidth_max = tile["final_bandwidth"].mean()
+                    if tile["circulating_aggregate_ids"].mean() < versions_min:
+                        versions_min = tile["circulating_aggregate_ids"].mean()
+                    if tile["circulating_aggregate_ids"].mean() > versions_max:
+                        versions_max = tile["circulating_aggregate_ids"].mean()
 
         maps[f"{strat}_map_runs"] = pd.DataFrame(
             data_runs,
@@ -280,6 +307,11 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
         )
         maps[f"{strat}_map_latency"] = pd.DataFrame(
             data_latency,
+            columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
+            index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
+        )
+        maps[f"{strat}_map_bandwidth"] = pd.DataFrame(
+            data_bandwidth,
             columns=[f"{x_axis} {x}" for x in pd.unique(copy_df[x_axis])],
             index=[f"{y_axis} {y}" for y in pd.unique(copy_df[y_axis])],
         )
@@ -339,10 +371,19 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             zmin=latency_min,
             zmax=latency_max,
         )
+        maps[f"{strat}_map_bandwidth"] = px.imshow(
+            maps[f"{strat}_map_bandwidth"],
+            text_auto=True,
+            title=f"{strategies_map[strat]} Bandwidth",
+            zmin=bandwidth_min,
+            zmax=bandwidth_max,
+        )
         maps[f"{strat}_map_versions"] = px.imshow(
             maps[f"{strat}_map_versions"],
             text_auto=True,
             title=f"{strategies_map[strat]} circulating versions",
+            zmin=versions_min,
+            zmax=versions_max,
         )
 
     # Per roles
@@ -544,6 +585,21 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                     dcc.Graph(
                         id=f"{strat}_map_latency",
                         figure=maps[f"{strat}_map_latency"],
+                    )
+                    for strat in strategies_map
+                ],
+            ),
+            html.H1("Bandwidth"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"{strat}_map_bandwidth",
+                        figure=maps[f"{strat}_map_bandwidth"],
                     )
                     for strat in strategies_map
                 ],

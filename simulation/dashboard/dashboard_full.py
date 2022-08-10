@@ -111,7 +111,13 @@ if __name__ == "__main__":
         y="receiver_id",
         color="type",
         hover_name="type",
-        hover_data=["receiver_id", "emitter_id", "run_id"],
+        hover_data=[
+            "receiver_time",
+            "emitter_time",
+            "receiver_id",
+            "emitter_id",
+            "run_id",
+        ],
     )
     version_timeline_fig = px.scatter(
         pd.DataFrame(columns=data.columns),
@@ -290,6 +296,16 @@ if __name__ == "__main__":
                     ),
                 ]
             ),
+            html.Div(
+                [
+                    html.H3("Show latencies"),
+                    dcc.Checklist(
+                        ["YES"],
+                        [],
+                        id="show-latencies",
+                    ),
+                ]
+            ),
             dcc.Graph(id="message_timeline", figure=message_timeline_fig),
             dcc.Graph(id="version_timeline", figure=version_timeline_fig),
             dcc.Graph(id="bandwidth_timeline", figure=version_timeline_fig),
@@ -313,6 +329,7 @@ if __name__ == "__main__":
             dash.Input(
                 component_id="observed-failure-rates-range", component_property="value"
             ),
+            dash.Input(component_id="show-latencies", component_property="value"),
         ],
     )
     def update_timeline(
@@ -322,6 +339,7 @@ if __name__ == "__main__":
         selected_types,
         selected_failures,
         selected_observed_failures,
+        show_latencies,
     ):
         df = data.copy()
         if selected_runs_success != "All":
@@ -351,14 +369,33 @@ if __name__ == "__main__":
             df = df[df["run_id"].isin(selected_run_ids)]
         df = df[df["type"].isin(selected_types)]
 
+        if show_latencies:
+            if "emitter" in selected_y_axis:
+                error_x = "latency"
+                error_x_minus = np.zeros(len(df))
+            else:
+                error_x = np.zeros(len(df))
+                error_x_minus = "latency"
+        else:
+            error_x = None
+            error_x_minus = None
+
         # Timeline
         new_message_timeline = px.scatter(
             df,
             x=selected_y_axis + "_time",
+            error_x=error_x,
+            error_x_minus=error_x_minus,
             y=selected_y_axis + "_id",
             color="type",
             hover_name="type",
-            hover_data=["receiver_id", "emitter_id", "run_id"],
+            hover_data=[
+                "receiver_time",
+                "emitter_time",
+                "receiver_id",
+                "emitter_id",
+                "run_id",
+            ],
         )
         version_timeline_fig = px.scatter(
             df,

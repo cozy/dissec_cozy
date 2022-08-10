@@ -204,8 +204,6 @@ export class NodesManager {
 
       if (!resultingMessages) {
         // The message bounced because the node was busy
-        // Remove the last message from old messages and put it back in the queue
-        this.oldMessages.pop()
         this.insertMessage(message)
       } else {
         // Save stats for exporting

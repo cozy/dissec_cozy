@@ -2,7 +2,7 @@ import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunne
 
 let configs: RunConfig[] = []
 const debug = false
-const fullExport = false
+const fullExport = true
 if (debug) {
   configs = [
     {
@@ -25,9 +25,9 @@ if (debug) {
     },
   ]
 } else {
-  const failureRates = [0, 0.00005, 0.0001, 0.00015, 0.0002]
-  const sizes = [4, 5, 6]
-  const depths = [3, 4, 5]
+  const failureRates = [0, 0.0005, 0.001, 0.0015, 0.002]
+  const sizes = [4]
+  const depths = [3]
   const retries = 1
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic, ProtocolStrategy.Eager]) {

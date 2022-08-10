@@ -43,6 +43,7 @@ export enum StopStatus {
   ExceededDeadline = 'Deadline',
   BadResult = 'BadResult',
   AllContributorsDead = 'ContribDead',
+  OutOfBackup = '0Backup',
 }
 
 export interface Aggregate {
