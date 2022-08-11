@@ -111,7 +111,7 @@ export class ExperimentRunner {
 
     new Date().toISOString().split('T')[0]
     this.outputPath =
-      `./outputs/run${runs.length}_${this.fullExport ? 'full' : ''}` +
+      `./outputs/${new Date().toISOString()}_run${runs.length}_${this.fullExport ? 'full_' : ''}` +
       JSON.stringify(labels)
         .replaceAll('"', '')
         .replaceAll(',', '_')
@@ -173,6 +173,14 @@ export class ExperimentRunner {
   run() {
     const results: RunResult[] = []
     const startTime = Date.now()
+
+    if (!fs.existsSync(this.outputPath)) {
+      const components = this.outputPath.split('/')
+      fs.mkdirSync(this.outputPath.replace(components[components.length - 1], ''), {
+        recursive: true,
+      })
+    }
+
     let exportCounter = 0
     for (let i = 0; i < this.runs.length; i++) {
       console.log(JSON.stringify(this.runs[i]))
@@ -195,13 +203,6 @@ export class ExperimentRunner {
       'Messages: ',
       results.map(e => e.messages.length).reduce((prev, curr) => prev + curr)
     )
-
-    if (!fs.existsSync(this.outputPath)) {
-      const components = this.outputPath.split('/')
-      fs.mkdirSync(this.outputPath.replace(components[components.length - 1], ''), {
-        recursive: true,
-      })
-    }
 
     this.writeResults(this.outputPath, results)
     console.log(`Total simulation time: ${(Date.now() - startTime) / 60000} minutes`)

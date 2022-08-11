@@ -754,9 +754,9 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        0.001,
-                        0.00001,
-                        value=[0, 0.001],
+                        0.002,
+                        0.00005,
+                        value=[0, 0.002],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
