@@ -6,7 +6,7 @@ const fullExport = false
 if (debug) {
   configs = [
     {
-      strategy: ProtocolStrategy.Pessimistic,
+      strategy: ProtocolStrategy.Optimistic,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 100,
@@ -16,19 +16,19 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 200000,
-      failureRate: 0.0002,
+      failureRate: 0.002,
       depth: 3,
       fanout: 4,
-      groupSize: 3,
+      groupSize: 4,
       random: false,
-      seed: 'PESS-f0.0002-s3-d3-0/1',
+      seed: 'OPTI-f0.002-s4-d3-0/1',
     },
   ]
 } else {
   const failureRates = [0, 0.0005, 0.001, 0.0015, 0.002]
-  const sizes = [4, 5, 6]
-  const depths = [3, 4, 5]
-  const retries = 100
+  const sizes = [4]
+  const depths = [3]
+  const retries = 1
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic, ProtocolStrategy.Eager]) {
     for (const failure of failureRates) {

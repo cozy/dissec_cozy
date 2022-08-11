@@ -292,25 +292,6 @@ export class ExperimentRunner {
               {}
             )
           )
-
-          // Timeout is set at the max between the encryption latency for the contributor
-          // and the decryption time for the aggregator.
-          manager.transmitMessage(
-            new Message(
-              MessageType.ContributionTimeout,
-              0,
-              (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio +
-                manager.nodes[member].cryptoLatency() *
-                  Math.max(
-                    run.groupSize,
-                    manager.nodes[member].node?.children.flatMap(e => e.members).length || run.groupSize * run.fanout
-                  ) *
-                  3,
-              member,
-              member,
-              {}
-            )
-          )
         }
       } else if (run.strategy === ProtocolStrategy.Optimistic || run.strategy === ProtocolStrategy.Eager) {
         // Contributors respond with a ping to the first member
@@ -324,29 +305,22 @@ export class ExperimentRunner {
             {}
           )
         )
+      }
 
-        // Setting contribution collection timeouts on the leaves aggregators
-        // The first member times out first to inform its members
-        for (const member of aggregator.members) {
-          manager.transmitMessage(
-            new Message(
-              MessageType.ContributionTimeout,
-              0,
-              (averageHopsPerBroadcast + aggregator.members.indexOf(member) === 0 ? 1 : 2) *
-                run.averageLatency *
-                run.maxToAverageRatio +
-                manager.nodes[member].cryptoLatency() *
-                  Math.max(
-                    run.groupSize,
-                    manager.nodes[member].node?.children.flatMap(e => e.members).length || run.groupSize * run.fanout
-                  ) *
-                  3,
-              member,
-              member,
-              {}
-            )
+      // Timeout is set at the max between the encryption latency for the contributor
+      // and the decryption time for the aggregator.
+      for (const member of aggregator.members) {
+        manager.transmitMessage(
+          new Message(
+            MessageType.ContributionTimeout,
+            0,
+            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio +
+              manager.nodes[member].cryptoLatency() * (2 + run.groupSize), // Signature + certificate + open channel with each parent
+            member,
+            member,
+            {}
           )
-        }
+        )
       }
     }
 
