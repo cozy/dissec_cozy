@@ -1,5 +1,5 @@
 import { ProtocolStrategy } from '../experimentRunner'
-import { Message, MessageType } from '../message'
+import { Message, MessageType, StopStatus } from '../message'
 import { Node, NodeRole } from '../node'
 import { createGenerator } from '../random'
 
@@ -85,7 +85,12 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
           )
         )
       } else {
-        throw new Error('Ran out of backups...')
+        messages.push(
+          new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+            status: StopStatus.OutOfBackup,
+            targetGroup: this.node,
+          })
+        )
       }
     }
   }
