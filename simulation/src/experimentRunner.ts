@@ -1,4 +1,5 @@
 import fs from 'fs'
+import { execSync } from 'child_process'
 
 import NodesManager, { AugmentedMessage } from './manager'
 import { Message, MessageType, StopStatus } from './message'
@@ -10,15 +11,6 @@ export enum ProtocolStrategy {
   Optimistic = 'OPTI',
   Eager = 'EAGER',
 }
-
-// function theoreticalLatency(run: RunConfig) {
-//   switch (run.strategy) {
-//     case ProtocolStrategy.Pessimistic:
-//       return 0
-//     default:
-//       return 0
-//   }
-// }
 
 export interface RunConfig {
   strategy: ProtocolStrategy
@@ -72,7 +64,17 @@ export class ExperimentRunner {
     const labels: { [k: string]: string } = {}
 
     // These keys will not be in the name
-    const skippedKeys = ['multicastSize', 'selectivity', 'deadline', 'seed', 'failCheckPeriod', 'healthCheckPeriod']
+    const skippedKeys = [
+      'multicastSize',
+      'selectivity',
+      'deadline',
+      'seed',
+      'failCheckPeriod',
+      'healthCheckPeriod',
+      'averageLatency',
+      'averageCryptoTime',
+      'averageComputeTime',
+    ]
 
     // Shorter names for keys
     const translation: { [k: string]: string } = {
@@ -111,7 +113,9 @@ export class ExperimentRunner {
 
     new Date().toISOString().split('T')[0]
     this.outputPath =
-      `./outputs/${new Date().toISOString()}_run${runs.length}_${this.fullExport ? 'full_' : ''}` +
+      `./outputs/${new Date().toISOString()}_${execSync('git rev-parse HEAD').toString().trim()}_run${runs.length}_${
+        this.fullExport ? 'full_' : ''
+      }` +
       JSON.stringify(labels)
         .replaceAll('"', '')
         .replaceAll(',', '_')
