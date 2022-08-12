@@ -21,6 +21,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
   // TODO: Set this in the backup contacting protocol
   this.role = NodeRole.LeafAggregator
 
+  // The intersection of the local list and the received one
   const intersection = intersectLists(this.contributorsList[this.id], receivedMessage.content.contributors) || []
 
   // Keep a copy in case the node is sending the confirmation to itself
@@ -28,8 +29,8 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
   // Store the received list
   this.contributorsList[receivedMessage.emitterId] = receivedMessage.content.contributors
 
-  if (!arrayEquals(oldContributors || [], intersection)) {
-    // Contributors have changed
+  if (this.contactedAsABackup && !arrayEquals(oldContributors || [], intersection)) {
+    // The node is a backup and received a different list than his local one
     // Query previously unknown contributors for their data
     const newContributors = intersection.filter(
       e => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
@@ -39,28 +40,57 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       // Memorize that we queried the node to prevent multiple queries
       this.queriedNode.push(contributor)
       messages.push(
-        new Message(MessageType.RequestData, this.localTime, 0, this.id, contributor, { parents: this.node.members })
+        new Message(MessageType.RequestData, this.localTime, 0, this.id, contributor, {
+          parents: this.node.members,
+        })
       )
     }
 
-    if (newContributors.length > 0 && this.config.strategy === ProtocolStrategy.Optimistic) {
-      // In the optimistic version, add a synchronization trigger when a backup asks for data
+    if (
+      newContributors.length > 0 &&
+      (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager)
+    ) {
+      // In the optimistic versions, add a synchronization trigger if the backup asked for data
+      // This happens only for backups joining
       messages.push(
         new Message(
           MessageType.SynchronizationTimeout,
           this.localTime,
-          this.localTime +
-            (3 * this.config.averageCryptoTime + this.config.averageLatency) * this.config.maxToAverageRatio,
+          this.localTime + this.config.averageLatency * this.config.maxToAverageRatio + 3 * this.cryptoLatency(),
           this.id,
           this.id,
           {}
         )
       )
     }
+  }
 
-    if (this.finishedWorking || this.contributorsList[this.id]?.map(e => this.contributions[e]).every(Boolean)) {
-      // This node already finished aggregating but received updated contributors
-      // It immediatly sends the updated aggregate to its parent
+  if (this.config.strategy === ProtocolStrategy.Pessimistic) {
+    this.contributorsList[this.id] = intersection
+
+    if (!arrayEquals(oldContributors || [], intersection)) {
+      // The local list changed, tell other members about it
+      this.node.members
+        .filter(e => e !== this.id)
+        .forEach(member =>
+          messages.push(
+            new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+              contributors: this.contributorsList[this.id],
+            })
+          )
+        )
+
+      // The node knows it will need to send a new version
+      this.finishedWorking = false
+    }
+
+    if (
+      !this.finishedWorking &&
+      this.node.members
+        .map(member => arrayEquals(this.contributorsList[this.id] || [], this.contributorsList[member] || []))
+        .every(Boolean)
+    ) {
+      // The node has received the same list from each member, send the aggregate
       this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
       messages.push(
         new Message(
@@ -81,36 +111,57 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
           }
         )
       )
+      this.finishedWorking = true
     }
-  }
+  } else {
+    if (!arrayEquals(oldContributors || [], intersection)) {
+      if (!this.contactedAsABackup) {
+        // The node is not a backup
+        this.contributorsList[this.id] = intersection
 
-  if (
-    !this.finishedWorking &&
-    this.node.members.map(member => this.contributorsList[member]).every(Boolean) &&
-    this.contributorsList[this.id]?.map(e => this.contributions[e]).every(Boolean)
-  ) {
-    // The node has received a list from each member and knows the contributions, send the aggregate
-    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
-    messages.push(
-      new Message(
-        MessageType.SendAggregate,
-        this.localTime,
-        0, // Don't specify time to let the manager add the latency
-        this.id,
-        this.node.parents[this.node.members.indexOf(this.id)],
-        {
-          aggregate: {
-            counter: this.contributorsList[this.id]!.length,
-            data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
-              (prev, curr) => prev + curr,
-              0
-            ),
-            id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
-          },
-        }
-      )
-    )
-    this.finishedWorking = true
+        // The local list changed, tell other members about it
+        this.node.members
+          .filter(e => e !== this.id)
+          .forEach(member =>
+            messages.push(
+              new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+                contributors: this.contributorsList[this.id],
+              })
+            )
+          )
+      }
+
+      const nextAggregationId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+      if (
+        nextAggregationId !== this.lastSentAggregateId &&
+        this.contributorsList[this.id]?.map(e => this.contributions[e]).every(Boolean)
+      ) {
+        // The aggregate version changed and the node has received all expected shares, resend the new version to the parent
+        // It immediatly sends the updated aggregate to its parent
+        this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+        messages.push(
+          new Message(
+            MessageType.SendAggregate,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            this.node.parents[this.node.members.indexOf(this.id)],
+            {
+              aggregate: {
+                counter: this.contributorsList[this.id]!.length,
+                data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
+                  (prev, curr) => prev + curr,
+                  0
+                ),
+                id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+              },
+            }
+          )
+        )
+
+        this.finishedWorking = true
+      }
+    }
   }
 
   return messages

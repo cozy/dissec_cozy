@@ -16,6 +16,7 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   const messages: Message[] = []
 
   // Retransmit and answer to pings without verifications because it's does not leak info
+  // TODO: Split pings in separate messages
   if (this.config.strategy === ProtocolStrategy.Pessimistic) {
     // Pessimists inform every parent that they will contribute
     for (const parent of receivedMessage.content.parents) {
@@ -46,10 +47,10 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   // Verifying the parent's certificate and signature when sending the data
   // Prepare shares
-  this.localTime += 2 * this.config.averageCryptoTime + this.config.averageComputeTime
-  this.shares = Array(this.node.members.length).fill(0)
+  this.localTime += 2 * this.cryptoLatency() + this.config.averageComputeTime
+  this.shares = Array(this.config.groupSize).fill(0)
   let accumulator = 0
-  for (let i = 0; i < this.node.members.length - 1; i++) {
+  for (let i = 0; i < this.config.groupSize - 1; i++) {
     // TODO: Use a more general noising process
     const noise = 1000000000 * generator()
     this.shares[i] = this.secretValue + noise

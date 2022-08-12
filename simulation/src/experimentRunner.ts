@@ -1,6 +1,6 @@
 import fs from 'fs'
 
-import NodesManager from './manager'
+import NodesManager, { AugmentedMessage } from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
@@ -8,14 +8,26 @@ import TreeNode from './treeNode'
 export enum ProtocolStrategy {
   Pessimistic = 'PESS',
   Optimistic = 'OPTI',
+  Eager = 'EAGER',
 }
+
+// function theoreticalLatency(run: RunConfig) {
+//   switch (run.strategy) {
+//     case ProtocolStrategy.Pessimistic:
+//       return 0
+//     default:
+//       return 0
+//   }
+// }
 
 export interface RunConfig {
   strategy: ProtocolStrategy
-  averageLatency: number
+  selectivity: number
   maxToAverageRatio: number
+  averageLatency: number
   averageCryptoTime: number
   averageComputeTime: number
+  failCheckPeriod: number
   healthCheckPeriod: number
   multicastSize: number
   deadline: number
@@ -23,30 +35,167 @@ export interface RunConfig {
   depth: number
   fanout: number
   groupSize: number
+  random: boolean
   seed: string
 }
 
 export interface RunResult extends RunConfig {
   status: StopStatus
+  work: number
+  latency: number
+  completeness: number
+  circulatingAggregateIds: number
+  finalUsedBandwidth: number
   observedFailureRate: number
-  messages: Message[]
+  messages: AugmentedMessage[]
 }
 
 export class ExperimentRunner {
   runs: RunConfig[]
+  outputPath: string
   debug?: boolean = false
+  fullExport?: boolean = false
+  intermediateExport?: number = 0
 
-  constructor(runs: RunConfig[], options: { debug?: boolean } = {}) {
+  constructor(
+    runs: RunConfig[],
+    options: { debug?: boolean; fullExport?: boolean; intermediateExport?: number } = { intermediateExport: 0 }
+  ) {
     this.runs = runs
     this.debug = options.debug
+    this.fullExport = options.fullExport
+    this.intermediateExport = options.intermediateExport
+
+    // Compute output path based on run configs
+    const values: { [k: string]: any[] } = {}
+    const uniqueValues: { [k: string]: any[] } = {}
+    const labels: { [k: string]: string } = {}
+
+    // These keys will not be in the name
+    const skippedKeys = ['multicastSize', 'selectivity', 'deadline', 'seed', 'failCheckPeriod', 'healthCheckPeriod']
+
+    // Shorter names for keys
+    const translation: { [k: string]: string } = {
+      strategy: 'strat',
+      maxToAverageRatio: 'maxR',
+      averageLatency: 'lat',
+      averageCryptoTime: 'crypto',
+      averageComputeTime: 'compute',
+    }
+
+    // Put values for each keys in an array
+    runs.forEach(run =>
+      Object.entries(run).forEach(([k, v]) => {
+        if (skippedKeys.includes(k)) return
+        const translatedKey = translation[k] ? translation[k] : k
+
+        if (!uniqueValues[translatedKey]) uniqueValues[translatedKey] = []
+        if (values[translatedKey]) values[translatedKey].push(v)
+        else values[translatedKey] = [v]
+      })
+    )
+
+    // Keep unique values and range
+    for (const [k, arr] of Object.entries(values)) {
+      for (const v of arr) {
+        if (!uniqueValues[k].includes(v)) {
+          uniqueValues[k].push(v)
+        }
+      }
+      uniqueValues[k].sort()
+      labels[k] =
+        uniqueValues[k].length > 1
+          ? `${uniqueValues[k][0]}-${uniqueValues[k].length}-${uniqueValues[k][uniqueValues[k].length - 1]}`
+          : `${uniqueValues[k][0]}`
+    }
+
+    new Date().toISOString().split('T')[0]
+    this.outputPath =
+      `./outputs/${new Date().toISOString()}_run${runs.length}_${this.fullExport ? 'full_' : ''}` +
+      JSON.stringify(labels)
+        .replaceAll('"', '')
+        .replaceAll(',', '_')
+        .replaceAll(':', '')
+        .replaceAll('{', '')
+        .replaceAll('}', '') +
+      '.csv'
   }
 
-  run(outputPath: string) {
+  writeResults(outputPath: string, results: RunResult[]) {
+    if (!this.fullExport) {
+      // Write each run as a row
+      for (let i = 0; i < results.length; i++) {
+        const { messages, ...items } = results[i]
+
+        if (i === 0) {
+          // Add columns titles
+          fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
+        }
+
+        fs.writeFileSync(
+          outputPath,
+          Object.entries(items)
+            .map(([k, e]) => (typeof e === 'number' && k !== 'failureRate' ? e.toFixed(2) : e))
+            .join(';')
+            .replaceAll('.', ',') + '\n',
+          { flag: 'a' }
+        )
+      }
+    } else {
+      const { messages: _messages, ...items } = results[0]
+      const { content: _content, id: _id, ...restMessage } = _messages[0]
+      const columns = Object.keys(Object.assign(items, restMessage))
+
+      // Write each message as a row
+      for (let i = 0; i < results.length; i++) {
+        const { messages, ...items } = results[i]
+
+        if (i === 0) {
+          // Add columns titles
+          fs.writeFileSync(outputPath, columns.join(';') + '\n')
+        }
+
+        for (const message of messages) {
+          const assign: { [k: string]: any } = Object.assign(items, message)
+          fs.writeFileSync(
+            outputPath,
+            columns
+              .map(e => (typeof assign[e] === 'number' && e !== 'failureRate' ? assign[e].toFixed(2) : assign[e]))
+              .join(';')
+              .replaceAll('.', ',') + '\n',
+            { flag: 'a' }
+          )
+        }
+      }
+    }
+  }
+
+  run() {
     const results: RunResult[] = []
-    for (const run of this.runs) {
-      console.log(JSON.stringify(run))
-      results.push(this.singleRun(run))
+    const startTime = Date.now()
+
+    if (!fs.existsSync(this.outputPath)) {
+      const components = this.outputPath.split('/')
+      fs.mkdirSync(this.outputPath.replace(components[components.length - 1], ''), {
+        recursive: true,
+      })
+    }
+
+    let exportCounter = 0
+    for (let i = 0; i < this.runs.length; i++) {
+      console.log(JSON.stringify(this.runs[i]))
+      results.push(this.singleRun(this.runs[i]))
+
+      const averageRunTime = (Date.now() - startTime) / (i + 1)
+      const runsLeft = this.runs.length - i
+      console.log(`Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes`)
       console.log()
+
+      if (this.intermediateExport && ++exportCounter >= this.intermediateExport) {
+        exportCounter = 0
+        // Writing intermediary results
+        this.writeResults(this.outputPath, results)
+      }
     }
 
     console.log('Success rate:', results.filter(e => e.status === StopStatus.Success).length, '/', results.length)
@@ -55,45 +204,17 @@ export class ExperimentRunner {
       results.map(e => e.messages.length).reduce((prev, curr) => prev + curr)
     )
 
-    if (!fs.existsSync(outputPath)) {
-      const components = outputPath.split('/')
-      fs.mkdirSync(outputPath.replace(components[components.length - 1], ''), {
-        recursive: true,
-      })
-    }
-
-    // Splitting the array in smaller pieces to prevent running out of memory
-    fs.writeFileSync(outputPath, '[') // Default mode is w
-    for (let i = 0; i < results.length; i++) {
-      const output: { [key: string]: any[] } = {}
-      const { messages, ...items } = results[i]
-
-      // Initializing arrays for each stat
-      Object.entries(items).forEach(([key, value]) => (output[key] = Array(messages.length).fill(value)))
-      Object.keys(messages[0]).forEach(key => (output[key] = Array(messages.length).fill(0)))
-
-      messages.forEach((message, j) =>
-        Object.entries(message).forEach(([key, value]) => {
-          // Exclude content because it's not used but takes a lot of space
-          if (key === 'content') return
-          output[key][j] = value
-        })
-      )
-
-      fs.writeFileSync(outputPath, JSON.stringify(output), { flag: 'a' })
-      if (i !== results.length - 1) {
-        fs.writeFileSync(outputPath, ',', { flag: 'a' })
-      }
-    }
-    fs.writeFileSync(outputPath, ']', { flag: 'a' })
+    this.writeResults(this.outputPath, results)
+    console.log(`Total simulation time: ${(Date.now() - startTime) / 60000} minutes`)
   }
 
   singleRun(run: RunConfig): RunResult {
-    const nodesInTree = run.fanout ** run.depth * run.groupSize
+    // Exclude contributors (nodes at the last level)
+    const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
     const backupListSize = nodesInTree * 1
 
     // Create the tree structure
-    const { nextId, node: root } = TreeNode.createTree(run.depth, run.fanout, run.groupSize, 0)
+    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
 
     // Adding the querier group
     const querierGroup = new TreeNode(nextId, run.depth + 1)
@@ -101,29 +222,47 @@ export class ExperimentRunner {
     querierGroup.members = Array(run.groupSize).fill(nextId)
     root.parents = querierGroup.members
 
+    // Initialize the manager and populate nodes
     const manager = NodesManager.createFromTree(root, {
       ...run,
       debug: this.debug,
+      fullExport: this.fullExport,
     })
     const n = manager.addNode(querierGroup, querierGroup.id)
     n.role = NodeRole.Querier
     // Only the node with the lowest ID sends the message
     manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, querierGroup.id, querierGroup.id, {}))
 
-    // Create a backup list and give it to all the nodes
-    const backupListStart = Object.keys(manager.nodes).length
-    const backups = []
-    for (let i = 0; i < backupListSize; i++) {
-      const backup = new Node({ id: backupListStart + i, config: manager.config })
-      backup.role = NodeRole.Backup
-      manager.nodes[backupListStart + i] = backup
-      backups.push(backup)
-    }
-    for (let i = 0; i < backupListStart; i++) {
-      manager.nodes[i].backupList = backups.map(e => e.id)
+    // Eager does not use a backup list
+    if (run.strategy !== ProtocolStrategy.Eager) {
+      // Create a backup list and give it to all the nodes
+      const backupListStart = Object.keys(manager.nodes).length
+      const backups = []
+      // Create as many backup as nodes in the tree
+      for (let i = 0; i < backupListSize; i++) {
+        const backup = new Node({ id: backupListStart + i, config: manager.config })
+        backup.role = NodeRole.Backup
+        manager.nodes[backupListStart + i] = backup
+        backups.push(backup)
+      }
+      for (let i = 0; i < backupListStart; i++) {
+        if (manager.nodes[i]) {
+          manager.nodes[i].backupList = backups.map(e => e.id)
+        }
+      }
     }
 
     // All leaves aggregator request data from contributors
+
+    // The number of hops needed on average to reach all the node in a zone
+    // const numberContributors = run.groupSize * run.fanout ** run.depth // TODO: Not accurate
+    // const totalNumberOfNodes = numberContributors / run.selectivity
+    // const nodesPerZone = totalNumberOfNodes / run.fanout ** run.depth
+    // // Nodes broadcast to all the nodes they know in their finger table
+    // const averageHopsPerBroadcast = Math.log2(Math.log2(nodesPerZone))
+    // TODO: Compute this value depending on the total number of nodes in the network
+    const averageHopsPerBroadcast = 1
+
     const leavesAggregators = root.selectNodesByDepth(run.depth - 1)
     for (const aggregator of leavesAggregators) {
       for (const member of aggregator.members) {
@@ -142,60 +281,52 @@ export class ExperimentRunner {
       if (run.strategy === ProtocolStrategy.Pessimistic) {
         // Setting contribution collection timeouts on the leaves aggregators
         for (const member of aggregator.members) {
-          // TODO: Timeouts should take into account the broadcasts.
-          // Currently supposes that contributors are reached in 1 hop
-
           // Contributors respond with a ping and then the contribution, await both
           manager.transmitMessage(
-            new Message(MessageType.PingTimeout, 0, 2 * run.averageLatency * run.maxToAverageRatio, member, member, {})
-          )
-          manager.transmitMessage(
             new Message(
-              MessageType.ContributionTimeout,
+              MessageType.PingTimeout,
               0,
-              (2 * run.averageLatency + run.averageCryptoTime * run.groupSize * 3) * run.maxToAverageRatio,
+              (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
               member,
               member,
               {}
             )
           )
         }
-      } else {
-        // TODO: Timeouts should take into account the broadcasts.
+      } else if (run.strategy === ProtocolStrategy.Optimistic || run.strategy === ProtocolStrategy.Eager) {
         // Contributors respond with a ping to the first member
         manager.transmitMessage(
           new Message(
             MessageType.PingTimeout,
             0,
-            2 * run.averageLatency * run.maxToAverageRatio,
+            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
             aggregator.members[0],
             aggregator.members[0],
             {}
           )
         )
+      }
 
-        // Setting contribution collection timeouts on the leaves aggregators
-        // The first member times out first to inform its members
-        for (const member of aggregator.members) {
-          manager.transmitMessage(
-            new Message(
-              MessageType.ContributionTimeout,
-              0,
-              ((aggregator.members.indexOf(member) === 0 ? 2 : 3) * run.averageLatency +
-                run.averageCryptoTime * run.groupSize * 3) *
-                run.maxToAverageRatio,
-              member,
-              member,
-              {}
-            )
+      // Timeout is set at the max between the encryption latency for the contributor
+      // and the decryption time for the aggregator.
+      for (const member of aggregator.members) {
+        manager.transmitMessage(
+          new Message(
+            MessageType.ContributionTimeout,
+            0,
+            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio +
+              manager.nodes[member].cryptoLatency() * (2 + run.groupSize), // Signature + certificate + open channel with each parent
+            member,
+            member,
+            {}
           )
-        }
+        )
       }
     }
 
     // Set contributors role
-    const contributors = root.selectNodesByDepth(run.depth)
-    for (const contributorGroup of contributors) {
+    const contributorsNodes = root.selectNodesByDepth(run.depth)
+    for (const contributorGroup of contributorsNodes) {
       for (const contributor of contributorGroup.members) {
         manager.nodes[contributor].role = NodeRole.Contributor
       }
@@ -211,11 +342,20 @@ export class ExperimentRunner {
       }
     }
 
+    manager.initialNodeRoles = manager.countNodesPerRole()
+
+    // Running the simulator the end
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
     }
 
-    console.log(`Simulation finished with status ${manager.status}`)
+    manager.finalNodeRoles = manager.countNodesPerRole()
+
+    const initialNumberContributors = contributorsNodes.flatMap(e => e.members).length
+    const receivedNumberContributors = manager.finalNumberContributors
+    const completeness = (100 * receivedNumberContributors) / initialNumberContributors
+
+    console.log(`Simulation finished with status ${manager.status} (${completeness}% completeness)`)
     console.log(
       `${
         (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100
@@ -228,19 +368,28 @@ export class ExperimentRunner {
       manager.displayAggregateId()
     }
 
-    const oldMessages: Message[] = []
-    const oldIds: number[] = []
-    manager.oldMessages.forEach(m => {
-      if (!oldIds.includes(m.id)) {
-        oldIds.push(m.id)
-        oldMessages.push(m)
-      }
-    })
+    const oldMessages: AugmentedMessage[] = []
+    if (this.fullExport) {
+      const oldIds: number[] = []
+      manager.oldMessages.forEach(m => {
+        if (!oldIds.includes(m.id)) {
+          oldIds.push(m.id)
+          oldMessages.push(m)
+        }
+      })
+    }
+
     return {
       ...run,
       status: manager.status,
+      work: manager.totalWork,
+      latency: manager.globalTime,
+      completeness,
+      circulatingAggregateIds: Object.keys(manager.circulatingAggregateIds).length,
+      finalUsedBandwidth: manager.usedBandwidth,
       observedFailureRate:
-        Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length,
+        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100,
+      ...manager.statisticsPerRole(),
       messages: oldMessages,
     }
   }

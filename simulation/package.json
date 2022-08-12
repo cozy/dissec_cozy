@@ -5,8 +5,11 @@
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "start:large": "NODE_OPTIONS='--max-old-space-size=16384' ts-node src/index.ts",
     "test": "jest",
-    "dashboard": "python3 dashboard/dashboard.py"
+    "dashboard": "PORT='8050' python3 dashboard/dashboard.py",
+    "dashboard:mini": "PORT='8051' python3 dashboard/dashboard_mini.py",
+    "dashboard:full": "PORT='8052' python3 dashboard/dashboard_full.py"
   },
   "devDependencies": {
     "@types/jest": "^27.4.0",
@@ -16,6 +19,7 @@
     "typescript": "^4.5.5"
   },
   "dependencies": {
+    "@stdlib/random-base-rayleigh": "^0.0.6",
     "lodash": "^4.17.21"
   }
 }

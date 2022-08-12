@@ -1,51 +1,64 @@
-import config from '../dissec.config.json'
 import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
 
 let configs: RunConfig[] = []
 const debug = false
+const fullExport = false
 if (debug) {
   configs = [
     {
       strategy: ProtocolStrategy.Optimistic,
-      averageLatency: 100,
+      selectivity: 0.1,
       maxToAverageRatio: 10,
+      averageLatency: 100,
       averageCryptoTime: 100,
       averageComputeTime: 100,
+      failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
-      deadline: 500000,
-      failureRate: 0.0005,
+      deadline: 200000,
+      failureRate: 0.002,
       depth: 3,
       fanout: 4,
-      groupSize: 3,
-      seed: 'OPTI:0-29',
+      groupSize: 4,
+      random: false,
+      seed: 'OPTI-f0.002-s4-d3-0/1',
     },
   ]
 } else {
-  configs = [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic].flatMap(strategy =>
-    Array(1)
-      .fill(0)
-      .flatMap((_, failure) =>
-        Array(100)
-          .fill(0)
-          .map((_, retries) => ({
-            strategy: strategy,
-            averageLatency: 100,
-            maxToAverageRatio: 10,
-            averageCryptoTime: 100,
-            averageComputeTime: 100,
-            healthCheckPeriod: 3,
-            multicastSize: 5,
-            deadline: 100 * 5000,
-            failureRate: 0.0005 * (failure + 1),
-            depth: 3,
-            fanout: 4,
-            groupSize: 3,
-            seed: `${strategy}:${failure}-${retries}`,
-          }))
-      )
-  )
+  const failureRates = [0, 0.0005, 0.001, 0.0015, 0.002]
+  const sizes = [4]
+  const depths = [3, 4]
+  const retries = 10
+
+  for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic, ProtocolStrategy.Eager]) {
+    for (const failure of failureRates) {
+      for (const size of sizes) {
+        for (const depth of depths) {
+          for (let i = 0; i < retries; i++) {
+            configs.push({
+              strategy: strategy,
+              selectivity: 0.1,
+              maxToAverageRatio: 10,
+              averageLatency: 100,
+              averageCryptoTime: 100,
+              averageComputeTime: 100,
+              failCheckPeriod: 100,
+              healthCheckPeriod: 3,
+              multicastSize: 5,
+              deadline: 100 * 2000,
+              failureRate: failure,
+              depth: depth,
+              fanout: 4,
+              groupSize: size,
+              random: false,
+              seed: `${strategy}-f${failure}-s${size}-d${depth}-${i}/${retries}`,
+            })
+          }
+        }
+      }
+    }
+  }
 }
 
-const runner = new ExperimentRunner(configs, { debug })
-runner.run(config.dataPath)
+const runner = new ExperimentRunner(configs, { debug, fullExport })
+runner.run()

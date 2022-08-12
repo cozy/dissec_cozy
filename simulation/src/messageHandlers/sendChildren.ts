@@ -27,8 +27,8 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
     // The node does not know its children yet
     // Verifying the member's certificate and signature.
     // Also sign the request for the children
-    this.localTime += 3 * this.config.averageCryptoTime
-    this.node.children = receivedMessage.content.children.map((child) => TreeNode.fromCopy(child, child.id)) // Copy children
+    this.localTime += 3 * this.cryptoLatency()
+    this.node.children = receivedMessage.content.children.map(child => TreeNode.fromCopy(child, child.id)) // Copy children
     this.role = receivedMessage.content.role
     this.backupList = receivedMessage.content.backupList
 

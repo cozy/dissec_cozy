@@ -11,7 +11,7 @@ export function handleContactBackup(this: Node, receivedMessage: Message): Messa
   }
 
   // Verifying the emitter's certificate and signature
-  this.localTime += 2 * this.config.averageCryptoTime
+  this.localTime += 2 * this.cryptoLatency()
 
   if (this.contactedAsABackup || this.role !== NodeRole.Backup) {
     // The backup is not available

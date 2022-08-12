@@ -1,4 +1,4 @@
-import { Message, MessageType } from '../message'
+import { Message, MessageType, StopStatus } from '../message'
 import { Node } from '../node'
 import { createGenerator } from '../random'
 
@@ -38,8 +38,8 @@ export function handleContinueMulticast(this: Node, receivedMessage: Message): M
       )
     }
 
-    const remainingBackups = this.backupList.filter(e => !multicastTargets.includes(e))
-    if (remainingBackups.length > 0) {
+    this.backupList = this.backupList.filter(e => !multicastTargets.includes(e))
+    if (this.backupList.length > 0) {
       // Reschedule a multicast if there are other backups available and the previously contacted ones didn't answer
       this.continueMulticast = true
       messages.push(
@@ -50,13 +50,18 @@ export function handleContinueMulticast(this: Node, receivedMessage: Message): M
           this.id,
           this.id,
           {
-            remainingBackups,
+            remainingBackups: this.backupList,
             failedNode: receivedMessage.content.failedNode,
           }
         )
       )
     } else {
-      throw new Error('Ran out of backups...')
+      messages.push(
+        new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+          status: StopStatus.OutOfBackup,
+          targetGroup: this.node,
+        })
+      )
     }
   }
 

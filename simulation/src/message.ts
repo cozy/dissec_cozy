@@ -32,6 +32,7 @@ export enum MessageType {
   ContributorsPolling = 'ContributorsPolling',
   SendChildren = 'SendChildren',
   RequestData = 'ReqData',
+  GiveUpChild = 'GiveUp',
 }
 
 export enum StopStatus {
@@ -42,6 +43,7 @@ export enum StopStatus {
   ExceededDeadline = 'Deadline',
   BadResult = 'BadResult',
   AllContributorsDead = 'ContribDead',
+  OutOfBackup = '0Backup',
 }
 
 export interface Aggregate {
@@ -184,7 +186,7 @@ export class Message {
         break
       case MessageType.SendAggregate:
         console.log(
-          `${tag} received an aggregate (ID=${this.content.aggregate!.id}) from child #${this.emitterId}. [${children
+          `${tag} received an aggregate from child #${this.emitterId} (ID=${this.content.aggregate!.id}). [${children
             ?.filter(child => Boolean(receiver.aggregates[child]))
             .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
         )
@@ -288,6 +290,9 @@ export class Message {
         break
       case MessageType.RequestData:
         console.log(`${tag} has been requested data by backup #${this.emitterId} joining the tree`)
+        break
+      case MessageType.GiveUpChild:
+        console.log(`${tag} has been told to give up child ${this.content.targetNode} by member ${this.emitterId}`)
         break
     }
   }

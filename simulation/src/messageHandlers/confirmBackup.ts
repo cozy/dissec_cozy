@@ -1,4 +1,3 @@
-import { ProtocolStrategy } from '../experimentRunner'
 import { Message, MessageType } from '../message'
 import { Node, NodeRole } from '../node'
 import TreeNode from '../treeNode'
@@ -21,7 +20,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.parentLastReceivedAggregateId = receivedMessage.content.parentLastReceivedAggregateId
 
     // Verify Certif + open the encryted channel + sign the notification for members
-    this.localTime += 3 * this.config.averageCryptoTime
+    this.localTime += 3 * this.cryptoLatency()
 
     // The node is still available and the parent wants it as a child
     this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup, this.id)
@@ -46,23 +45,20 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
       )
     }
 
-    if (this.config.strategy === ProtocolStrategy.Pessimistic) {
-      // Timeout to abort the protocol in case the group is dead
-      messages.push(
-        new Message(
-          MessageType.NotifyGroupTimeout,
-          this.localTime,
-          this.localTime +
-            (2 * this.config.averageLatency + 3 * this.config.averageCryptoTime) * this.config.maxToAverageRatio,
-          this.id,
-          this.id,
-          {
-            targetGroup: receivedMessage.content.targetGroup,
-            failedNode: receivedMessage.content.failedNode,
-          }
-        )
+    // Timeout to abort the protocol in case the group is dead
+    messages.push(
+      new Message(
+        MessageType.NotifyGroupTimeout,
+        this.localTime,
+        this.localTime + 2 * this.config.averageLatency * this.config.maxToAverageRatio + 3 * this.cryptoLatency(),
+        this.id,
+        this.id,
+        {
+          targetGroup: receivedMessage.content.targetGroup,
+          failedNode: receivedMessage.content.failedNode,
+        }
       )
-    }
+    )
   } else if (!this.replacedNode) {
     // Backup is not used
     // Turn on availability

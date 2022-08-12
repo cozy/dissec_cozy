@@ -8,7 +8,7 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
   // This occurs when 2 nodes are being replaced concurrently in the same group.
   if (this.node && (this.node.children.length > 0 || this.contributorsList[this.id])) {
     // Verifying the backup's certificate + signature + sign the current group and children
-    this.localTime += 3 * this.config.averageCryptoTime
+    this.localTime += 3 * this.cryptoLatency()
 
     // The node has been notified by a backup that it is joining the group
     // Compare the local members with the received one, keep the newest version

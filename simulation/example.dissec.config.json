@@ -1,3 +1,4 @@
 {
-  "dataPath": "./outputs/raw.json"
+  "dataPath": "./outputs/raw.json",
+  "defaultGraph": "./outputs/raw.json"
 }

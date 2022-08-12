@@ -13,7 +13,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
   }
 
   // Verifying the child's certificate, signature and decrypt the symmetric key
-  this.localTime += 3 * this.config.averageCryptoTime
+  this.localTime += 3 * this.cryptoLatency()
 
   // Store the share
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
@@ -23,7 +23,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
     // The node received all expected contributions and can continue the protocole
     const parent = this.node.parents[this.node.members.indexOf(this.id)]
 
-    if (this.config.strategy === ProtocolStrategy.Optimistic) {
+    if (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager) {
       // Tell other members
       // This is useful for backups that joined before obtaining a list
       for (const member of this.node.members.filter(e => this.id !== e)) {
