@@ -29,6 +29,42 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
   // Store the received list
   this.contributorsList[receivedMessage.emitterId] = receivedMessage.content.contributors
 
+  if (this.contactedAsABackup && !arrayEquals(oldContributors || [], intersection)) {
+    // The node is a backup and received a different list than his local one
+    // Query previously unknown contributors for their data
+    const newContributors = intersection.filter(
+      e => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
+    )
+    this.contributorsList[this.id] = intersection
+    for (const contributor of newContributors) {
+      // Memorize that we queried the node to prevent multiple queries
+      this.queriedNode.push(contributor)
+      messages.push(
+        new Message(MessageType.RequestData, this.localTime, 0, this.id, contributor, {
+          parents: this.node.members,
+        })
+      )
+    }
+
+    if (
+      newContributors.length > 0 &&
+      (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager)
+    ) {
+      // In the optimistic versions, add a synchronization trigger if the backup asked for data
+      // This happens only for backups joining
+      messages.push(
+        new Message(
+          MessageType.SynchronizationTimeout,
+          this.localTime,
+          this.localTime + this.config.averageLatency * this.config.maxToAverageRatio + 3 * this.cryptoLatency(),
+          this.id,
+          this.id,
+          {}
+        )
+      )
+    }
+  }
+
   if (this.config.strategy === ProtocolStrategy.Pessimistic) {
     this.contributorsList[this.id] = intersection
 
@@ -79,41 +115,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     }
   } else {
     if (!arrayEquals(oldContributors || [], intersection)) {
-      if (this.contactedAsABackup) {
-        // This if branch is only for clarity because only backups can have unknown contributors by now
-        // Query previously unknown contributors for their data
-        const newContributors = intersection.filter(
-          e => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
-        )
-        this.contributorsList[this.id] = intersection
-        for (const contributor of newContributors) {
-          // Memorize that we queried the node to prevent multiple queries
-          this.queriedNode.push(contributor)
-          messages.push(
-            new Message(MessageType.RequestData, this.localTime, 0, this.id, contributor, {
-              parents: this.node.members,
-            })
-          )
-        }
-
-        if (
-          newContributors.length > 0 &&
-          (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager)
-        ) {
-          // In the optimistic versions, add a synchronization trigger if the backup asked for data
-          // This happens only for backups joining
-          messages.push(
-            new Message(
-              MessageType.SynchronizationTimeout,
-              this.localTime,
-              this.localTime + this.config.averageLatency * this.config.maxToAverageRatio + 3 * this.cryptoLatency(),
-              this.id,
-              this.id,
-              {}
-            )
-          )
-        }
-      } else {
+      if (!this.contactedAsABackup) {
         // The node is not a backup
         this.contributorsList[this.id] = intersection
 
