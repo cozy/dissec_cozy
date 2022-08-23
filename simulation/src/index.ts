@@ -45,7 +45,7 @@ if (debug) {
               failCheckPeriod: 100,
               healthCheckPeriod: 3,
               multicastSize: 5,
-              deadline: 100 * 2000,
+              deadline: 75 * 2000,
               failureRate: failure,
               depth: depth,
               fanout: 4,
