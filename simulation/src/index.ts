@@ -25,7 +25,7 @@ if (debug) {
     },
   ]
 } else {
-  const failureRates = [0, 0.00005, 0.0001, 0.00015, 0.0002]
+  const failureRates = [0, 0.0001, 0.0002, 0.0003, 0.0004]
   const sizes = [3, 4, 5]
   const depths = [3, 4, 5]
   const retries = 100
