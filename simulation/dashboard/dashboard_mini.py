@@ -482,6 +482,48 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             title=f"{strategies_map[strat]} Completeness per group size",
         )
 
+    mean_copy_df = copy_df.groupby(
+        ["depth", "failure_probability", "strategy"], as_index=False
+    ).mean()
+    diffs_opti = mean_copy_df.loc[(mean_copy_df["strategy"] == "OPTI")]
+    for d in pd.unique(mean_copy_df["depth"]):
+        diffs_eager = mean_copy_df.loc[
+            (mean_copy_df["strategy"] == "EAGER") & (mean_copy_df["depth"] == d)
+        ]
+        diffs_opti.loc[(mean_copy_df["depth"] == d), "completeness"] -= diffs_eager[
+            "completeness"
+        ].values
+
+    curves[f"curve_completeness_diff_depth"] = px.line(
+        diffs_opti,
+        x="failure_probability",
+        y="completeness",
+        color="depth",
+        range_y=[-100, 100],
+        title=f"Completeness diff per depth",
+    )
+
+    mean_copy_df = copy_df.groupby(
+        ["group_size", "failure_probability", "strategy"], as_index=False
+    ).mean()
+    diffs_opti = mean_copy_df.loc[(mean_copy_df["strategy"] == "OPTI")]
+    for d in pd.unique(mean_copy_df["group_size"]):
+        diffs_eager = mean_copy_df.loc[
+            (mean_copy_df["strategy"] == "EAGER") & (mean_copy_df["group_size"] == d)
+        ]
+        diffs_opti.loc[
+            (mean_copy_df["group_size"] == d), "completeness"
+        ] -= diffs_eager["completeness"].values
+
+    curves[f"curve_completeness_diff_size"] = px.line(
+        diffs_opti,
+        x="failure_probability",
+        y="completeness",
+        color="group_size",
+        range_y=[-100, 100],
+        title=f"Completeness diff per size",
+    )
+
     return html.Div(
         children=[
             html.H1("Number of runs"),
@@ -694,6 +736,24 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                         figure=curves[f"{strat}_curve_completeness_size"],
                     )
                     for strat in strategies_map
+                ],
+            ),
+            html.H1("Completeness differences (Eager vs Opti)"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"curve_completeness_diff_depth",
+                        figure=curves[f"curve_completeness_diff_depth"],
+                    ),
+                    dcc.Graph(
+                        id=f"curve_completeness_diff_size",
+                        figure=curves[f"curve_completeness_diff_size"],
+                    ),
                 ],
             ),
         ]
