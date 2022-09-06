@@ -830,7 +830,7 @@ if __name__ == "__main__":
                     html.H3("Depths"),
                     dcc.RangeSlider(
                         3,
-                        5,
+                        7,
                         1,
                         value=[3, 7],
                         id="depths-range",
