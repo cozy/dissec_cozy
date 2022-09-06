@@ -282,30 +282,16 @@ export class ExperimentRunner {
         )
       }
 
-      if (run.strategy === ProtocolStrategy.Pessimistic) {
-        // Setting contribution collection timeouts on the leaves aggregators
-        for (const member of aggregator.members) {
-          // Contributors respond with a ping and then the contribution, await both
-          manager.transmitMessage(
-            new Message(
-              MessageType.PingTimeout,
-              0,
-              (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
-              member,
-              member,
-              {}
-            )
-          )
-        }
-      } else if (run.strategy === ProtocolStrategy.Optimistic || run.strategy === ProtocolStrategy.Eager) {
-        // Contributors respond with a ping to the first member
+      // Setting contribution collection timeouts on the leaves aggregators
+      for (const member of aggregator.members) {
+        // Contributors respond with a ping and then the contribution, await both
         manager.transmitMessage(
           new Message(
             MessageType.PingTimeout,
             0,
             (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
-            aggregator.members[0],
-            aggregator.members[0],
+            member,
+            member,
             {}
           )
         )
