@@ -30,7 +30,7 @@ if (debug) {
   const depths = [4, 5, 6]
   const retries = 100
 
-  for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Pessimistic, ProtocolStrategy.Eager]) {
+  for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager]) {
     for (const failure of failureRates) {
       for (const size of sizes) {
         for (const depth of depths) {
