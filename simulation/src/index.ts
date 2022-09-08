@@ -1,8 +1,8 @@
 import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
 
 let configs: RunConfig[] = []
-const debug = false
-const fullExport = false
+const debug = true
+const fullExport = true
 if (debug) {
   configs = [
     {
@@ -26,8 +26,8 @@ if (debug) {
   ]
 } else {
   const failureRates = [0, 0.0001, 0.0002, 0.0003, 0.0004]
-  const sizes = [4, 5, 6]
-  const depths = [4, 5, 6]
+  const sizes = [3]
+  const depths = [3]
   const retries = 100
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager]) {

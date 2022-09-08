@@ -59,6 +59,9 @@ def get_data(path, aggregate_message=True):
     df.reset_index(inplace=True)
     df.fillna(0, inplace=True)
 
+    df.loc[df["run_id"].str.startswith("OPTI-leader"), "strategy"] = "O_LEADER"
+    df.loc[df["run_id"].str.startswith("EAGER-leader"), "strategy"] = "E_LEADER"
+
     for r in roles:
         df[f"work_per_node_{r}"] = (
             df[f"work_{r}"] / df[f"final_nodes_{r}"]
@@ -159,6 +162,15 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         hover_name="run_id",
         points="all",
         title=f"Travail selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
+    )
+    graphs["messages_strategy"] = px.box(
+        data,
+        x=tab,
+        y="messages_total",
+        color="strategy",
+        hover_name="run_id",
+        points="all",
+        title=f"Messages selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
     )
     graphs["latency_failure_rate_status"] = px.box(
         data,
@@ -468,6 +480,19 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 },
                 children=[
                     dcc.Graph(
+                        id="messages_strategy",
+                        figure=graphs["messages_strategy"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
                         id="observed_failure_rate_per_failure_prob",
                         figure=graphs["observed_failure_rate_per_failure_prob"],
                     ),
@@ -658,7 +683,13 @@ if __name__ == "__main__":
     outputs = glob("./outputs/*")
 
     # Remove strategies not present in the data
-    strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+    strategies_map = dict(
+        EAGER="Eager",
+        OPTI="Optimistic",
+        PESS="Pessimistic",
+        O_LEADER="Leader Opti",
+        E_LEADER="Leader Eager",
+    )
     for k in set(strategies_map.keys()).difference(strategies):
         del strategies_map[k]
 

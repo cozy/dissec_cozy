@@ -10,6 +10,7 @@ statistics = [
     "final_nodes",
     "failures",
     "work",
+    "messages",
     "work_per_node",
     "delta_nodes",
     "bandwidth",
@@ -123,7 +124,7 @@ if __name__ == "__main__":
         pd.DataFrame(columns=data.columns),
         x="receiver_time",
         y="currently_circulating_ids",
-        color="strategy",
+        color="run_id",
         hover_name="type",
         hover_data=["receiver_id", "emitter_id", "run_id"],
     )
@@ -131,7 +132,15 @@ if __name__ == "__main__":
         pd.DataFrame(columns=data.columns),
         x="receiver_time",
         y="bandwidth",
-        color="strategy",
+        color="run_id",
+        hover_name="type",
+        hover_data=["receiver_id", "emitter_id", "run_id"],
+    )
+    messages_timeline_fig = px.scatter(
+        pd.DataFrame(columns=data.columns),
+        x="receiver_time",
+        y="messages_total",
+        color="run_id",
         hover_name="type",
         hover_data=["receiver_id", "emitter_id", "run_id"],
     )
@@ -309,6 +318,7 @@ if __name__ == "__main__":
             dcc.Graph(id="message_timeline", figure=message_timeline_fig),
             dcc.Graph(id="version_timeline", figure=version_timeline_fig),
             dcc.Graph(id="bandwidth_timeline", figure=version_timeline_fig),
+            dcc.Graph(id="messages_timeline", figure=messages_timeline_fig),
             dcc.Graph(id="message_stats", figure=message_stats_fig),
         ]
     )
@@ -318,6 +328,7 @@ if __name__ == "__main__":
             dash.Output(component_id="message_timeline", component_property="figure"),
             dash.Output(component_id="version_timeline", component_property="figure"),
             dash.Output(component_id="bandwidth_timeline", component_property="figure"),
+            dash.Output(component_id="messages_timeline", component_property="figure"),
             dash.Output(component_id="message_stats", component_property="figure"),
         ],
         [
@@ -401,7 +412,7 @@ if __name__ == "__main__":
             df,
             x="receiver_time",
             y="currently_circulating_ids",
-            color="strategy",
+            color="run_id",
             hover_name="type",
             hover_data=["receiver_id", "emitter_id", "run_id"],
         )
@@ -409,7 +420,15 @@ if __name__ == "__main__":
             df,
             x="receiver_time",
             y="bandwidth",
-            color="strategy",
+            color="run_id",
+            hover_name="type",
+            hover_data=["receiver_id", "emitter_id", "run_id"],
+        )
+        messages_timeline_fig = px.scatter(
+            df,
+            x="receiver_time",
+            y="messages_total",
+            color="run_id",
             hover_name="type",
             hover_data=["receiver_id", "emitter_id", "run_id"],
         )
@@ -426,6 +445,7 @@ if __name__ == "__main__":
             new_message_timeline,
             version_timeline_fig,
             bandwidth_timeline_fig,
+            messages_timeline_fig,
             new_message_stats_fig,
         ]
 

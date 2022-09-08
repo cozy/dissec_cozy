@@ -1,4 +1,4 @@
-import { Message } from '../message'
+import { Message, MessageType } from '../message'
 import { Node } from '../node'
 
 export function handlePingTimeout(this: Node): Message[] {
@@ -9,6 +9,16 @@ export function handlePingTimeout(this: Node): Message[] {
 
   // Initialize the list of queried note
   this.queriedNode = this.contributorsList[this.id]?.slice()
+
+  // The node sends the list to itself so that if it's the first finalized list, the node also tells its members about it
+  messages.push(
+    new Message(MessageType.ConfirmContributors, this.localTime, this.localTime, this.id, this.id, {
+      contributors: this.contributorsList[this.id],
+    })
+  )
+
+  // HACK: Forget the list and resend it to self
+  delete this.contributorsList[this.id]
 
   return messages
 }
