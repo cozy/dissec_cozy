@@ -27,8 +27,8 @@ if (debug) {
 } else {
   const failureRates = [0, 0.0001, 0.0002, 0.0003, 0.0004]
   const sizes = [3]
-  const depths = [3]
-  const retries = 100
+  const depths = [4]
+  const retries = 1
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager]) {
     for (const failure of failureRates) {
@@ -60,5 +60,5 @@ if (debug) {
   }
 }
 
-const runner = new ExperimentRunner(configs, { debug, fullExport, intermediateExport: 5 })
+const runner = new ExperimentRunner(configs, { debug, fullExport, intermediateExport: undefined })
 runner.run()

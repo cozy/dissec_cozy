@@ -17,8 +17,8 @@ export function handlePingTimeout(this: Node): Message[] {
     })
   )
 
-  // HACK: Forget the list and resend it to self
-  delete this.contributorsList[this.id]
+  // The node starts monitoring the contributors when it knows them
+  messages.push(new Message(MessageType.RequestHealthChecks, this.localTime, this.localTime, this.id, this.id, {}))
 
   return messages
 }

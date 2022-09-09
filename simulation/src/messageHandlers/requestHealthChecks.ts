@@ -19,6 +19,9 @@ export function handleRequestHealthChecks(this: Node, receivedMessage: Message):
     // Check the health of the node in the same position in each child
     // Do not request from nodes we're already trying to replace to avoid conflicting requests
     children = this.node.children.map(child => child.members[position]).filter(e => !this.lookingForBackup[e])
+  } else if (this.role === NodeRole.LeafAggregator) {
+    // Check the health of all children
+    children = this.contributorsList[this.id] || []
   }
 
   for (const child of children) {

@@ -114,7 +114,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       this.finishedWorking = true
     }
   } else {
-    if (!arrayEquals(oldContributors || [], intersection)) {
+    if (!arrayEquals(oldContributors || [], intersection) || !this.finishedWorking) {
       if (!this.contactedAsABackup) {
         // The node is not a backup
         this.contributorsList[this.id] = intersection
