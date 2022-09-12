@@ -100,7 +100,14 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
 
   if (this.role === NodeRole.LeafAggregator && this.config.strategy === ProtocolStrategy.Optimistic) {
     const newList = this.contributorsList[this.id]?.filter(e => !ongoingChecks.includes(e))
-    if (newList && !arrayEquals(newList, this.contributorsList[this.id]!)) {
+    if (newList && newList.length === 0) {
+      // The last contributor died
+      messages.push(
+        new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+          status: StopStatus.AllContributorsDead,
+        })
+      )
+    } else if (newList && !arrayEquals(newList, this.contributorsList[this.id]!)) {
       // Leaves only remove nodes from their local list if a contributor is no longer responding
       messages.push(
         new Message(MessageType.ConfirmContributors, this.localTime, this.localTime, this.id, this.id, {

@@ -2,7 +2,7 @@ import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunne
 
 let configs: RunConfig[] = []
 const debug = false
-const fullExport = true
+const fullExport = false
 if (debug) {
   configs = [
     {
@@ -16,21 +16,21 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 150000,
-      failureRate: 0,
-      depth: 3,
+      failureRate: 0.0004,
+      depth: 5,
       fanout: 4,
       groupSize: 3,
-      concentration: 1,
+      concentration: 0,
       random: false,
-      seed: 'OPTI-f0-s3-d3-c0-0/1',
+      seed: 'OPTI-f0.0004-s3-d5-c0-0/1',
     },
   ]
 } else {
-  const failureRates = [0, 0.0001, 0.0002, 0.0003, 0.0004]
-  const sizes = [3]
-  const depths = [4]
-  const concentrations = [0, 1]
-  const retries = 1
+  const failureRates = [0, 0.0001, 0.0002, 0.0003]
+  const sizes = [3, 4]
+  const depths = [4, 5, 6]
+  const concentrations = [0, 1, 2]
+  const retries = 10
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager]) {
     for (const failure of failureRates) {
