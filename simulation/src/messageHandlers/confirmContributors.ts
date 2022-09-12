@@ -114,53 +114,49 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       this.finishedWorking = true
     }
   } else {
-    if (!arrayEquals(oldContributors || [], intersection) || !this.finishedWorking) {
-      if (!this.contactedAsABackup) {
-        // The node is not a backup
-        this.contributorsList[this.id] = intersection
+    // The node is not a backup
+    this.contributorsList[this.id] = intersection
 
-        // The local list changed, tell other members about it
-        this.node.members
-          .filter(e => e !== this.id)
-          .forEach(member =>
-            messages.push(
-              new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
-                contributors: this.contributorsList[this.id],
-              })
-            )
-          )
-      }
-
-      const nextAggregationId = this.aggregationId(this.contributorsList[this.id]!.map(String))
-      if (
-        nextAggregationId !== this.lastSentAggregateId &&
-        this.contributorsList[this.id]?.map(e => this.contributions[e]).every(Boolean)
-      ) {
-        // The aggregate version changed and the node has received all expected shares, resend the new version to the parent
-        // It immediatly sends the updated aggregate to its parent
-        this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+    // Send a contributors confirmation to members who might have different list
+    for (const m of this.node.members.filter(e => e !== this.id)) {
+      if (!arrayEquals(this.contributorsList[this.id] || [], this.contributorsList[m] || [])) {
         messages.push(
-          new Message(
-            MessageType.SendAggregate,
-            this.localTime,
-            0, // Don't specify time to let the manager add the latency
-            this.id,
-            this.node.parents[this.node.members.indexOf(this.id)],
-            {
-              aggregate: {
-                counter: this.contributorsList[this.id]!.length,
-                data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
-                  (prev, curr) => prev + curr,
-                  0
-                ),
-                id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
-              },
-            }
-          )
+          new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, m, {
+            contributors: this.contributorsList[this.id],
+          })
         )
-
-        this.finishedWorking = true
       }
+    }
+
+    const nextAggregationId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+    if (
+      nextAggregationId !== this.lastSentAggregateId &&
+      this.contributorsList[this.id]?.map(e => this.contributions[e]).every(Boolean)
+    ) {
+      // The aggregate version changed and the node has received all expected shares, resend the new version to the parent
+      // It immediatly sends the updated aggregate to its parent
+      this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+      messages.push(
+        new Message(
+          MessageType.SendAggregate,
+          this.localTime,
+          0, // Don't specify time to let the manager add the latency
+          this.id,
+          this.node.parents[this.node.members.indexOf(this.id)],
+          {
+            aggregate: {
+              counter: this.contributorsList[this.id]!.length,
+              data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
+                (prev, curr) => prev + curr,
+                0
+              ),
+              id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+            },
+          }
+        )
+      )
+
+      this.finishedWorking = true
     }
   }
 

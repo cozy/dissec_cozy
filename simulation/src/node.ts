@@ -133,10 +133,6 @@ export class Node {
       }
     }
 
-    if (this.id === 183 && receivedMessage.type === MessageType.SendContribution) {
-      console.log('ok')
-    }
-
     switch (receivedMessage.type) {
       case MessageType.RequestContribution:
         messages.push(...this.handleRequestContribution(receivedMessage))

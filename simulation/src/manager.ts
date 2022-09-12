@@ -226,6 +226,7 @@ export class NodesManager {
             ...message,
             currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
             bandwidth: this.usedBandwidth,
+            ...this.statisticsPerRole(),
           })
         }
 

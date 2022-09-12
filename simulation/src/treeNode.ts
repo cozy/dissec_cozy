@@ -47,7 +47,9 @@ class TreeNode {
     } else {
       const generator = Generator.get(run.seed)
       // Rebalance the number of members in this contributor group
-      const numberOfContributors = run.random ? Math.round(Math.sqrt(run.fanout ** (generator() * 2))) : 1
+      const numberOfContributors = run.random
+        ? Math.round(Math.sqrt(run.fanout ** (generator() * 2)))
+        : run.fanout ** run.concentration
 
       if (node.members.length > numberOfContributors) {
         // Removing contributors from the group

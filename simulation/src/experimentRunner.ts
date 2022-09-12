@@ -27,6 +27,7 @@ export interface RunConfig {
   depth: number
   fanout: number
   groupSize: number
+  concentration: number
   random: boolean
   seed: string
 }
@@ -74,6 +75,7 @@ export class ExperimentRunner {
       'averageLatency',
       'averageCryptoTime',
       'averageComputeTime',
+      'maxR',
     ]
 
     // Shorter names for keys
@@ -159,17 +161,21 @@ export class ExperimentRunner {
           fs.writeFileSync(outputPath, columns.join(';') + '\n')
         }
 
-        for (const message of messages) {
-          const assign: { [k: string]: any } = Object.assign(items, message)
-          fs.writeFileSync(
-            outputPath,
-            columns
-              .map(e => (typeof assign[e] === 'number' && e !== 'failureRate' ? assign[e].toFixed(2) : assign[e]))
-              .join(';')
-              .replaceAll('.', ',') + '\n',
-            { flag: 'a' }
-          )
-        }
+        fs.writeFileSync(
+          outputPath,
+          messages
+            .map(message => {
+              const assign: { [k: string]: any } = Object.assign(items, message)
+              return (
+                columns
+                  .map(e => (typeof assign[e] === 'number' && e !== 'failureRate' ? assign[e].toFixed(2) : assign[e]))
+                  .join(';')
+                  .replaceAll('.', ',') + '\n'
+              )
+            })
+            .join(''),
+          { flag: 'a' }
+        )
       }
     }
   }
@@ -290,22 +296,6 @@ export class ExperimentRunner {
             MessageType.PingTimeout,
             0,
             (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
-            member,
-            member,
-            {}
-          )
-        )
-      }
-
-      // Timeout is set at the max between the encryption latency for the contributor
-      // and the decryption time for the aggregator.
-      for (const member of aggregator.members) {
-        manager.transmitMessage(
-          new Message(
-            MessageType.ContributionTimeout,
-            0,
-            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio +
-              manager.nodes[member].cryptoLatency() * (2 + run.groupSize), // Signature + certificate + open channel with each parent
             member,
             member,
             {}

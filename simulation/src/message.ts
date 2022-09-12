@@ -167,9 +167,9 @@ export class Message {
             arrayEquals(receiver.contributorsList[receiver.id] || [], this.content.contributors || [])
               ? ''
               : ' different'
-          } confirmed list of ${this.content.contributors?.length} contributors from node #${
-            this.emitterId
-          }, sending data to parent #${receiver.node!.parents[receiver.node!.members.indexOf(receiver.id)]}. ${
+          } confirmed list of ${this.content.contributors?.length} contributors from node #${this.emitterId}, ${
+            receiver.contributorsList[receiver.id]?.every(e => receiver.contributions[e]) ? '' : 'not '
+          }sending data to parent #${receiver.node!.parents[receiver.node!.members.indexOf(receiver.id)]}. ${
             this.content.contributors
               ? `new id=${receiver.aggregationId(this.content.contributors.map(String))}`
               : 'Did not receive contributors'
