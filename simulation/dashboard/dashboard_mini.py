@@ -11,6 +11,7 @@ tabs = [
     dict(label="Taille de groupe", value="group_size"),
     dict(label="Fanout", value="fanout"),
     dict(label="Taux de panne", value="failure_rate"),
+    dict(label="Concentration", value="concentration"),
 ]
 roles = ["Aggregator", "LeafAggregator", "Contributor", "Backup", "Querier"]
 statistics = [
@@ -132,6 +133,7 @@ def generate_summary(data, status, strategies):
 
 def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
     copy_df = df.copy()
+    copy_df.sort_values(by=[x_axis, y_axis], inplace=True)
 
     work_min = copy_df["total_work"].max()
     work_max = copy_df["total_work"].min()
@@ -821,18 +823,18 @@ if __name__ == "__main__":
                     ),
                     html.H3("Group Sizes"),
                     dcc.RangeSlider(
-                        3,
-                        7,
                         2,
-                        value=[3, 7],
+                        7,
+                        1,
+                        value=[2, 7],
                         id="group-sizes-range",
                     ),
                     html.H3("Depths"),
                     dcc.RangeSlider(
-                        3,
+                        2,
                         7,
                         1,
-                        value=[3, 7],
+                        value=[2, 7],
                         id="depths-range",
                     ),
                 ]
