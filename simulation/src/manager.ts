@@ -178,13 +178,6 @@ export class NodesManager {
   handleNextMessage() {
     const message = this.messages.pop()!
 
-    // Update simulation time and failures
-    while (this.lastFailureUpdate + this.config.failCheckPeriod <= message.receptionTime) {
-      this.updateFailures()
-      this.lastFailureUpdate += this.config.failCheckPeriod
-      this.globalTime = this.lastFailureUpdate
-    }
-
     if (message.type === MessageType.StopSimulator) {
       // Flushing the message queue
       this.messages = []
@@ -213,6 +206,13 @@ export class NodesManager {
     } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
       this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
     } else if (this.nodes[message.receiverId].alive) {
+      // Update simulation time and failures
+      while (this.lastFailureUpdate + this.config.failCheckPeriod <= message.receptionTime) {
+        this.updateFailures()
+        this.lastFailureUpdate += this.config.failCheckPeriod
+        this.globalTime = this.lastFailureUpdate
+      }
+
       this.globalTime = message.receptionTime
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId]
