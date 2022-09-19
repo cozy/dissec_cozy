@@ -10,6 +10,7 @@ export enum ProtocolStrategy {
   Pessimistic = 'PESS',
   Optimistic = 'OPTI',
   Eager = 'EAGER',
+  Strawman = 'STRAW',
 }
 
 export interface RunConfig {
@@ -240,24 +241,28 @@ export class ExperimentRunner {
     })
     const n = manager.addNode(querierGroup, querierGroup.id)
     n.role = NodeRole.Querier
-    // Only the node with the lowest ID sends the message
-    manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, querierGroup.id, querierGroup.id, {}))
 
-    // Eager does not use a backup list
-    if (run.strategy !== ProtocolStrategy.Eager) {
-      // Create a backup list and give it to all the nodes
-      const backupListStart = Object.keys(manager.nodes).length
-      const backups = []
-      // Create as many backup as nodes in the tree
-      for (let i = 0; i < backupListSize; i++) {
-        const backup = new Node({ id: backupListStart + i, config: manager.config })
-        backup.role = NodeRole.Backup
-        manager.nodes[backupListStart + i] = backup
-        backups.push(backup)
-      }
-      for (let i = 0; i < backupListStart; i++) {
-        if (manager.nodes[i]) {
-          manager.nodes[i].backupList = backups.map(e => e.id)
+    // Strawman does no health verifications
+    if (run.strategy !== ProtocolStrategy.Strawman) {
+      // Only the node with the lowest ID sends the message
+      manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, querierGroup.id, querierGroup.id, {}))
+
+      // Eager does not use a backup list
+      if (run.strategy !== ProtocolStrategy.Eager) {
+        // Create a backup list and give it to all the nodes
+        const backupListStart = Object.keys(manager.nodes).length
+        const backups = []
+        // Create as many backup as nodes in the tree
+        for (let i = 0; i < backupListSize; i++) {
+          const backup = new Node({ id: backupListStart + i, config: manager.config })
+          backup.role = NodeRole.Backup
+          manager.nodes[backupListStart + i] = backup
+          backups.push(backup)
+        }
+        for (let i = 0; i < backupListStart; i++) {
+          if (manager.nodes[i]) {
+            manager.nodes[i].backupList = backups.map(e => e.id)
+          }
         }
       }
     }
@@ -312,12 +317,14 @@ export class ExperimentRunner {
       }
     }
 
-    // Upper layers periodically send health checks to their children
-    for (let i = 0; i < run.depth - 1; i++) {
-      const nodes = root.selectNodesByDepth(i)
-      for (const node of nodes) {
-        for (const member of node.members) {
-          manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, member, member, {}))
+    if (run.strategy !== ProtocolStrategy.Strawman) {
+      // Upper layers periodically send health checks to their children
+      for (let i = 0; i < run.depth - 1; i++) {
+        const nodes = root.selectNodesByDepth(i)
+        for (const node of nodes) {
+          for (const member of node.members) {
+            manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, member, member, {}))
+          }
         }
       }
     }
@@ -327,6 +334,11 @@ export class ExperimentRunner {
     // Running the simulator the end
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
+    }
+
+    if (manager.status === StopStatus.Unfinished) {
+      manager.status = StopStatus.ExceededDeadline
+      manager.globalTime = run.deadline
     }
 
     manager.finalNodeRoles = manager.countNodesPerRole()

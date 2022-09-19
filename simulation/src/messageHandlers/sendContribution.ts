@@ -57,7 +57,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
         )
       }
       this.finishedWorking = true
-    } else {
+    } else if (this.config.strategy === ProtocolStrategy.Pessimistic) {
       if (!this.confirmContributors) {
         // Send data to the parent if the node is a backup joining
         this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
@@ -92,6 +92,30 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
             })
           )
         }
+      }
+    } else if (this.config.strategy === ProtocolStrategy.Strawman) {
+      // Simply send the aggregate
+      this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+      if (this.parentLastReceivedAggregateId !== this.lastSentAggregateId) {
+        // Resend only if the agregate changed
+        messages.push(
+          new Message(
+            MessageType.SendAggregate,
+            this.localTime,
+            0, // Don't specify time to let the manager add the latency
+            this.id,
+            parent,
+            {
+              aggregate: {
+                counter: this.contributorsList[this.id]!.length,
+                data: this.contributorsList[this.id]!.map(contributor => this.contributions[contributor]).reduce(
+                  (prev, curr) => prev + curr
+                ),
+                id: this.lastSentAggregateId,
+              },
+            }
+          )
+        )
       }
     }
   }

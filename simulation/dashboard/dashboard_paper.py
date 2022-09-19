@@ -449,7 +449,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="completeness",
         color="strategy",
         hover_name="run_id",
-        points="all",
+        points=False,
         title=f"Complétude par {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
 
@@ -720,11 +720,7 @@ if __name__ == "__main__":
 
     # Remove strategies not present in the data
     strategies_map = dict(
-        EAGER="Eager",
-        OPTI="Optimistic",
-        PESS="Pessimistic",
-        O_LEADER="Leader Opti",
-        E_LEADER="Leader Eager",
+        EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
     )
     for k in set(strategies_map.keys()).difference(strategies):
         del strategies_map[k]

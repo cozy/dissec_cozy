@@ -88,7 +88,9 @@ if __name__ == "__main__":
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
 
     # Remove strategies not present in the data
-    strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+    strategies_map = dict(
+        EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
+    )
     for k in set(strategies_map.keys()).difference(strategies):
         del strategies_map[k]
 
