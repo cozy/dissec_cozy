@@ -41,7 +41,7 @@ export class Node {
   config: ManagerArguments
   localTime: number = 0
   alive: boolean = true
-  deathTime: number = 0
+  deathTime: number = -1
   role: NodeRole
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean

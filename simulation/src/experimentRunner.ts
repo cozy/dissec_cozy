@@ -335,7 +335,9 @@ export class ExperimentRunner {
     const receivedNumberContributors = manager.finalNumberContributors
     const completeness = (100 * receivedNumberContributors) / initialNumberContributors
 
-    console.log(`Simulation finished with status ${manager.status} (${completeness}% completeness)`)
+    console.log(
+      `Simulation finished with status ${manager.status} (${completeness}% completeness); time = ${manager.globalTime}`
+    )
     console.log(
       `${
         (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100

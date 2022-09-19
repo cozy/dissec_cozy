@@ -29,6 +29,7 @@ export class NodesManager {
   multicastSize: number
   failureRate: number
   lastFailureUpdate: number = 0
+  nextStepFailures: number = 0
   status: StopStatus
   generator: () => number
   rayleigh = rayleigh.factory(1, { seed: 1 })
@@ -110,14 +111,12 @@ export class NodesManager {
   }
 
   updateFailures() {
-    for (const node of Object.values(this.nodes)) {
-      if (node.alive) {
-        // Querier can't die
-        if (this.generator() < this.failureRate && node.role !== NodeRole.Querier) {
-          const newFailure = node.alive
-          // The node failed
-          node.alive = false
-          if (newFailure) {
+    if (this.config.random) {
+      for (const node of Object.values(this.nodes)) {
+        if (node.alive) {
+          // Querier can't die
+          if (this.generator() < this.failureRate && node.role !== NodeRole.Querier) {
+            node.alive = false
             node.deathTime = this.globalTime
             this.failuresPerRole[node.role] += 1
             if (
@@ -136,8 +135,31 @@ export class NodesManager {
           }
         }
       }
-      if (!node.alive && node.deathTime === 0) {
+    } else {
+      const nodesArray = Object.values(this.nodes).filter(e => e.alive && e.role !== NodeRole.Querier)
+      this.nextStepFailures += this.config.failureRate * nodesArray.length
+      const failures = Math.floor(this.nextStepFailures)
+      this.nextStepFailures -= failures
+
+      // Randomly order the nodes, the first nodes will fail
+      const failedNodes = nodesArray.sort(() => this.generator() - 0.5)
+      for (const node of failedNodes.slice(0, failures)) {
+        node.alive = false
         node.deathTime = this.globalTime
+        this.failuresPerRole[node.role] += 1
+        if (
+          node.node &&
+          node.node.children.length !== 0 &&
+          node.node.members.map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
+        ) {
+          // All members of the group are dead, stop the run because it's dead
+          this.messages.push(
+            new Message(MessageType.StopSimulator, 0, this.globalTime, this.querier, this.querier, {
+              status: StopStatus.GroupDead,
+              targetGroup: node.node,
+            })
+          )
+        }
       }
     }
   }
