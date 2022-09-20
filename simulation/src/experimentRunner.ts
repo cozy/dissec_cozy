@@ -242,6 +242,18 @@ export class ExperimentRunner {
     const n = manager.addNode(querierGroup, querierGroup.id)
     n.role = NodeRole.Querier
 
+    // Backup list is included in all protocols to preserve fairness: backups can fail
+    // Create a backup list and give it to all the nodes
+    const backupListStart = Object.keys(manager.nodes).length
+    const backups = []
+    // Create as many backup as nodes in the tree
+    for (let i = 0; i < backupListSize; i++) {
+      const backup = new Node({ id: backupListStart + i, config: manager.config })
+      backup.role = NodeRole.Backup
+      manager.nodes[backupListStart + i] = backup
+      backups.push(backup)
+    }
+
     // Strawman does no health verifications
     if (run.strategy !== ProtocolStrategy.Strawman) {
       // Only the node with the lowest ID sends the message
@@ -249,16 +261,6 @@ export class ExperimentRunner {
 
       // Eager does not use a backup list
       if (run.strategy !== ProtocolStrategy.Eager) {
-        // Create a backup list and give it to all the nodes
-        const backupListStart = Object.keys(manager.nodes).length
-        const backups = []
-        // Create as many backup as nodes in the tree
-        for (let i = 0; i < backupListSize; i++) {
-          const backup = new Node({ id: backupListStart + i, config: manager.config })
-          backup.role = NodeRole.Backup
-          manager.nodes[backupListStart + i] = backup
-          backups.push(backup)
-        }
         for (let i = 0; i < backupListStart; i++) {
           if (manager.nodes[i]) {
             manager.nodes[i].backupList = backups.map(e => e.id)
@@ -337,8 +339,9 @@ export class ExperimentRunner {
     }
 
     if (manager.status === StopStatus.Unfinished) {
-      manager.status = StopStatus.ExceededDeadline
-      manager.globalTime = run.deadline
+      // No messages and not checking health, add a fake message to update
+      manager.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
+      manager.handleNextMessage()
     }
 
     manager.finalNodeRoles = manager.countNodesPerRole()

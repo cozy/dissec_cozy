@@ -151,6 +151,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="failure_probability",
         hover_name="run_id",
         title=f"Failure rate by protocol latency",
+        render_mode="svg",
     )
 
     graphs["failure_rate_per_failure_proba_protocol"] = px.box(
@@ -169,7 +170,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="work_total",
         color="status",
         hover_name="run_id",
-        points="all",
+        points=False,
         title="Travail selon la taille de groupe par status",
     )
     graphs["work_failure_rate_strategy"] = px.box(
@@ -178,7 +179,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="work_total",
         color="strategy",
         hover_name="run_id",
-        points="all",
+        points=False,
         title=f"Travail selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
     )
     graphs["messages_strategy"] = px.box(
@@ -187,7 +188,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="messages_total",
         color="strategy",
         hover_name="run_id",
-        points="all",
+        points=False,
         title=f"Messages selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
     )
     graphs["latency_failure_rate_status"] = px.box(
@@ -196,7 +197,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="simulation_length",
         color="status",
         hover_name="run_id",
-        points="all",
+        points=False,
         title=f"Latence selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par status",
     )
     graphs["latency_failure_rate_strategy"] = px.box(
@@ -205,7 +206,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="simulation_length",
         color="strategy",
         hover_name="run_id",
-        points="all",
+        points=False,
         title=f"Latence selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
     )
     graphs["observed_failure_rate_per_failure_prob"] = px.box(
@@ -214,7 +215,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="failure_rate",
         color="strategy",
         hover_name="run_id",
-        points="all",
+        points=False,
         title=f"Taux de panne pour chaque {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
     graphs["observed_failure_rate_per_status"] = px.box(
@@ -223,7 +224,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="failure_rate",
         color="strategy",
         hover_name="run_id",
-        points="all",
+        points=False,
         title="Taux de panne pour chaque statut d'exécution",
     )
 
@@ -265,6 +266,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             color="status",
             hover_name="run_id",
             title=f"{strategies_map[strat]} execution latency",
+            render_mode="svg",
         )
         graphs[f"{strategies_map[strat]}_work_scatter"] = px.scatter(
             data[data["strategy"] == strat],
@@ -273,6 +275,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             color="status",
             hover_name="run_id",
             title=f"{strategies_map[strat]} total work",
+            render_mode="svg",
         )
 
         graphs[f"{strategies_map[strat]}_latency_amplification_scatter"] = px.scatter(
@@ -284,6 +287,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             marginal_y="histogram",
             trendline="lowess",
             title=f"{strategies_map[strat]} latency amplification",
+            render_mode="svg",
         )
         graphs[f"{strategies_map[strat]}_work_amplification_scatter"] = px.scatter(
             amps[amps["strategy"] == strat],
@@ -294,6 +298,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             marginal_y="histogram",
             trendline="lowess",
             title=f"{strategies_map[strat]} work amplification",
+            render_mode="svg",
         )
         graphs[f"{strategies_map[strat]}_completeness_scatter"] = px.scatter(
             amps[amps["strategy"] == strat],
@@ -304,6 +309,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             marginal_y="histogram",
             trendline="lowess",
             title=f"{strategies_map[strat]} completeness",
+            render_mode="svg",
         )
 
         not_empty = len(grouped_mean[grouped_mean["strategy"] == strat]) > 0
@@ -844,7 +850,9 @@ if __name__ == "__main__":
         df["failure_probability"] = df["failure_probability"].round(6)
 
         # Remove strategies not present in the data
-        strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+        strategies_map = dict(
+            EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
+        )
         for k in set(strategies_map.keys()).difference(strategies):
             del strategies_map[k]
 
