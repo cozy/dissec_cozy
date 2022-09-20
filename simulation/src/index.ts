@@ -27,10 +27,10 @@ if (debug) {
   ]
 } else {
   const failureRates = [0, 0.0001, 0.0002, 0.0003]
-  const sizes = [3, 4, 5]
+  const sizes = [3, 4, 5, 6]
   const depths = [3, 4, 5]
   const concentrations = [0]
-  const retries = 10
+  const retries = 50
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]) {
     for (const failure of failureRates) {
