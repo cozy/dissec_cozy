@@ -17,20 +17,20 @@ if (debug) {
       multicastSize: 5,
       deadline: 150000,
       failureRate: 0.0004,
-      depth: 5,
+      depth: 4,
       fanout: 4,
-      groupSize: 3,
+      groupSize: 4,
       concentration: 0,
-      random: false,
-      seed: 'OPTI-f0.0004-s3-d5-c0-0/1',
+      random: true,
+      seed: 'OPTI-f0.0004-s4-d4-c0-6/20',
     },
   ]
 } else {
-  const failureRates = [0, 0.0001, 0.0002, 0.0003]
+  const failureRates = [0, 0.0001, 0.0002, 0.0003, 0.0004, 0.0005]
   const sizes = [3, 4, 5, 6]
-  const depths = [3, 4, 5]
+  const depths = [3, 4, 5, 6]
   const concentrations = [0]
-  const retries = 50
+  const retries = 30
 
   for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]) {
     for (const failure of failureRates) {
@@ -41,7 +41,7 @@ if (debug) {
               configs.push({
                 strategy: strategy,
                 selectivity: 0.1,
-                maxToAverageRatio: 10,
+                maxToAverageRatio: 5,
                 averageLatency: 100,
                 averageCryptoTime: 100,
                 averageComputeTime: 100,
@@ -54,7 +54,7 @@ if (debug) {
                 fanout: 4,
                 groupSize: size,
                 concentration,
-                random: false,
+                random: true,
                 seed: `${strategy}-f${failure}-s${size}-d${depth}-c${concentration}-${i}/${retries}`,
               })
             }
