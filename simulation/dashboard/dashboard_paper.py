@@ -147,6 +147,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     box_points = False
 
+    to_export = dict()
+
     graphs["failure_rate_per_latency"] = px.scatter(
         data,
         x="simulation_length",
@@ -495,6 +497,26 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Complétude par {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
 
+    graphs["initial_contributors"] = px.box(
+        data,
+        x="depth",
+        y="initial_nodes_Contributor",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Initial number of contributors",
+    )
+
+    graphs["final_contributors"] = px.box(
+        data,
+        x="depth",
+        y="final_nodes_Contributor",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Final number of contributors",
+    )
+
     return html.Div(
         children=[
             html.H1("Failure rate and failure probability:"),
@@ -729,6 +751,23 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 id="completeness_per_failure_prob",
                 figure=graphs["completeness_per_failure_prob"],
             ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"initial_contributors",
+                        figure=graphs["initial_contributors"],
+                    ),
+                    dcc.Graph(
+                        id=f"final_contributors",
+                        figure=graphs["final_contributors"],
+                    ),
+                ],
+            ),
         ]
     )
 
@@ -807,9 +846,9 @@ if __name__ == "__main__":
                     html.H3("Depths"),
                     dcc.RangeSlider(
                         3,
-                        5,
+                        7,
                         1,
-                        value=[3, 5],
+                        value=[3, 7],
                         id="depths-range",
                     ),
                 ]
@@ -847,13 +886,6 @@ if __name__ == "__main__":
         tab,
         store_file,
     ):
-        print(
-            "Update Arguments: ",
-            selected_failures,
-            selected_sizes,
-            selected_depths,
-            tab,
-        )
         if not store_file:
             df = get_data(config["defaultGraph"])
         else:

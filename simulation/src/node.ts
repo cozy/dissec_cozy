@@ -123,7 +123,11 @@ export class Node {
         132, 134, 147, 148, 149, 153, 162, 164, 183, 192, 194, 195, 196, 197, 226, 269, 278, 284, 287, 290, 305, 306,
         311, 312, 317, 326, 339, 354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446, 4597, 6173,
       ]
-      const filters: MessageType[] = []
+      const filters: MessageType[] = [
+        MessageType.CheckHealth,
+        MessageType.ConfirmHealth,
+        MessageType.RequestHealthChecks,
+      ]
       if (
         nodesOfInterest.includes(this.id) ||
         nodesOfInterest.includes(receivedMessage.emitterId) ||

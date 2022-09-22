@@ -283,7 +283,8 @@ export class NodesManager {
   private standardLatency(): number {
     if (this.config.random) {
       // TODO: Model latency
-      return Math.max(0, Math.min((this.config.averageLatency * this.config.maxToAverageRatio) / 2, this.rayleigh()))
+      // return Math.max(0, Math.min((this.config.averageLatency * this.config.maxToAverageRatio) / 3, this.rayleigh()))
+      return this.config.averageLatency
     } else {
       return this.config.averageLatency
     }
