@@ -56,7 +56,10 @@ if (debug) {
       }
       for (const failure of [0, 0.000025, 0.00005, 0.000075, 0.0001]) {
         configs.push(
-          Object.assign({}, baseConfig, { failure, seed: `${strategy}-f${failure}-s5-d6-c0-${configs.length}` })
+          Object.assign({}, baseConfig, {
+            failureRate: failure,
+            seed: `${strategy}-f${failure}-s5-d6-c0-${configs.length}`,
+          })
         )
       }
       for (const size of [3, 4, 5, 6]) {
