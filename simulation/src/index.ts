@@ -49,7 +49,7 @@ if (debug) {
 
   for (let retry = 0; retry < retries; retry++) {
     for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]) {
-      for (const depth of [4, 5, 6]) {
+      for (const depth of [4, 5, 6, 7]) {
         configs.push(
           Object.assign({}, baseConfig, { depth, seed: `${strategy}-f0.00005-s5-d${depth}-c0-${configs.length}` })
         )

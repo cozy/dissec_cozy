@@ -7,7 +7,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "start:large": "NODE_OPTIONS='--max-old-space-size=16384' ts-node src/index.ts",
-    "start:max": "NODE_OPTIONS='--max-old-space-size=40000' ts-node src/index.ts",
+    "start:max": "tsc && node ./lib/src/index.js --max-old-space-size=40000 --semi_space_growth_factor=4 --semi-space-growth-factor=4",
     "test": "jest",
     "dashboard": "PORT='8050' python3 dashboard/dashboard.py",
     "dashboard:mini": "PORT='8051' python3 dashboard/dashboard_mini.py",
