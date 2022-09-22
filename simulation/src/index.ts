@@ -16,13 +16,13 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 150000,
-      failureRate: 0.0003,
-      depth: 5,
+      failureRate: 0.00005,
+      depth: 6,
       fanout: 4,
-      groupSize: 4,
+      groupSize: 5,
       concentration: 0,
       random: true,
-      seed: 'OPTI-f0.0003-s4-d5-c0-3/10',
+      seed: 'OPTI-f0.00005-s5-d6-c0-6',
     },
   ]
 } else {
@@ -49,7 +49,7 @@ if (debug) {
 
   for (let retry = 0; retry < retries; retry++) {
     for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]) {
-      for (const depth of [4, 5, 6, 7]) {
+      for (const depth of [4, 5, 6]) {
         configs.push(
           Object.assign({}, baseConfig, { depth, seed: `${strategy}-f0.00005-s5-d${depth}-c0-${configs.length}` })
         )

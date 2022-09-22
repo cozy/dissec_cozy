@@ -1,7 +1,8 @@
 {
   "name": "simulation",
   "version": "1.0.0",
-  "main": "index.js",
+  "module": "commonjs",
+  "main": "lib/src/index.js",
   "license": "MIT",
   "scripts": {
     "start": "ts-node src/index.ts",
@@ -18,7 +19,7 @@
     "jest": "^27.5.1",
     "ts-jest": "^27.1.3",
     "ts-node": "^10.5.0",
-    "typescript": "^4.5.5"
+    "typescript": "^4.9.0-dev.20220922"
   },
   "dependencies": {
     "@stdlib/random-base-rayleigh": "^0.0.6",
