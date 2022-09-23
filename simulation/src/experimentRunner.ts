@@ -47,15 +47,24 @@ export interface RunResult extends RunConfig {
 export class ExperimentRunner {
   runs: RunConfig[]
   outputPath: string
+  checkpoint?: { checkpoint: number; name: string }
   debug?: boolean = false
   fullExport?: boolean = false
   intermediateExport?: number = 0
 
   constructor(
     runs: RunConfig[],
-    options: { debug?: boolean; fullExport?: boolean; intermediateExport?: number } = { intermediateExport: 0 }
+    options: {
+      debug?: boolean
+      fullExport?: boolean
+      intermediateExport?: number
+      checkpoint?: { checkpoint: number; name: string }
+    } = {
+      intermediateExport: 0,
+    }
   ) {
     this.runs = runs
+    this.checkpoint = options.checkpoint
     this.debug = options.debug
     this.fullExport = options.fullExport
     this.intermediateExport = options.intermediateExport
@@ -115,17 +124,21 @@ export class ExperimentRunner {
     }
 
     new Date().toISOString().split('T')[0]
-    this.outputPath =
-      `./outputs/${new Date().toISOString()}_${execSync('git rev-parse HEAD').toString().trim()}_run${runs.length}_${
-        this.fullExport ? 'full_' : ''
-      }` +
-      JSON.stringify(labels)
-        .replaceAll('"', '')
-        .replaceAll(',', '_')
-        .replaceAll(':', '')
-        .replaceAll('{', '')
-        .replaceAll('}', '') +
-      '.csv'
+    if (this.checkpoint) {
+      this.outputPath = this.checkpoint.name + '.csv'
+    } else {
+      this.outputPath =
+        `./outputs/${new Date().toISOString()}_${execSync('git rev-parse HEAD').toString().trim()}_run${runs.length}_${
+          this.fullExport ? 'full_' : ''
+        }` +
+        JSON.stringify(labels)
+          .replaceAll('"', '')
+          .replaceAll(',', '_')
+          .replaceAll(':', '')
+          .replaceAll('{', '')
+          .replaceAll('}', '') +
+        '.csv'
+    }
   }
 
   writeResults(outputPath: string, results: RunResult[]) {
@@ -134,7 +147,7 @@ export class ExperimentRunner {
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
-        if (i === 0) {
+        if (i === 0 && this.checkpoint?.checkpoint === 0) {
           // Add columns titles
           fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
         }
@@ -157,7 +170,7 @@ export class ExperimentRunner {
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
-        if (i === 0) {
+        if (i === 0 && this.checkpoint?.checkpoint === 0) {
           // Add columns titles
           fs.writeFileSync(outputPath, columns.join(';') + '\n')
         }
@@ -206,6 +219,12 @@ export class ExperimentRunner {
         exportCounter = 0
         // Writing intermediary results
         this.writeResults(this.outputPath, results)
+
+        if (this.checkpoint) {
+          this.checkpoint.checkpoint += 1
+          fs.writeFileSync('./checkpoint.json', JSON.stringify(this.checkpoint))
+          console.log('Checkpoint!')
+        }
       }
     }
 

@@ -5,6 +5,7 @@ scripts/.token.json
 # DISSECOZY
 assets/
 dissec.config.json
+checkpoint.json
 
 # NPM
 node_modules/

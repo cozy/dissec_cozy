@@ -1,8 +1,17 @@
 import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
+import fs from 'fs'
+
+let checkpoint: { checkpoint: number; name: string }
+try {
+  checkpoint = JSON.parse(fs.readFileSync('./checkpoint.json').toString())
+} catch (err) {
+  checkpoint = { checkpoint: 0, name: './outputs/' + new Date().toISOString() }
+}
 
 let configs: RunConfig[] = []
 const debug = false
 const fullExport = false
+const useCheckpoint = true
 if (debug) {
   configs = [
     {
@@ -46,14 +55,11 @@ if (debug) {
     seed: `OPTI-f0.00005-s5-d6-c0-0`,
   }
   const retries = 10
+  const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
+  const depths = [7, 6, 5, 4]
 
-  for (let retry = 0; retry < retries; retry++) {
-    for (const strategy of [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]) {
-      for (const depth of [4, 5, 6, 7]) {
-        configs.push(
-          Object.assign({}, baseConfig, { depth, seed: `${strategy}-f0.00005-s5-d${depth}-c0-${configs.length}` })
-        )
-      }
+  for (const strategy of strategies) {
+    for (let retry = 0; retry < retries; retry++) {
       for (const failure of [0, 0.000025, 0.00005, 0.000075, 0.0001]) {
         configs.push(
           Object.assign({}, baseConfig, {
@@ -62,6 +68,8 @@ if (debug) {
           })
         )
       }
+    }
+    for (let retry = 0; retry < retries; retry++) {
       for (const size of [3, 4, 5, 6]) {
         configs.push(
           Object.assign({}, baseConfig, {
@@ -71,8 +79,20 @@ if (debug) {
         )
       }
     }
+    for (let retry = 0; retry < retries; retry++) {
+      for (const depth of depths) {
+        configs.push(
+          Object.assign({}, baseConfig, { depth, seed: `${strategy}-f0.00005-s5-d${depth}-c0-${configs.length}` })
+        )
+      }
+    }
   }
 }
 
-const runner = new ExperimentRunner(configs, { debug, fullExport, intermediateExport: 10 })
+const runner = new ExperimentRunner(configs.slice(useCheckpoint ? checkpoint.checkpoint : 0), {
+  debug,
+  fullExport,
+  intermediateExport: 1,
+  checkpoint: useCheckpoint && checkpoint,
+})
 runner.run()
