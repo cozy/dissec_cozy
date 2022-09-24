@@ -147,8 +147,6 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     box_points = False
 
-    to_export = dict()
-
     graphs["failure_rate_per_latency"] = px.scatter(
         data,
         x="simulation_length",
@@ -497,6 +495,32 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Complétude par {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
     )
 
+    df = data.copy()
+    df["failed_fraction"] = (
+        (df["initial_nodes_total"] - df["final_nodes_total"])
+        / df["initial_nodes_total"]
+        * 100
+    )
+    graphs["initial_nodes"] = px.box(
+        data,
+        x="depth",
+        y="initial_nodes_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Initial number of nodes",
+    )
+
+    graphs["final_nodes"] = px.box(
+        df,
+        x="depth",
+        y="failed_fraction",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Percent failed nodes",
+    )
+
     graphs["initial_contributors"] = px.box(
         data,
         x="depth",
@@ -765,6 +789,23 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"final_contributors",
                         figure=graphs["final_contributors"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"initial_nodes",
+                        figure=graphs["initial_nodes"],
+                    ),
+                    dcc.Graph(
+                        id=f"final_nodes",
+                        figure=graphs["final_nodes"],
                     ),
                 ],
             ),

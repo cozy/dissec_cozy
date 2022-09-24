@@ -223,7 +223,7 @@ export class ExperimentRunner {
         if (this.checkpoint) {
           this.checkpoint.checkpoint += 1
           fs.writeFileSync('./checkpoint.json', JSON.stringify(this.checkpoint))
-          console.log('Checkpoint!')
+          console.log(`Checkpoint ${i}/${this.runs.length}!`)
         }
       }
     }

@@ -5,7 +5,7 @@ let checkpoint: { checkpoint: number; name: string }
 try {
   checkpoint = JSON.parse(fs.readFileSync('./checkpoint.json').toString())
 } catch (err) {
-  checkpoint = { checkpoint: 0, name: './outputs/' + new Date().toISOString() }
+  checkpoint = { checkpoint: 0, name: './outputs/' + new Date().toISOString().replaceAll(':', '') }
 }
 
 let configs: RunConfig[] = []
@@ -46,7 +46,7 @@ if (debug) {
     healthCheckPeriod: 3,
     multicastSize: 5,
     deadline: 75 * 2000,
-    failureRate: 0.00005,
+    failureRate: 0.00007,
     depth: 6,
     fanout: 4,
     groupSize: 5,
@@ -60,7 +60,7 @@ if (debug) {
 
   for (const strategy of strategies) {
     for (let retry = 0; retry < retries; retry++) {
-      for (const failure of [0, 0.000025, 0.00005, 0.000075, 0.0001]) {
+      for (const failure of [0.0, 0.00007, 0.00014, 0.00024]) {
         configs.push(
           Object.assign({}, baseConfig, {
             failureRate: failure,
