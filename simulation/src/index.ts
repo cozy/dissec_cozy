@@ -25,13 +25,13 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 150000,
-      failureRate: 0.00005,
+      failureRate: 0.00024,
       depth: 6,
       fanout: 4,
       groupSize: 5,
       concentration: 0,
       random: true,
-      seed: 'OPTI-f0.00005-s5-d6-c0-6',
+      seed: 'OPTI-f0.00024-s5-d6-c0-147',
     },
   ]
 } else {
@@ -54,7 +54,7 @@ if (debug) {
     random: true,
     seed: `OPTI-f0.00005-s5-d6-c0-0`,
   }
-  const retries = 10
+  const retries = 30
   const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
   const depths = [7, 6, 5, 4]
 
@@ -93,6 +93,6 @@ const runner = new ExperimentRunner(configs.slice(useCheckpoint ? checkpoint.che
   debug,
   fullExport,
   intermediateExport: 1,
-  checkpoint: useCheckpoint && checkpoint,
+  checkpoint: useCheckpoint ? checkpoint : undefined,
 })
 runner.run()

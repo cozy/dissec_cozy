@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { execSync } from 'child_process'
+import cloneDeep from 'lodash/cloneDeep'
 
 import NodesManager, { AugmentedMessage } from './manager'
 import { Message, MessageType, StopStatus } from './message'
@@ -208,11 +209,23 @@ export class ExperimentRunner {
     let exportCounter = 0
     for (let i = 0; i < this.runs.length; i++) {
       console.log(JSON.stringify(this.runs[i]))
-      results.push(this.singleRun(this.runs[i]))
+      let result = this.singleRun(this.runs[i])
+      let j = 0
+      // HACK: Retry to find working simulations
+      while (!result) {
+        const newConfiguration = cloneDeep(this.runs[i])
+        newConfiguration.seed += `-retry${++j}`
+        console.log('Retry', newConfiguration.seed)
+        result = this.singleRun(newConfiguration)
+      }
+
+      results.push(result)
 
       const averageRunTime = (Date.now() - startTime) / (i + 1)
       const runsLeft = this.runs.length - i
-      console.log(`Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes`)
+      console.log(
+        `Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes (current ime: ${new Date().toISOString()})`
+      )
       console.log()
 
       if (this.intermediateExport && ++exportCounter >= this.intermediateExport) {
@@ -238,7 +251,7 @@ export class ExperimentRunner {
     console.log(`Total simulation time: ${(Date.now() - startTime) / 60000} minutes`)
   }
 
-  singleRun(run: RunConfig): RunResult {
+  singleRun(run: RunConfig): RunResult | undefined {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
     const backupListSize = nodesInTree * 1
@@ -353,8 +366,13 @@ export class ExperimentRunner {
     manager.initialNodeRoles = manager.countNodesPerRole()
 
     // Running the simulator the end
+    const startTime = Date.now()
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
+      if (Date.now() - startTime > 3600000) {
+        // It's been more than 1 hour, abort and retry
+        return
+      }
     }
 
     if (manager.status === StopStatus.Unfinished) {

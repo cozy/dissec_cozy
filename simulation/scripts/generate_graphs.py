@@ -167,7 +167,8 @@ if __name__ == "__main__":
     strategies = pd.unique(data["strategy"])
     status = pd.unique(data["status"])
     data["failure_probability"] = data["failure_probability"].round(6)
-    depths = np.sort(pd.unique(data["depth"]))
+    depths = [int(d) for d in np.sort(pd.unique(data["depth"]))]
+    sizes = [int(s) for s in np.sort(pd.unique(data["group_size"]))]
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
 
@@ -231,8 +232,28 @@ if __name__ == "__main__":
                 quantile["completeness"]
                 for quantile in [df2.quantile(q) for q in quantiles]
             ]
+        
+        for g in sizes:
+            df2 = df[df["group_size"] == g]
+            df2 = df2[df2["failure_probability"] == 0.00005]
+            df2 = df2[df2["depth"] == 6]
+            quantiles = [0, 0.25, 0.5, 0.75, 1]
+
+            res["work"][strategy][f"group-{str(g)}"] = [
+                quantile["work_total"]
+                for quantile in [df2.quantile(q) for q in quantiles]
+            ]
+            res["latency"][strategy][f"group-{str(g)}"] = [
+                quantile["simulation_length"]
+                for quantile in [df2.quantile(q) for q in quantiles]
+            ]
+            res["completeness"][strategy][f"group-{str(g)}"] = [
+                quantile["completeness"]
+                for quantile in [df2.quantile(q) for q in quantiles]
+            ]
 
     with open("./outputs/graphs.tex", "w") as f:
+        # Failure probabilities
         f.write(
             generate_figure(
                 res["work"],
@@ -272,7 +293,7 @@ if __name__ == "__main__":
             generate_figure(
                 res["work"],
                 "depth",
-                [4.0, 5.0, 6.0, 7.0],
+                [4, 5, 6, 7],
                 ["1003", "4009", "16033", "64131"],
                 "Nodes in the tree",
                 "Total work",
@@ -283,7 +304,7 @@ if __name__ == "__main__":
             generate_figure(
                 res["latency"],
                 "depth",
-                [4.0, 5.0, 6.0, 7.0],
+                [4, 5, 6, 7],
                 ["1003", "4009", "16033", "64131"],
                 "Nodes in the tree",
                 "Protocol latency",
@@ -294,10 +315,45 @@ if __name__ == "__main__":
             generate_figure(
                 res["completeness"],
                 "depth",
-                [4.0, 5.0, 6.0, 7.0],
+                [4, 5, 6, 7],
                 ["1003", "4009", "16033", "64131"],
                 "Nodes in the tree",
                 "Completeness",
                 "Completeness of each strategies at different depth",
+            )
+        )
+        
+        # Group size
+        f.write(
+            generate_figure(
+                res["work"],
+                "group",
+                [3, 4, 5, 6],
+                ["3", "4", "5", "6"],
+                "Security parameter",
+                "Total work",
+                "Total work of each strategies at different group size",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["latency"],
+                "group",
+                [3, 4, 5, 6],
+                ["3", "4", "5", "6"],
+                "Security parameter",
+                "Protocol latency",
+                "Protocol latency of each strategies at different group size",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["completeness"],
+                "group",
+                [3, 4, 5, 6],
+                ["3", "4", "5", "6"],
+                "Security parameter",
+                "Completeness",
+                "Completeness of each strategies at different group size",
             )
         )
