@@ -97,7 +97,7 @@ def get_data(path, aggregate_message=True):
 
 
 def generate_box(quantiles, index):
-    if np.nan in quantiles:
+    if pd.Series(quantiles).hasnans:
         return ""
 
     return f"""
@@ -167,8 +167,8 @@ if __name__ == "__main__":
     strategies = pd.unique(data["strategy"])
     status = pd.unique(data["status"])
     data["failure_probability"] = data["failure_probability"].round(6)
-    depths = [int(d) for d in np.sort(pd.unique(data["depth"]))]
-    sizes = [int(s) for s in np.sort(pd.unique(data["group_size"]))]
+    depths = np.sort(pd.unique(data["depth"]))
+    sizes = np.sort(pd.unique(data["group_size"]))
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
 
@@ -196,9 +196,9 @@ if __name__ == "__main__":
             res["completeness"][strategy] = {}
 
         for proba in failure_probabilities:
-            df2 = df[df["failure_probability"] == proba]
-            df2 = df2[df2["depth"] == 6]
-            df2 = df2[df2["group_size"] == 5]
+            df2 = df[df["failure_probability"] == proba].copy()
+            df2 = df2[df2["depth"] == 6.0]
+            df2 = df2[df2["group_size"] == 5.0]
             quantiles = [0, 0.25, 0.5, 0.75, 1]
 
             res["work"][strategy][f"failures-{str(proba)}"] = [
@@ -215,9 +215,9 @@ if __name__ == "__main__":
             ]
 
         for d in depths:
-            df2 = df[df["depth"] == d]
+            df2 = df[df["depth"] == d].copy()
             df2 = df2[df2["failure_probability"] == 0.00005]
-            df2 = df2[df2["group_size"] == 5]
+            df2 = df2[df2["group_size"] == 5.0]
             quantiles = [0, 0.25, 0.5, 0.75, 1]
 
             res["work"][strategy][f"depth-{str(d)}"] = [
@@ -232,11 +232,11 @@ if __name__ == "__main__":
                 quantile["completeness"]
                 for quantile in [df2.quantile(q) for q in quantiles]
             ]
-        
+
         for g in sizes:
-            df2 = df[df["group_size"] == g]
+            df2 = df[df["group_size"] == g].copy()
             df2 = df2[df2["failure_probability"] == 0.00005]
-            df2 = df2[df2["depth"] == 6]
+            df2 = df2[df2["depth"] == 6.0]
             quantiles = [0, 0.25, 0.5, 0.75, 1]
 
             res["work"][strategy][f"group-{str(g)}"] = [
@@ -293,7 +293,7 @@ if __name__ == "__main__":
             generate_figure(
                 res["work"],
                 "depth",
-                [4, 5, 6, 7],
+                [4.0, 5.0, 6.0, 7.0],
                 ["1003", "4009", "16033", "64131"],
                 "Nodes in the tree",
                 "Total work",
@@ -304,7 +304,7 @@ if __name__ == "__main__":
             generate_figure(
                 res["latency"],
                 "depth",
-                [4, 5, 6, 7],
+                [4.0, 5.0, 6.0, 7.0],
                 ["1003", "4009", "16033", "64131"],
                 "Nodes in the tree",
                 "Protocol latency",
@@ -315,20 +315,20 @@ if __name__ == "__main__":
             generate_figure(
                 res["completeness"],
                 "depth",
-                [4, 5, 6, 7],
+                [4.0, 5.0, 6.0, 7.0],
                 ["1003", "4009", "16033", "64131"],
                 "Nodes in the tree",
                 "Completeness",
                 "Completeness of each strategies at different depth",
             )
         )
-        
+
         # Group size
         f.write(
             generate_figure(
                 res["work"],
                 "group",
-                [3, 4, 5, 6],
+                [3.0, 4.0, 5.0, 6.0],
                 ["3", "4", "5", "6"],
                 "Security parameter",
                 "Total work",
@@ -339,7 +339,7 @@ if __name__ == "__main__":
             generate_figure(
                 res["latency"],
                 "group",
-                [3, 4, 5, 6],
+                [3.0, 4.0, 5.0, 6.0],
                 ["3", "4", "5", "6"],
                 "Security parameter",
                 "Protocol latency",
@@ -350,7 +350,7 @@ if __name__ == "__main__":
             generate_figure(
                 res["completeness"],
                 "group",
-                [3, 4, 5, 6],
+                [3.0, 4.0, 5.0, 6.0],
                 ["3", "4", "5", "6"],
                 "Security parameter",
                 "Completeness",
