@@ -14,9 +14,9 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
-const fullExport = true
-const useCheckpoint = false
+const debug = false
+const fullExport = false
+const useCheckpoint = true
 if (debug) {
   configs = [
     {
