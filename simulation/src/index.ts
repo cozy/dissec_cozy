@@ -50,7 +50,7 @@ if (debug) {
     failCheckPeriod: 100,
     healthCheckPeriod: 3,
     multicastSize: 5,
-    deadline: 75 * 2000,
+    deadline: 500 * 1000,
     failureRate: 0.00007,
     depth: 6,
     fanout: 4,
@@ -59,7 +59,7 @@ if (debug) {
     random: false,
     seed: `OPTI-f0.00005-s5-d6-c0-0`,
   }
-  const retries = 2
+  const retries = 5
   const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
   const depths = [7, 6, 5, 4]
 
@@ -79,7 +79,7 @@ if (debug) {
           Object.assign({}, baseConfig, {
             strategy,
             groupSize: size,
-            seed: `${strategy}-f0.00005-s${size}-d6-c0-${configs.length}`,
+            seed: `${strategy}-f0.00007-s${size}-d6-c0-${configs.length}`,
           })
         )
       }
@@ -88,7 +88,7 @@ if (debug) {
           Object.assign({}, baseConfig, {
             strategy,
             depth,
-            seed: `${strategy}-f0.00005-s5-d${depth}-c0-${configs.length}`,
+            seed: `${strategy}-f0.00007-s5-d${depth}-c0-${configs.length}`,
           })
         )
       }

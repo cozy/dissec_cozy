@@ -16,26 +16,31 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
     if (this.config.strategy === ProtocolStrategy.Eager) {
       // In eager strategy, tell members to give up their child as well
 
-      // Aggregators don't have secure channel, sign the request
-      // TODO: The node should contact itself instantly
-      this.localTime += this.cryptoLatency()
+      if (this.node.children.find(e => e.members.includes(unansweredHealthCheck))) {
+        // Don't tell member if the node has already been removed
+        // It means a group broadcast has already been done
 
-      for (const member of this.node.members) {
-        messages.push(
-          new Message(
-            MessageType.GiveUpChild,
-            this.localTime,
-            member === this.id ? this.localTime : 0,
-            this.id,
-            member,
-            {
-              targetNode: unansweredHealthCheck,
-            }
+        // Aggregators don't have secure channel, sign the request
+        // TODO: The node should contact itself instantly
+        // this.localTime += this.cryptoLatency()
+
+        for (const member of this.node.members) {
+          messages.push(
+            new Message(
+              MessageType.GiveUpChild,
+              this.localTime,
+              member === this.id ? this.localTime : 0,
+              this.id,
+              member,
+              {
+                targetNode: unansweredHealthCheck,
+              }
+            )
           )
-        )
 
-        // The querier only sends the message to himself
-        if (this.role === NodeRole.Querier) break
+          // The querier only sends the message to himself
+          if (this.role === NodeRole.Querier) break
+        }
       }
     } else {
       if (this.role !== NodeRole.LeafAggregator) {

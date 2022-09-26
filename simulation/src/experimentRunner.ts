@@ -403,16 +403,16 @@ export class ExperimentRunner {
       manager.displayAggregateId()
     }
 
-    const oldMessages: AugmentedMessage[] = []
-    if (this.fullExport) {
-      const oldIds: number[] = []
-      for (const m of manager.oldMessages) {
-        if (!oldIds.includes(m.id)) {
-          oldIds.push(m.id)
-          oldMessages.push(m)
-        }
-      }
-    }
+    const oldMessages: AugmentedMessage[] = manager.oldMessages
+    // if (this.fullExport) {
+    //   const oldIds: number[] = []
+    //   for (const m of manager.oldMessages) {
+    //     if (!oldIds.includes(m.id)) {
+    //       oldIds.push(m.id)
+    //       oldMessages.push(m)
+    //     }
+    //   }
+    // }
 
     return {
       ...run,

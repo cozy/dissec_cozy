@@ -11,6 +11,11 @@ export function handleGiveUpChild(this: Node, receivedMessage: Message): Message
     throw new Error(`#${this.id} ${receivedMessage.type} did not receive the target node`)
   }
 
+  // Check authenticity
+  // if (receivedMessage.emitterId !== this.id) {
+  //   this.localTime += this.config.averageCryptoTime
+  // }
+
   // Drop the child group
   this.node.children = this.node.children.filter(e => !e.members.includes(receivedMessage.content.targetNode!))
 
