@@ -541,8 +541,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Final number of contributors",
     )
 
+    default_failure = 0.00007
+    default_depth = 5
+    default_group = 5
+
     graphs[f"work_failure_paper"] = px.box(
-        data[(data["depth"] == 6) & (data["group_size"] == 5)],
+        data[(data["depth"] == default_depth) & (data["group_size"] == default_depth)],
         x="failure_probability",
         y="work_total",
         color="strategy",
@@ -551,7 +555,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Work for Failure",
     )
     graphs[f"work_depth_paper"] = px.box(
-        data[(data["failure_probability"] == 0.00005) & (data["group_size"] == 5)],
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["group_size"] == default_group)
+        ],
         x="depth",
         y="work_total",
         color="strategy",
@@ -560,7 +567,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Work for depth",
     )
     graphs[f"work_group_paper"] = px.box(
-        data[(data["failure_probability"] == 0.00005) & (data["depth"] == 6)],
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
         x="group_size",
         y="work_total",
         color="strategy",
@@ -570,7 +580,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     graphs[f"latency_failure_paper"] = px.box(
-        data[(data["depth"] == 6) & (data["group_size"] == 5)],
+        data[(data["depth"] == default_depth) & (data["group_size"] == default_group)],
         x="failure_probability",
         y="simulation_length",
         color="strategy",
@@ -579,7 +589,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Work for Failure",
     )
     graphs[f"latency_depth_paper"] = px.box(
-        data[(data["failure_probability"] == 0.00005) & (data["group_size"] == 5)],
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["group_size"] == default_group)
+        ],
         x="depth",
         y="simulation_length",
         color="strategy",
@@ -588,7 +601,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Work for depth",
     )
     graphs[f"latency_group_paper"] = px.box(
-        data[(data["failure_probability"] == 0.00005) & (data["depth"] == 6)],
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
         x="group_size",
         y="simulation_length",
         color="strategy",
@@ -598,7 +614,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     graphs[f"completeness_failure_paper"] = px.box(
-        data[(data["depth"] == 6) & (data["group_size"] == 5)],
+        data[(data["depth"] == default_depth) & (data["group_size"] == default_group)],
         x="failure_probability",
         y="completeness",
         color="strategy",
@@ -607,7 +623,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Work for Failure",
     )
     graphs[f"completeness_depth_paper"] = px.box(
-        data[(data["failure_probability"] == 0.00005) & (data["group_size"] == 5)],
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["group_size"] == default_group)
+        ],
         x="depth",
         y="completeness",
         color="strategy",
@@ -616,7 +635,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Work for depth",
     )
     graphs[f"completeness_group_paper"] = px.box(
-        data[(data["failure_probability"] == 0.00005) & (data["depth"] == 6)],
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
         x="group_size",
         y="completeness",
         color="strategy",
