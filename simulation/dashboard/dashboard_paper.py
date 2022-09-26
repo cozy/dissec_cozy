@@ -145,7 +145,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
 
-    box_points = False
+    box_points = "all"
 
     graphs["failure_rate_per_latency"] = px.scatter(
         data,
@@ -541,6 +541,90 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Final number of contributors",
     )
 
+    graphs[f"work_failure_paper"] = px.box(
+        data[(data["depth"] == 6) & (data["group_size"] == 5)],
+        x="failure_probability",
+        y="work_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for Failure",
+    )
+    graphs[f"work_depth_paper"] = px.box(
+        data[(data["failure_probability"] == 0.00005) & (data["group_size"] == 5)],
+        x="depth",
+        y="work_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for depth",
+    )
+    graphs[f"work_group_paper"] = px.box(
+        data[(data["failure_probability"] == 0.00005) & (data["depth"] == 6)],
+        x="group_size",
+        y="work_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for group",
+    )
+
+    graphs[f"latency_failure_paper"] = px.box(
+        data[(data["depth"] == 6) & (data["group_size"] == 5)],
+        x="failure_probability",
+        y="simulation_length",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for Failure",
+    )
+    graphs[f"latency_depth_paper"] = px.box(
+        data[(data["failure_probability"] == 0.00005) & (data["group_size"] == 5)],
+        x="depth",
+        y="simulation_length",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for depth",
+    )
+    graphs[f"latency_group_paper"] = px.box(
+        data[(data["failure_probability"] == 0.00005) & (data["depth"] == 6)],
+        x="group_size",
+        y="simulation_length",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for group",
+    )
+
+    graphs[f"completeness_failure_paper"] = px.box(
+        data[(data["depth"] == 6) & (data["group_size"] == 5)],
+        x="failure_probability",
+        y="completeness",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for Failure",
+    )
+    graphs[f"completeness_depth_paper"] = px.box(
+        data[(data["failure_probability"] == 0.00005) & (data["group_size"] == 5)],
+        x="depth",
+        y="completeness",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for depth",
+    )
+    graphs[f"completeness_group_paper"] = px.box(
+        data[(data["failure_probability"] == 0.00005) & (data["depth"] == 6)],
+        x="group_size",
+        y="completeness",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Work for group",
+    )
+
     return html.Div(
         children=[
             html.H1("Failure rate and failure probability:"),
@@ -806,6 +890,69 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"final_nodes",
                         figure=graphs["final_nodes"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"work_failure_paper",
+                        figure=graphs["work_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"work_depth_paper",
+                        figure=graphs["work_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"work_group_paper",
+                        figure=graphs["work_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"latency_failure_paper",
+                        figure=graphs["latency_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"latency_depth_paper",
+                        figure=graphs["latency_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"latency_group_paper",
+                        figure=graphs["latency_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"completeness_failure_paper",
+                        figure=graphs["completeness_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"completeness_depth_paper",
+                        figure=graphs["completeness_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"completeness_group_paper",
+                        figure=graphs["completeness_group_paper"],
                     ),
                 ],
             ),

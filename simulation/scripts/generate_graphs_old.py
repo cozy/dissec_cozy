@@ -123,90 +123,37 @@ def generate_tick(o, key, tick, index):
     )
 
 
-def generate_graph(o, key, xticks, xticklabels, xlabel=None, ylabel=None, ymax=None):
-    plots = "\n".join([generate_tick(o, key, p, i + 1) for (i, p) in enumerate(xticks)])
-    start = f"""
-    \\nextgroupplot[
-        xtick={{{",".join([str(i+1) for i in range(len(xticks))])}}},
-        xticklabels={{{",".join(xticklabels)}}},
-        {'xlabel=' + xlabel + ',' if xlabel is not None else ''}
-        {'ylabel=' + ylabel + ',' if ylabel is not None else ''}
-        {'ymax=' + ymax + ',' if ymax is not None else ''}
-    ]
-
-    {plots}
-"""
-    return start
+def generate_graph(o, key, params):
+    return "\n".join([generate_tick(o, key, p, i + 1) for (i, p) in enumerate(params)])
 
 
-def generate_figure(data, ticks, ticklabels, caption):
-    boxes = "\n".join(
-        [
-            generate_graph(
-                data["work"],
-                "failures",
-                ticks[0],
-                ticklabels[0],
-                ylabel="Total work",
-                ymax="100000000",
-            ),
-            generate_graph(
-                data["work"], "depth", ticks[1], ticklabels[1], ymax="100000000"
-            ),
-            generate_graph(
-                data["work"], "group", ticks[2], ticklabels[2], ymax="100000000"
-            ),
-            generate_graph(
-                data["latency"],
-                "failures",
-                ticks[3],
-                ticklabels[3],
-                ylabel="Protocol latency",
-            ),
-            generate_graph(data["latency"], "depth", ticks[4], ticklabels[4]),
-            generate_graph(data["latency"], "group", ticks[5], ticklabels[5]),
-            generate_graph(
-                data["completeness"],
-                "failures",
-                ticks[6],
-                ticklabels[6],
-                xlabel="Maximum expected failures",
-                ylabel="Completeness",
-            ),
-            generate_graph(
-                data["completeness"],
-                "depth",
-                ticks[7],
-                ticklabels[7],
-                xlabel="Nodes in the tree",
-            ),
-            generate_graph(
-                data["completeness"],
-                "group",
-                ticks[8],
-                ticklabels[8],
-                xlabel="Group size",
-            ),
-        ]
-    )
+def generate_figure(o, key, xticks, xticklabels, xlabel, ylabel, caption):
+    boxes = generate_graph(o, key, xticks)
     return f"""
-\\begin{{figure*}}
-    \\centering
-    \\resizebox{{\\textwidth}}{{!}}{{
-    \\begin{{tikzpicture}}
-        \\begin{{groupplot}}[
-            group style={{group size= 3 by 3, group name=perfplots}},
-            boxplot/draw direction=y,
-            cycle list name=color,
-            area legend,
-        ]
-
-            {boxes}
-        \\end{{groupplot}}
-    \\end{{tikzpicture}}
-    }}
-    \\caption{{{caption}}}
-\\end{{figure*}}
+\\begin{{figure}}
+  \\begin{{tikzpicture}}
+    \\begin{{axis}}
+      [
+      area legend,
+      xtick={{{",".join([str(i + 1) for i in range(len(xticklabels))])}}},
+      xticklabels={{{",".join(xticklabels)}}},
+      xlabel={xlabel},
+      ylabel={ylabel},
+      boxplot/draw direction=y,
+      cycle list name=color,
+      legend entries={{Strawman, Tolerant, Resilient}},
+      legend style={{
+          cells={{anchor=west}},
+          legend pos=inner north east,
+      }},
+      legend image post style={{mark=None,are legend}}
+      ]
+      {boxes}
+      \\end{{axis}}
+    \\node[below right] at (border.north east) {{\\ref{{legend}}}};
+  \\end{{tikzpicture}}
+  \\caption{{{caption}}}
+\\end{{figure}}
 """
 
 
@@ -305,33 +252,108 @@ if __name__ == "__main__":
                 for quantile in [df2.quantile(q) for q in quantiles]
             ]
 
-    with open("./outputs/graphs_1figure.tex", "w") as f:
+    with open("./outputs/graphs.tex", "w") as f:
         # Failure probabilities
         f.write(
             generate_figure(
-                res,
-                [
-                    failure_probabilities,
-                    depths,
-                    sizes,
-                    failure_probabilities,
-                    depths,
-                    sizes,
-                    failure_probabilities,
-                    depths,
-                    sizes,
-                ],
-                [
-                    ["0.0\%", "3.7\%", "7.2\%", "10.6\%", "13.9\%"],
-                    ["1003", "4009", "16033", "64131"],
-                    ["3", "4", "5", "6"],
-                    ["0.0\%", "3.7\%", "7.2\%", "10.6\%", "13.9\%"],
-                    ["1003", "4009", "16033", "64131"],
-                    ["3", "4", "5", "6"],
-                    ["0.0\%", "3.7\%", "7.2\%", "10.6\%", "13.9\%"],
-                    ["1003", "4009", "16033", "64131"],
-                    ["3", "4", "5", "6"],
-                ],
-                "Performances under selected constraints",
+                res["work"],
+                "failures",
+                failure_probabilities,
+                ["0.0\%", "3.7\%", "7.2\%", "10.6\%", "13.9\%"],
+                "Maximum expected failures",
+                "Total work",
+                "Total work of each strategies at different failure probabilities",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["latency"],
+                "failures",
+                failure_probabilities,
+                ["0.0\%", "3.7\%", "7.2\%", "10.6\%", "13.9\%"],
+                "Maximum Expected Failures",
+                "Protocol latency",
+                "Protocol latency of each strategies at different failure probabilities",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["completeness"],
+                "failures",
+                failure_probabilities,
+                ["0.0\%", "3.7\%", "7.2\%", "10.6\%", "13.9\%"],
+                "Maximum expected failures",
+                "Completeness",
+                "Completeness of each strategies at different failure probabilities",
+            )
+        )
+
+        # Depth
+        f.write(
+            generate_figure(
+                res["work"],
+                "depth",
+                [4.0, 5.0, 6.0, 7.0],
+                ["1003", "4009", "16033", "64131"],
+                "Nodes in the tree",
+                "Total work",
+                "Total work of each strategies at different depth",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["latency"],
+                "depth",
+                [4.0, 5.0, 6.0, 7.0],
+                ["1003", "4009", "16033", "64131"],
+                "Nodes in the tree",
+                "Protocol latency",
+                "Protocol latency of each strategies at different depth",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["completeness"],
+                "depth",
+                [4.0, 5.0, 6.0, 7.0],
+                ["1003", "4009", "16033", "64131"],
+                "Nodes in the tree",
+                "Completeness",
+                "Completeness of each strategies at different depth",
+            )
+        )
+
+        # Group size
+        f.write(
+            generate_figure(
+                res["work"],
+                "group",
+                [3.0, 4.0, 5.0, 6.0],
+                ["3", "4", "5", "6"],
+                "Security parameter",
+                "Total work",
+                "Total work of each strategies at different group size",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["latency"],
+                "group",
+                [3.0, 4.0, 5.0, 6.0],
+                ["3", "4", "5", "6"],
+                "Security parameter",
+                "Protocol latency",
+                "Protocol latency of each strategies at different group size",
+            )
+        )
+        f.write(
+            generate_figure(
+                res["completeness"],
+                "group",
+                [3.0, 4.0, 5.0, 6.0],
+                ["3", "4", "5", "6"],
+                "Security parameter",
+                "Completeness",
+                "Completeness of each strategies at different group size",
             )
         )

@@ -48,7 +48,7 @@ export interface RunResult extends RunConfig {
 export class ExperimentRunner {
   runs: RunConfig[]
   outputPath: string
-  checkpoint?: { checkpoint: number; name: string }
+  checkpoint?: { checkpoint: number; name: string; path: string }
   debug?: boolean = false
   fullExport?: boolean = false
   intermediateExport?: number = 0
@@ -59,7 +59,7 @@ export class ExperimentRunner {
       debug?: boolean
       fullExport?: boolean
       intermediateExport?: number
-      checkpoint?: { checkpoint: number; name: string }
+      checkpoint?: { checkpoint: number; name: string; path: string }
     } = {
       intermediateExport: 0,
     }
@@ -143,12 +143,13 @@ export class ExperimentRunner {
   }
 
   writeResults(outputPath: string, results: RunResult[]) {
+    console.log('Writing results at', this.outputPath)
     if (!this.fullExport) {
       // Write each run as a row
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
-        if (i === 0 && this.checkpoint?.checkpoint === 0) {
+        if (i === 0 && ((this.checkpoint && this.checkpoint?.checkpoint === 0) || !this.checkpoint)) {
           // Add columns titles
           fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
         }
@@ -171,7 +172,7 @@ export class ExperimentRunner {
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
-        if (i === 0 && this.checkpoint?.checkpoint === 0) {
+        if (i === 0 && ((this.checkpoint && this.checkpoint?.checkpoint === 0) || !this.checkpoint)) {
           // Add columns titles
           fs.writeFileSync(outputPath, columns.join(';') + '\n')
         }
@@ -235,7 +236,7 @@ export class ExperimentRunner {
 
         if (this.checkpoint) {
           this.checkpoint.checkpoint += 1
-          fs.writeFileSync('./checkpoint.json', JSON.stringify(this.checkpoint))
+          fs.writeFileSync(this.checkpoint.path, JSON.stringify(this.checkpoint))
           console.log(`Checkpoint ${i}/${this.runs.length}!`)
         }
       }
@@ -369,8 +370,8 @@ export class ExperimentRunner {
     const startTime = Date.now()
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
-      if (Date.now() - startTime > 3600000) {
-        // It's been more than 1 hour, abort and retry
+      if (Date.now() - startTime > 1800000) {
+        // It's been more than 1/2 hour, abort and retry
         return
       }
     }
@@ -405,12 +406,12 @@ export class ExperimentRunner {
     const oldMessages: AugmentedMessage[] = []
     if (this.fullExport) {
       const oldIds: number[] = []
-      manager.oldMessages.forEach(m => {
+      for (const m of manager.oldMessages) {
         if (!oldIds.includes(m.id)) {
           oldIds.push(m.id)
           oldMessages.push(m)
         }
-      })
+      }
     }
 
     return {

@@ -294,7 +294,7 @@ if __name__ == "__main__":
                     html.H3("Theoretical failure rate"),
                     dcc.RangeSlider(
                         0,
-                        failure_probabilities[-1],
+                        0.0001,
                         failure_probabilities[1] - failure_probabilities[0]
                         if len(failure_probabilities) > 1
                         else None,
