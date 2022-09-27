@@ -311,6 +311,8 @@ export class NodesManager {
             return 800
           case MessageType.BackupResponse:
             return 800
+          case MessageType.GiveUpChild:
+            return 800
           case MessageType.ContributorPing:
             return 800
           case MessageType.ConfirmContributors:

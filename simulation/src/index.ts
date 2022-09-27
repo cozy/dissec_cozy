@@ -36,7 +36,7 @@ if (debug) {
       groupSize: 5,
       concentration: 0,
       random: true,
-      seed: 'EAGER-f0.00005-s5-d5-c0-766',
+      seed: 'EAGER-f0.00005-s5-d5-c0-762',
     },
   ]
 } else {

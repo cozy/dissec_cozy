@@ -542,11 +542,11 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     default_failure = 0.00007
-    default_depth = 5
+    default_depth = 6
     default_group = 5
 
     graphs[f"work_failure_paper"] = px.box(
-        data[(data["depth"] == default_depth) & (data["group_size"] == default_depth)],
+        data[(data["depth"] == default_depth) & (data["group_size"] == default_group)],
         x="failure_probability",
         y="work_total",
         color="strategy",

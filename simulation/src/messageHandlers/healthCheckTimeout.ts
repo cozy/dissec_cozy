@@ -13,7 +13,10 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
 
   const ongoingChecks = Object.keys(this.ongoingHealthChecks).map(Number)
   for (const unansweredHealthCheck of ongoingChecks) {
-    if (this.config.strategy === ProtocolStrategy.Eager) {
+    if (this.id === 1286) {
+      console.log('k')
+    }
+    if (this.config.strategy === ProtocolStrategy.Eager && this.role !== NodeRole.LeafAggregator) {
       // In eager strategy, tell members to give up their child as well
 
       if (this.node.children.find(e => e.members.includes(unansweredHealthCheck))) {
@@ -103,7 +106,7 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
     }
   }
 
-  if (this.role === NodeRole.LeafAggregator && this.config.strategy === ProtocolStrategy.Optimistic) {
+  if (this.role === NodeRole.LeafAggregator && this.config.strategy !== ProtocolStrategy.Optimistic) {
     const newList = this.contributorsList[this.id]?.filter(e => !ongoingChecks.includes(e))
     if (newList && newList.length === 0) {
       // The last contributor died
