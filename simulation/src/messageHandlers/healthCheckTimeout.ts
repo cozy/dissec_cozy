@@ -13,9 +13,6 @@ export function handleHealthCheckTimeout(this: Node, receivedMessage: Message): 
 
   const ongoingChecks = Object.keys(this.ongoingHealthChecks).map(Number)
   for (const unansweredHealthCheck of ongoingChecks) {
-    if (this.id === 1286) {
-      console.log('k')
-    }
     if (this.config.strategy === ProtocolStrategy.Eager && this.role !== NodeRole.LeafAggregator) {
       // In eager strategy, tell members to give up their child as well
 
