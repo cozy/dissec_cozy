@@ -110,56 +110,11 @@ export class NodesManager {
     return this.nodes[node.id]
   }
 
-  updateFailures() {
-    if (this.config.random) {
-      for (const node of Object.values(this.nodes)) {
-        if (node.alive) {
-          // Querier can't die
-          if (this.generator() < this.failureRate && node.role !== NodeRole.Querier) {
-            node.alive = false
-            node.deathTime = this.globalTime
-            this.failuresPerRole[node.role] += 1
-            if (
-              node.node &&
-              node.node.children.length !== 0 &&
-              node.node.members.map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
-            ) {
-              // All members of the group are dead, stop the run because it's dead
-              this.messages.push(
-                new Message(MessageType.StopSimulator, 0, this.globalTime, this.querier, this.querier, {
-                  status: StopStatus.GroupDead,
-                  targetGroup: node.node,
-                })
-              )
-            }
-          }
-        }
-      }
-    } else {
-      const nodesArray = Object.values(this.nodes).filter(e => e.alive && e.role !== NodeRole.Querier)
-      this.nextStepFailures += this.config.failureRate * nodesArray.length
-      const failures = Math.floor(this.nextStepFailures)
-      this.nextStepFailures -= failures
-
-      // Randomly order the nodes, the first nodes will fail
-      const failedNodes = nodesArray.sort(() => this.generator() - 0.5)
-      for (const node of failedNodes.slice(0, failures)) {
-        node.alive = false
-        node.deathTime = this.globalTime
-        this.failuresPerRole[node.role] += 1
-        if (
-          node.node &&
-          node.node.children.length !== 0 &&
-          node.node.members.map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
-        ) {
-          // All members of the group are dead, stop the run because it's dead
-          this.messages.push(
-            new Message(MessageType.StopSimulator, 0, this.globalTime, this.querier, this.querier, {
-              status: StopStatus.GroupDead,
-              targetGroup: node.node,
-            })
-          )
-        }
+  setFailures() {
+    for (const node of Object.values(this.nodes)) {
+      if (node.role !== NodeRole.Querier) {
+        node.deathTime = -this.failureRate * Math.log(1 - this.generator())
+        this.messages.push(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
       }
     }
   }
@@ -169,7 +124,10 @@ export class NodesManager {
     if (unsentMessage.receptionTime === 0)
       unsentMessage.receptionTime = unsentMessage.emissionTime + this.standardLatency()
 
-    if (this.nodes[unsentMessage.emitterId].alive) {
+    if (
+      this.nodes[unsentMessage.emitterId].deathTime < 0 ||
+      this.nodes[unsentMessage.emitterId].deathTime > unsentMessage.emissionTime
+    ) {
       this.insertMessage(cloneDeep(unsentMessage))
       this.messageCounter++
     }
@@ -177,6 +135,8 @@ export class NodesManager {
 
   handleNextMessage() {
     const message = this.messages.pop()!
+    const alive =
+      this.nodes[message.receiverId].deathTime < 0 || this.nodes[message.receiverId].deathTime > message.receptionTime
 
     if (message.type === MessageType.StopSimulator) {
       // Flushing the message queue
@@ -189,7 +149,7 @@ export class NodesManager {
             `#${
               message.content.targetGroup?.id
             } did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(
-              e => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`
+              e => `#${e} (${alive}@${this.nodes[e].deathTime})`
             )}]; children = [${message.content.targetGroup!.children}]`
           )
           break
@@ -205,15 +165,10 @@ export class NodesManager {
       }
     } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
       this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
-    } else if (this.nodes[message.receiverId].alive) {
-      // Update simulation time and failures
-      while (this.lastFailureUpdate + this.config.failCheckPeriod <= message.receptionTime) {
-        this.updateFailures()
-        this.lastFailureUpdate += this.config.failCheckPeriod
-        this.globalTime = this.lastFailureUpdate
-      }
-
+    } else if (alive) {
+      // Advance simulation time
       this.globalTime = message.receptionTime
+
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId]
         .receiveMessage(message)

@@ -18,6 +18,7 @@ export enum MessageType {
   SynchronizationTimeout = 'SynchroTO',
   SendAggregate = 'SendAgg',
   // Failure detection
+  Failing = 'Fail',
   RequestHealthChecks = 'ReqHC',
   CheckHealth = 'HC',
   ConfirmHealth = 'ConfH',
@@ -190,6 +191,9 @@ export class Message {
             ?.filter(child => Boolean(receiver.aggregates[child]))
             .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
         )
+        break
+      case MessageType.Failing:
+        console.log(`${tag} is failing`)
         break
       case MessageType.RequestHealthChecks:
         console.log(

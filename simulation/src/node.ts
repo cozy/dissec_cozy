@@ -24,6 +24,7 @@ import {
   handleSendChildren,
   handleSendContribution,
   handleSynchronizationTimeout,
+  handleFailing,
 } from './messageHandlers'
 import TreeNode from './treeNode'
 
@@ -40,7 +41,6 @@ export class Node {
   node?: TreeNode
   config: ManagerArguments
   localTime: number = 0
-  alive: boolean = true
   deathTime: number = -1
   role: NodeRole
   ongoingHealthChecks: { [nodeId: number]: boolean }
@@ -71,6 +71,7 @@ export class Node {
   handleConfirmContributors = handleConfirmContributors
   handleSynchronizationTimeout = handleSynchronizationTimeout
   handleSendAggregate = handleSendAggregate
+  handleFailing = handleFailing
   handleRequestHealthChecks = handleRequestHealthChecks
   handleHealthCheckTimeout = handleHealthCheckTimeout
   handleContactBackup = handleContactBackup
@@ -164,6 +165,9 @@ export class Node {
         break
       case MessageType.SendAggregate:
         messages.push(...this.handleSendAggregate(receivedMessage))
+        break
+      case MessageType.Failing:
+        messages.push(...this.handleFailing(receivedMessage))
         break
       case MessageType.RequestHealthChecks:
         messages.push(...this.handleRequestHealthChecks(receivedMessage))

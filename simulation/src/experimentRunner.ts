@@ -14,8 +14,18 @@ export enum ProtocolStrategy {
   Strawman = 'STRAW',
 }
 
+export enum FailureHandlingBlock {
+  FullFailurePropagation = 'FFP',
+  LocalFailurePropagation = 'LFP',
+}
+
+export interface BuildingBlocks {
+  failure: FailureHandlingBlock
+}
+
 export interface RunConfig {
   strategy: ProtocolStrategy
+  buildingBlocks: BuildingBlocks
   selectivity: number
   maxToAverageRatio: number
   averageLatency: number
@@ -32,6 +42,31 @@ export interface RunConfig {
   concentration: number
   random: boolean
   seed: string
+}
+
+export function defaultConfig(): RunConfig {
+  return {
+    strategy: ProtocolStrategy.Optimistic,
+    buildingBlocks: {
+      failure: FailureHandlingBlock.LocalFailurePropagation,
+    },
+    selectivity: 0.1,
+    maxToAverageRatio: 10,
+    averageLatency: 100,
+    averageCryptoTime: 100,
+    averageComputeTime: 100,
+    failCheckPeriod: 100,
+    healthCheckPeriod: 3,
+    multicastSize: 5,
+    deadline: 500 * 1000,
+    failureRate: 0.00007,
+    depth: 3,
+    fanout: 4,
+    groupSize: 5,
+    concentration: 0,
+    random: false,
+    seed: `OPTI-f0.00005-s5-d6-c0-0`,
+  }
 }
 
 export interface RunResult extends RunConfig {
@@ -366,6 +401,8 @@ export class ExperimentRunner {
 
     manager.initialNodeRoles = manager.countNodesPerRole()
 
+    manager.setFailures()
+
     // Running the simulator the end
     const startTime = Date.now()
     while (manager.messages.length > 0) {
@@ -391,10 +428,10 @@ export class ExperimentRunner {
     console.log(
       `Simulation finished with status ${manager.status} (${completeness}% completeness); time = ${manager.globalTime}`
     )
+
+    const failedNodes = Object.values(manager.nodes).filter(e => !(e.deathTime > manager.globalTime || e.deathTime < 0))
     console.log(
-      `${
-        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100
-      }% of nodes failed (${Object.values(manager.nodes).filter(e => !e.alive).length} / ${
+      `${(failedNodes.length / Object.values(manager.nodes).length) * 100}% of nodes failed (${failedNodes.length} / ${
         Object.values(manager.nodes).length
       })`
     )
@@ -422,8 +459,7 @@ export class ExperimentRunner {
       completeness,
       circulatingAggregateIds: Object.keys(manager.circulatingAggregateIds).length,
       finalUsedBandwidth: manager.usedBandwidth,
-      observedFailureRate:
-        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100,
+      observedFailureRate: (failedNodes.length / Object.values(manager.nodes).length) * 100,
       ...manager.statisticsPerRole(),
       messages: oldMessages,
     }

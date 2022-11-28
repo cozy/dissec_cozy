@@ -1,4 +1,4 @@
-import { ExperimentRunner, ProtocolStrategy, RunConfig } from './experimentRunner'
+import { ExperimentRunner, FailureHandlingBlock, ProtocolStrategy, RunConfig } from './experimentRunner'
 import fs from 'fs'
 
 let checkpoint: { checkpoint: number; name: string; path: string }
@@ -14,13 +14,16 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = false
+const debug = true
 const fullExport = false
 const useCheckpoint = true
 if (debug) {
   configs = [
     {
-      strategy: ProtocolStrategy.Eager,
+      strategy: ProtocolStrategy.Optimistic,
+      buildingBlocks: {
+        failure: FailureHandlingBlock.LocalFailurePropagation,
+      },
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 100,
@@ -30,18 +33,21 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 150000,
-      failureRate: 0.00005,
-      depth: 5,
+      failureRate: 200000,
+      depth: 3,
       fanout: 4,
       groupSize: 5,
       concentration: 0,
       random: true,
-      seed: 'EAGER-f0.00005-s5-d5-c0-762',
+      seed: 'EAGER-f0.00005-s5-d5-c0-761',
     },
   ]
 } else {
   const baseConfig = {
     strategy: ProtocolStrategy.Optimistic,
+    buildingBlocks: {
+      failure: FailureHandlingBlock.LocalFailurePropagation,
+    },
     selectivity: 0.1,
     maxToAverageRatio: 10,
     averageLatency: 100,
@@ -96,7 +102,7 @@ if (debug) {
   }
 }
 
-const runner = new ExperimentRunner(configs.slice(useCheckpoint ? checkpoint.checkpoint : 0), {
+const runner = new ExperimentRunner(configs, {
   debug,
   fullExport,
   intermediateExport: 1,
