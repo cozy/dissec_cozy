@@ -1,5 +1,5 @@
-import { Message } from '../message'
-import { Node } from '../node'
+import { Message } from '../../message'
+import { Node } from '../../node'
 
 export function handleContributorPing(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

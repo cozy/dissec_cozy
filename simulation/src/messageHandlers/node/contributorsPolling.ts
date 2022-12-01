@@ -1,5 +1,5 @@
-import { Message, MessageType } from '../message'
-import { Node } from '../node'
+import { Message, MessageType } from '../../message'
+import { Node } from '../../node'
 
 export function handleContributorsPolling(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

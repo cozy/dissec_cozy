@@ -3,27 +3,16 @@ import { RunConfig } from './experimentRunner'
 import { Generator } from './random'
 
 class TreeNode {
-  id: number
   parents: number[]
   members: number[]
   children: TreeNode[]
   depth: number
 
-  constructor(id: number, depth: number) {
-    this.id = id
+  constructor(depth: number) {
     this.depth = depth
     this.parents = []
     this.members = []
     this.children = []
-  }
-
-  static fromCopy(source: TreeNode, id: number): TreeNode {
-    const copy = JSON.parse(JSON.stringify(source))
-    const node = new TreeNode(id, source.depth)
-    node.parents = copy.parents
-    node.members = copy.members
-    node.children = source.children.map(e => this.fromCopy(e, e.id))
-    return node
   }
 
   copy(): TreeNode {
@@ -31,7 +20,7 @@ class TreeNode {
   }
 
   static createTree(run: RunConfig, depth: number, id: number): { nextId: number; node: TreeNode } {
-    const node = new TreeNode(id, run.depth)
+    const node = new TreeNode(depth)
     node.members = Array(run.groupSize)
       .fill(id)
       .map((e, i) => e + i)
@@ -70,22 +59,20 @@ class TreeNode {
   }
 
   /**
-   * Finds the node with the given ID below the current node.
+   * Finds the group where a member has the given ID below the current node.
    *
    * @param id The id of the searched node
    * @returns The searched node and its position in its group
    */
-  findNode(id: number): TreeNode | undefined {
+  findGroup(id: number): TreeNode | undefined {
     let index: number
-    if (id === this.id) {
+    if ((index = this.members.indexOf(id)) >= 0) {
       return this
-    } else if ((index = this.members.indexOf(id)) >= 0) {
-      return TreeNode.fromCopy(this, this.members[index])
-    } else if ((index = this.children.map(e => e.id).indexOf(id)) >= 0) {
+    } else if ((index = this.children.map(e => e.members.includes(id)).indexOf(true)) >= 0) {
       return this.children[index]
     } else {
       for (const child of this.children) {
-        const node = child.findNode(id)
+        const node = child.findGroup(id)
         if (node) {
           return node
         }
@@ -103,7 +90,7 @@ class TreeNode {
   }
 
   log(depth: number = 1) {
-    console.log(`Node #${this.id} (members=${this.members}) has ${this.children.length} children:`)
+    console.log(`Group [${this.members.map(e => '#' + e)}] has ${this.children.length} children:`)
     for (let i = 0; i < this.children.length; i++) {
       console.group()
       this.children[i].log(depth + 1)

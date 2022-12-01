@@ -14,13 +14,34 @@ export enum ProtocolStrategy {
   Strawman = 'STRAW',
 }
 
-export enum FailureHandlingBlock {
+export enum FailurePropagationBlock {
   FullFailurePropagation = 'FFP',
   LocalFailurePropagation = 'LFP',
 }
 
+export enum FailureHandlingBlock {
+  Replace = 'Replace',
+  Drop = 'Drop',
+}
+
+export enum StandbyBlock {
+  Stop = 'Stop',
+  Standby = 'Standby',
+  Stay = 'Stay',
+}
+
+export enum SynchronizationBlock {
+  FullSynchronization = 'FullSync',
+  LeavesSynchronization = 'Leaves',
+  NonBlocking = 'NonBlocking',
+  None = 'None',
+}
+
 export interface BuildingBlocks {
-  failure: FailureHandlingBlock
+  failurePropagation: FailurePropagationBlock
+  failureHandling: FailureHandlingBlock
+  standby: StandbyBlock
+  synchronization: SynchronizationBlock
 }
 
 export interface RunConfig {
@@ -44,12 +65,25 @@ export interface RunConfig {
   seed: string
 }
 
+export const STRATEGIES: { [key: string]: BuildingBlocks } = {
+  STRAWMAN: {
+    failurePropagation: FailurePropagationBlock.FullFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stop,
+    synchronization: SynchronizationBlock.None,
+  },
+  EAGER: {
+    failurePropagation: FailurePropagationBlock.FullFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.Stay,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+}
+
 export function defaultConfig(): RunConfig {
   return {
     strategy: ProtocolStrategy.Optimistic,
-    buildingBlocks: {
-      failure: FailureHandlingBlock.LocalFailurePropagation,
-    },
+    buildingBlocks: STRATEGIES.STRAWMAN,
     selectivity: 0.1,
     maxToAverageRatio: 10,
     averageLatency: 100,
@@ -290,13 +324,13 @@ export class ExperimentRunner {
   singleRun(run: RunConfig): RunResult | undefined {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
-    const backupListSize = nodesInTree * 1
+    const backupListSize = nodesInTree * 10
 
     // Create the tree structure
     let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
 
     // Adding the querier group
-    const querierGroup = new TreeNode(nextId, run.depth + 1)
+    const querierGroup = new TreeNode(run.depth + 1)
     querierGroup.children.push(root)
     querierGroup.members = Array(run.groupSize).fill(nextId)
     root.parents = querierGroup.members
@@ -307,7 +341,7 @@ export class ExperimentRunner {
       debug: this.debug,
       fullExport: this.fullExport,
     })
-    const n = manager.addNode(querierGroup, querierGroup.id)
+    const n = manager.addNode(querierGroup, querierGroup.members[0])
     n.role = NodeRole.Querier
 
     // Backup list is included in all protocols to preserve fairness: backups can fail
@@ -322,20 +356,9 @@ export class ExperimentRunner {
       backups.push(backup)
     }
 
-    // Strawman does no health verifications
-    if (run.strategy !== ProtocolStrategy.Strawman) {
-      // Only the node with the lowest ID sends the message
-      manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, querierGroup.id, querierGroup.id, {}))
+    manager.replacementNodes = backups
 
-      // Eager does not use a backup list
-      if (run.strategy !== ProtocolStrategy.Eager) {
-        for (let i = 0; i < backupListStart; i++) {
-          if (manager.nodes[i]) {
-            manager.nodes[i].backupList = backups.map(e => e.id)
-          }
-        }
-      }
-    }
+    manager.setFailures()
 
     // All leaves aggregator request data from contributors
 
@@ -357,23 +380,15 @@ export class ExperimentRunner {
       for (const child of aggregator.children.flatMap(e => e.members)) {
         // Only the node with the lowest ID sends the message
         manager.transmitMessage(
-          new Message(MessageType.RequestContribution, 0, 0, aggregator.id, child, {
-            parents: aggregator.members,
-          })
-        )
-      }
-
-      // Setting contribution collection timeouts on the leaves aggregators
-      for (const member of aggregator.members) {
-        // Contributors respond with a ping and then the contribution, await both
-        manager.transmitMessage(
           new Message(
-            MessageType.PingTimeout,
+            MessageType.RequestContribution,
             0,
-            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
-            member,
-            member,
-            {}
+            (averageHopsPerBroadcast + 1) * manager.standardLatency(),
+            aggregator.members[0],
+            child,
+            {
+              parents: aggregator.members,
+            }
           )
         )
       }
@@ -387,21 +402,7 @@ export class ExperimentRunner {
       }
     }
 
-    if (run.strategy !== ProtocolStrategy.Strawman) {
-      // Upper layers periodically send health checks to their children
-      for (let i = 0; i < run.depth - 1; i++) {
-        const nodes = root.selectNodesByDepth(i)
-        for (const node of nodes) {
-          for (const member of node.members) {
-            manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, member, member, {}))
-          }
-        }
-      }
-    }
-
     manager.initialNodeRoles = manager.countNodesPerRole()
-
-    manager.setFailures()
 
     // Running the simulator the end
     const startTime = Date.now()

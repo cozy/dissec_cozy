@@ -1,6 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep'
-import { Message, MessageType } from '../message'
-import { Node } from '../node'
+import { Message, MessageType } from '../../message'
+import { Node } from '../../node'
 
 export function handleBackupResponse(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

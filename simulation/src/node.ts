@@ -7,25 +7,22 @@ import {
   handleConfirmBackup,
   handleConfirmContributors,
   handleContactBackup,
-  handleContinueMulticast,
   handleContributionTimeout,
   handleContributorPing,
   handleContributorsPolling,
   handleGiveUpChild,
-  handleHealthCheckTimeout,
   handleNotifyGroup,
   handleNotifyGroupTimeout,
   handlePingTimeout,
   handlePrepareContribution,
   handleRequestContribution,
   handleRequestData,
-  handleRequestHealthChecks,
   handleSendAggregate,
   handleSendChildren,
   handleSendContribution,
   handleSynchronizationTimeout,
-  handleFailing,
-} from './messageHandlers'
+} from './messageHandlers/node'
+import { handleFailure } from './messageHandlers/node/handleFailure'
 import TreeNode from './treeNode'
 
 export enum NodeRole {
@@ -45,7 +42,6 @@ export class Node {
   role: NodeRole
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
-  backupList: number[]
   lookingForBackup: { [nodeId: number]: boolean }
   continueMulticast: boolean
   contactedAsABackup: boolean
@@ -71,11 +67,8 @@ export class Node {
   handleConfirmContributors = handleConfirmContributors
   handleSynchronizationTimeout = handleSynchronizationTimeout
   handleSendAggregate = handleSendAggregate
-  handleFailing = handleFailing
-  handleRequestHealthChecks = handleRequestHealthChecks
-  handleHealthCheckTimeout = handleHealthCheckTimeout
+  handleFailure = handleFailure
   handleContactBackup = handleContactBackup
-  handleContinueMulticast = handleContinueMulticast
   handleBackupResponse = handleBackupResponse
   handleConfirmBackup = handleConfirmBackup
   handleNotifyGroup = handleNotifyGroup
@@ -85,17 +78,16 @@ export class Node {
   handleRequestData = handleRequestData
   handleGiveUpChild = handleGiveUpChild
 
-  constructor({ node, id, config }: { node?: TreeNode; id?: number; config: ManagerArguments }) {
+  constructor({ node, id, config }: { node?: TreeNode; id: number; config: ManagerArguments }) {
     if (!node && !id) return //throw new Error("Initializing a node without id")
 
-    this.id = (node ? node.id : id)!
-    this.node = cloneDeep(node)
+    this.id = id
+    this.node = node
     this.config = config
     this.role = NodeRole.Aggregator
     this.secretValue = 50 // TODO: Better value, not always 50
     this.ongoingHealthChecks = {}
     this.finishedWorking = false
-    this.backupList = []
     this.lookingForBackup = {}
     this.continueMulticast = false
     this.contactedAsABackup = false
@@ -107,7 +99,7 @@ export class Node {
     const messages: Message[] = []
 
     // When the node is busy, messages are put back into the queue at the earliest available time, except for health checks
-    if (receivedMessage.receptionTime < this.localTime && receivedMessage.type !== MessageType.CheckHealth) {
+    if (receivedMessage.receptionTime < this.localTime && receivedMessage.type !== MessageType.Failing) {
       receivedMessage.receptionTime = this.localTime
       return null
     }
@@ -124,11 +116,7 @@ export class Node {
         // 132, 134, 147, 148, 149, 153, 162, 164, 183, 192, 194, 195, 196, 197, 226, 269, 278, 284, 287, 290, 305, 306,
         // 311, 312, 317, 326, 339, 354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446, 3164, 4597, 6173,
       ]
-      const filters: MessageType[] = [
-        MessageType.CheckHealth,
-        MessageType.ConfirmHealth,
-        MessageType.RequestHealthChecks,
-      ]
+      const filters: MessageType[] = []
       if (
         nodesOfInterest.includes(this.id) ||
         nodesOfInterest.includes(receivedMessage.emitterId) ||
@@ -166,49 +154,8 @@ export class Node {
       case MessageType.SendAggregate:
         messages.push(...this.handleSendAggregate(receivedMessage))
         break
-      case MessageType.Failing:
-        messages.push(...this.handleFailing(receivedMessage))
-        break
-      case MessageType.RequestHealthChecks:
-        messages.push(...this.handleRequestHealthChecks(receivedMessage))
-        break
-      case MessageType.CheckHealth:
-        if (this.node && receivedMessage.content.parents) this.node.parents = receivedMessage.content.parents
-
-        messages.push(
-          new Message(
-            MessageType.ConfirmHealth,
-            receivedMessage.receptionTime, // Reply to health check instantly
-            0, // Don't specify time to let the manager add the latency
-            this.id,
-            receivedMessage.emitterId,
-            { members: this.node?.members }
-          )
-        )
-        break
-      case MessageType.ConfirmHealth:
-        delete this.ongoingHealthChecks[receivedMessage.emitterId]
-
-        // Update the group of the child
-        if (
-          this.role !== NodeRole.Querier &&
-          this.role !== NodeRole.LeafAggregator &&
-          receivedMessage.content.members
-        ) {
-          // Prevent Querier from updating its group
-          const child = this.node!.children.find(e => e.members.includes(receivedMessage.emitterId))
-
-          if (child) {
-            // The child is still monitored, update its group
-            child.members = receivedMessage.content.members!
-          }
-        }
-        break
-      case MessageType.HealthCheckTimeout:
-        messages.push(...this.handleHealthCheckTimeout(receivedMessage))
-        break
-      case MessageType.ContinueMulticast:
-        messages.push(...this.handleContinueMulticast(receivedMessage))
+      case MessageType.HandleFailure:
+        messages.push(...this.handleFailure(receivedMessage))
         break
       case MessageType.ContactBackup:
         messages.push(...this.handleContactBackup(receivedMessage))
@@ -243,12 +190,16 @@ export class Node {
 
     // Invariant: the node is a member of its group
     if (this.node && !this.node.members.includes(this.id)) {
-      throw new Error(`#${this.id} is not in its members ([${this.node.members}])`)
+      throw new Error(`${this.tag()} is not in its members ([${this.node.members}])`)
     }
 
     receivedMessage.work = this.localTime - startTime
 
     return messages
+  }
+
+  tag() {
+    return `[@${this.localTime}] (${this.role}) Node #${this.id}`
   }
 
   /**

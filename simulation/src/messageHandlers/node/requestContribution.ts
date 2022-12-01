@@ -1,6 +1,6 @@
-import { Message, MessageType } from '../message'
-import { Node } from '../node'
-import { Generator } from '../random'
+import { Message, MessageType } from '../../message'
+import { Node } from '../../node'
+import { Generator } from '../../random'
 
 const generator = Generator.get()
 
@@ -43,19 +43,19 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   }
   this.shares[this.shares.length - 1] = this.secretValue - accumulator
 
-  for (const parent of receivedMessage.content.parents) {
-    // Send data to parent
-    messages.push(
-      new Message(
-        MessageType.PrepareContribution,
-        this.localTime,
-        0, // Don't specify time to let the manager add the latency
-        this.id,
-        this.id,
-        { share: this.shares[this.node.parents.indexOf(parent)], targetNode: parent }
-      )
+  // Schedule the actual data emission once all the work has been done
+  // TODO:
+  const computeTime = (this.config.averageCryptoTime + this.config.averageComputeTime) * this.config.groupSize
+  messages.push(
+    new Message(
+      MessageType.PrepareContribution,
+      this.localTime,
+      this.localTime + computeTime, // Don't specify time to let the manager add the latency
+      this.id,
+      this.id,
+      {}
     )
-  }
+  )
 
   return messages
 }

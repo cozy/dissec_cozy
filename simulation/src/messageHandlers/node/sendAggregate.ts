@@ -1,5 +1,5 @@
-import { Message, MessageType, StopStatus } from '../message'
-import { Node, NodeRole } from '../node'
+import { Message, MessageType, StopStatus } from '../../message'
+import { Node, NodeRole } from '../../node'
 
 export function handleSendAggregate(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

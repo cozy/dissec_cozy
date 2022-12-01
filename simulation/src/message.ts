@@ -6,6 +6,7 @@ import TreeNode from './treeNode'
 export enum MessageType {
   // System
   StopSimulator = 'STOP',
+  Failing = 'Failing',
   // Contribution
   RequestContribution = 'ReqContrib',
   ContributorPing = 'ContribPing',
@@ -18,11 +19,7 @@ export enum MessageType {
   SynchronizationTimeout = 'SynchroTO',
   SendAggregate = 'SendAgg',
   // Failure detection
-  Failing = 'Fail',
-  RequestHealthChecks = 'ReqHC',
-  CheckHealth = 'HC',
-  ConfirmHealth = 'ConfH',
-  HealthCheckTimeout = 'HCTO',
+  HandleFailure = 'Failure',
   // Failure handling
   ContinueMulticast = 'ContMCast',
   ContactBackup = 'ContactBU',
@@ -36,6 +33,17 @@ export enum MessageType {
   GiveUpChild = 'GiveUp',
 }
 
+export const isSystemMessage = (messageType: MessageType) => {
+  switch (messageType) {
+    case MessageType.StopSimulator:
+      return true
+    case MessageType.Failing:
+      return true
+    default:
+      return false
+  }
+}
+
 export enum StopStatus {
   Unfinished = 'Unfinished',
   Success = 'Success',
@@ -45,6 +53,7 @@ export enum StopStatus {
   BadResult = 'BadResult',
   AllContributorsDead = 'ContribDead',
   OutOfBackup = '0Backup',
+  FullFailurePropagation = 'FFP',
 }
 
 export interface Aggregate {
@@ -103,7 +112,7 @@ export class Message {
   log(receiver: Node, filter: MessageType[] = []) {
     if (filter.includes(this.type)) return
 
-    const tag = `[@${receiver.localTime}] (${receiver.role}) Node #${receiver.id}`
+    const tag = receiver.tag()
     const position = receiver.node?.members.indexOf(receiver.id)
     let children: number[] =
       receiver.role === NodeRole.Querier
@@ -170,7 +179,7 @@ export class Message {
               : ' different'
           } confirmed list of ${this.content.contributors?.length} contributors from node #${this.emitterId}, ${
             receiver.contributorsList[receiver.id]?.every(e => receiver.contributions[e]) ? '' : 'not '
-          }sending data to parent #${receiver.node!.parents[receiver.node!.members.indexOf(receiver.id)]}. ${
+          }sending data to parent #${receiver.node?.parents[receiver.node?.members.indexOf(receiver.id)] || '???'}. ${
             this.content.contributors
               ? `new id=${receiver.aggregationId(this.content.contributors.map(String))}`
               : 'Did not receive contributors'
@@ -192,48 +201,8 @@ export class Message {
             .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
         )
         break
-      case MessageType.Failing:
-        console.log(`${tag} is failing`)
-        break
-      case MessageType.RequestHealthChecks:
-        console.log(
-          `${tag} is requesting health checks from his children [${children.map(e => '#' + e)}]. ${
-            receiver.finishedWorking ? 'Not rescheduling' : 'Rescheduling'
-          }`
-        )
-        break
-      case MessageType.CheckHealth:
-        console.log(`${tag} received a health check request from parent node #${this.emitterId}.`)
-        break
-      case MessageType.ConfirmHealth:
-        console.log(
-          `${tag} received a health confirmation from child node #${this.emitterId} ([${Object.keys(
-            receiver.ongoingHealthChecks
-          )}]). ${
-            receiver.role !== NodeRole.Querier &&
-            this.content.members &&
-            !arrayEquals(
-              receiver.node!.children.find(e => e.members.includes(this.emitterId))!.members,
-              this.content.members!
-            )
-              ? ` Child updated its members: [${
-                  receiver.node!.children.find(e => e.members.includes(this.emitterId))!.members
-                }] -> [${this.content.members}]`
-              : ''
-          }`
-        )
-        break
-      case MessageType.HealthCheckTimeout:
-        console.log(
-          `${tag} timed out health checks. ${
-            Object.keys(receiver.ongoingHealthChecks).length
-          } ongoing health checks are unanswered:`
-        )
-        for (const unansweredHealthCheck of Object.keys(receiver.ongoingHealthChecks)) {
-          console.log(
-            `\t- Node #${unansweredHealthCheck} did not answer the health check, triggering recovery procedure...`
-          )
-        }
+      case MessageType.HandleFailure:
+        console.log(`${tag} is handling a failure`)
         break
       case MessageType.ContinueMulticast:
         if (receiver.continueMulticast) console.log(`${tag} tries to continue multicasting to backups`)

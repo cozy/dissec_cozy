@@ -1,6 +1,5 @@
-import { Message, MessageType } from '../message'
-import { Node, NodeRole } from '../node'
-import TreeNode from '../treeNode'
+import { Message, MessageType } from '../../message'
+import { Node, NodeRole } from '../../node'
 
 export function handleConfirmBackup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -23,7 +22,7 @@ export function handleConfirmBackup(this: Node, receivedMessage: Message): Messa
     this.localTime += 3 * this.cryptoLatency()
 
     // The node is still available and the parent wants it as a child
-    this.node = TreeNode.fromCopy(receivedMessage.content.targetGroup, this.id)
+    this.node = receivedMessage.content.targetGroup
     this.node.members = this.node.members.map(e => (e !== receivedMessage.content.failedNode ? e : this.id))
     this.node.children = [] // The backup receives children later
     this.role = NodeRole.Aggregator // This is temporary, to prevent being reassigned as backup

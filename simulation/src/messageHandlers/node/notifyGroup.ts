@@ -1,5 +1,5 @@
-import { Message, MessageType } from '../message'
-import { Node, NodeRole } from '../node'
+import { Message, MessageType } from '../../message'
+import { Node, NodeRole } from '../../node'
 
 export function handleNotifyGroup(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -10,15 +10,8 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
     // Verifying the backup's certificate + signature + sign the current group and children
     this.localTime += 3 * this.cryptoLatency()
 
-    // The node has been notified by a backup that it is joining the group
-    // Compare the local members with the received one, keep the newest version
-    this.node.members = this.node.members
-      .slice()
-      .map(e => (e !== receivedMessage.content.failedNode ? e : receivedMessage.emitterId || e))
-    this.node.parents = receivedMessage.content.targetGroup?.parents || this.node.parents
-
     // The backup will ask again later if the list is not yet known
-    const contributors = this.contributorsList[this.id]
+    const contributors = this.contributorsList[this.id] || this.pingList
 
     if (this.role !== NodeRole.LeafAggregator) {
       messages.push(
@@ -32,7 +25,6 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
             targetGroup: this.node,
             children: this.node.children,
             role: this.role,
-            backupList: this.backupList,
             contributors,
           }
         )
@@ -49,7 +41,6 @@ export function handleNotifyGroup(this: Node, receivedMessage: Message): Message
             targetGroup: this.node,
             children: this.node.children,
             role: this.role,
-            backupList: this.backupList,
             contributors,
           }
         )

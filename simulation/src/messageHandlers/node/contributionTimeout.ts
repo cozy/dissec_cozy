@@ -1,7 +1,7 @@
-import { ProtocolStrategy } from '../experimentRunner'
-import { arrayEquals } from '../helpers'
-import { Message, MessageType } from '../message'
-import { Node } from '../node'
+import { ProtocolStrategy } from '../../experimentRunner'
+import { arrayEquals } from '../../helpers'
+import { Message, MessageType } from '../../message'
+import { Node } from '../../node'
 
 export function handleContributionTimeout(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

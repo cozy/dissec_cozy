@@ -2,10 +2,11 @@ import cloneDeep from 'lodash/cloneDeep'
 import rayleigh from '@stdlib/random-base-rayleigh'
 
 import { RunConfig } from './experimentRunner'
-import { Message, MessageType, StopStatus } from './message'
+import { isSystemMessage, Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import { Generator, xmur3 } from './random'
 import TreeNode from './treeNode'
+import { handleStopSimulator, handleFailing } from './messageHandlers/manager'
 
 export interface ManagerArguments extends RunConfig {
   debug?: boolean
@@ -19,7 +20,9 @@ export interface AugmentedMessage extends Omit<Message, 'log'> {
 
 export class NodesManager {
   debug?: boolean
+  root: TreeNode
   nodes: { [id: number]: Node } = {}
+  replacementNodes: Node[] = []
   querier: number = 0
   messages: Message[] = []
   oldMessages: AugmentedMessage[] = []
@@ -44,6 +47,9 @@ export class NodesManager {
   usedBandwidth: number = 0
   totalWork = 0
   finalNumberContributors = 0
+
+  handleStopSimulator = handleStopSimulator
+  handleFailing = handleFailing
 
   constructor(options: ManagerArguments) {
     this.debug = options.debug
@@ -70,13 +76,14 @@ export class NodesManager {
 
   static createFromTree(root: TreeNode, options: ManagerArguments): NodesManager {
     const manager = new NodesManager(options)
+    manager.root = root
 
-    let i = root.id
-    let node = root.findNode(i)
+    let i = root.members[0]
+    let node = root.findGroup(i)
     while (node) {
       manager.addNode(node)
       i += 1
-      node = root.findNode(i)
+      node = root.findGroup(i)
     }
 
     return manager
@@ -106,15 +113,18 @@ export class NodesManager {
 
   addNode(node: TreeNode, querier?: number): Node {
     if (querier) this.querier = querier
-    this.nodes[node.id] = new Node({ node, config: this.config })
-    return this.nodes[node.id]
+    const id = Object.keys(this.nodes).length
+    this.nodes[id] = new Node({ node, id, config: this.config })
+    return this.nodes[id]
   }
 
   setFailures() {
-    for (const node of Object.values(this.nodes)) {
-      if (node.role !== NodeRole.Querier) {
-        node.deathTime = -this.failureRate * Math.log(1 - this.generator())
-        this.messages.push(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
+    if (this.failureRate > 0) {
+      for (const node of Object.values(this.nodes)) {
+        if (node.role !== NodeRole.Querier) {
+          node.deathTime = -this.failureRate * Math.log(1 - this.generator())
+          this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
+        }
       }
     }
   }
@@ -138,37 +148,23 @@ export class NodesManager {
     const alive =
       this.nodes[message.receiverId].deathTime < 0 || this.nodes[message.receiverId].deathTime > message.receptionTime
 
-    if (message.type === MessageType.StopSimulator) {
-      // Flushing the message queue
-      this.messages = []
-      this.status = message.content.status!
+    // Advance simulation time
+    this.globalTime = message.receptionTime
 
-      switch (this.status) {
-        case StopStatus.SimultaneousFailures:
-          console.log(
-            `#${
-              message.content.targetGroup?.id
-            } did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(
-              e => `#${e} (${alive}@${this.nodes[e].deathTime})`
-            )}]; children = [${message.content.targetGroup!.children}]`
-          )
-          break
-        case StopStatus.GroupDead:
-          console.log(
-            `Group of node [${
-              message.content.targetGroup!.members
-            }]) died at [${message.content.targetGroup!.members.map(m => this.nodes[m].deathTime)}]`
-          )
-        case StopStatus.Success:
-          this.finalNumberContributors = message.content.contributors?.length || 0
-          break
-      }
-    } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
+    if (message.receptionTime > this.config.deadline) {
       this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
+    } else if (isSystemMessage(message.type)) {
+      switch (message.type) {
+        case MessageType.StopSimulator:
+          this.handleStopSimulator(message)
+          break
+        case MessageType.Failing:
+          this.handleFailing(message)
+          break
+        default:
+          throw new Error('Unimplemented system message')
+      }
     } else if (alive) {
-      // Advance simulation time
-      this.globalTime = message.receptionTime
-
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId]
         .receiveMessage(message)
@@ -227,7 +223,7 @@ export class NodesManager {
       }
       for (const child of node.node!.children) {
         console.group()
-        log(this.nodes[child.id])
+        log(this.nodes[child.members[0]])
       }
       console.groupEnd()
     }
@@ -235,7 +231,7 @@ export class NodesManager {
     log(querier)
   }
 
-  private standardLatency(): number {
+  standardLatency(): number {
     if (this.config.random) {
       // TODO: Model latency
       // return Math.max(0, Math.min((this.config.averageLatency * this.config.maxToAverageRatio) / 3, this.rayleigh()))
@@ -256,7 +252,7 @@ export class NodesManager {
             return 1000
           case MessageType.NotifyGroupTimeout:
             return 1000
-          case MessageType.CheckHealth:
+          case MessageType.Failing:
             return 900
           case MessageType.NotifyGroup:
             return 800
@@ -289,7 +285,7 @@ export class NodesManager {
     }
   }
 
-  private insertMessage(message: Message) {
+  insertMessage(message: Message) {
     if (this.messages.length === 0) {
       this.messages = [message]
     } else {

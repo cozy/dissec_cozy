@@ -1,6 +1,5 @@
-import { Message, MessageType } from '../message'
-import { Node } from '../node'
-import TreeNode from '../treeNode'
+import { Message, MessageType } from '../../message'
+import { Node } from '../../node'
 
 export function handleSendChildren(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -28,9 +27,8 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
     // Verifying the member's certificate and signature.
     // Also sign the request for the children
     this.localTime += 3 * this.cryptoLatency()
-    this.node.children = receivedMessage.content.children.map(child => TreeNode.fromCopy(child, child.id)) // Copy children
+    this.node.children = receivedMessage.content.children
     this.role = receivedMessage.content.role
-    this.backupList = receivedMessage.content.backupList
 
     const position = this.node.members.indexOf(this.id)
     // Resume the aggregation by asking for data and checking health
@@ -48,9 +46,6 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
         )
       )
     }
-
-    // Start monitoring children's health
-    messages.push(new Message(MessageType.RequestHealthChecks, this.localTime, this.localTime, this.id, this.id, {}))
   }
 
   return messages

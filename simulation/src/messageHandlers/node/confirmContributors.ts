@@ -1,13 +1,17 @@
-import { ProtocolStrategy } from '../experimentRunner'
-import { arrayEquals, intersectLists } from '../helpers'
-import { Message, MessageType } from '../message'
-import { Node, NodeRole } from '../node'
+import { ProtocolStrategy } from '../../experimentRunner'
+import { arrayEquals, intersectLists } from '../../helpers'
+import { Message, MessageType } from '../../message'
+import { Node, NodeRole } from '../../node'
 
 export function handleConfirmContributors(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
   if (!this.node) {
     throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
+  }
+  if (!receivedMessage.content.contributors) {
+    // Empty contributors
+    return messages
   }
 
   if (!this.contactedAsABackup) {

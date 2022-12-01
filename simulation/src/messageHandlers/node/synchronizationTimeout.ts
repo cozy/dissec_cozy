@@ -1,5 +1,5 @@
-import { Message, MessageType, StopStatus } from '../message'
-import { Node } from '../node'
+import { Message, MessageType, StopStatus } from '../../message'
+import { Node } from '../../node'
 
 export function handleSynchronizationTimeout(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []

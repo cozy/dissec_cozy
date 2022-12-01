@@ -1,6 +1,5 @@
-import { ProtocolStrategy } from '../experimentRunner'
-import { Message, MessageType } from '../message'
-import { Node } from '../node'
+import { Message, MessageType } from '../../message'
+import { Node } from '../../node'
 
 export function handlePingTimeout(this: Node): Message[] {
   const messages: Message[] = []
@@ -17,11 +16,6 @@ export function handlePingTimeout(this: Node): Message[] {
       contributors: this.contributorsList[this.id],
     })
   )
-
-  if (this.config.strategy !== ProtocolStrategy.Strawman) {
-    // The node starts monitoring the contributors when it knows them
-    messages.push(new Message(MessageType.RequestHealthChecks, this.localTime, this.localTime, this.id, this.id, {}))
-  }
 
   return messages
 }
