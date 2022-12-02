@@ -9,11 +9,8 @@ export enum MessageType {
   Failing = 'Failing',
   // Contribution
   RequestContribution = 'ReqContrib',
-  ContributorPing = 'ContribPing',
-  PingTimeout = 'PingTO',
   PrepareContribution = 'PrepareContrib',
   SendContribution = 'SendContrib',
-  ContributionTimeout = 'ContribTO',
   // Synchronization
   ConfirmContributors = 'ConfContrib',
   SynchronizationTimeout = 'SynchroTO',
@@ -21,10 +18,6 @@ export enum MessageType {
   // Failure detection
   HandleFailure = 'Failure',
   // Failure handling
-  ContinueMulticast = 'ContMCast',
-  ContactBackup = 'ContactBU',
-  BackupResponse = 'BUResponse',
-  ConfirmBackup = 'ConfBU',
   NotifyGroup = 'NotifGroup',
   NotifyGroupTimeout = 'NotifGroupTO',
   ContributorsPolling = 'ContributorsPolling',
@@ -150,27 +143,6 @@ export class Message {
           }) from #${this.emitterId}`
         )
         break
-      case MessageType.ContributionTimeout:
-        console.log(
-          `${tag} timed out waiting for contributions, received ${
-            Object.values(receiver.contributions).length
-          } contributions from [${receiver.contributorsList[receiver.id]
-            ?.filter(e => receiver.contributions[e])
-            .slice()
-            .sort()}], sending to others [${receiver.node?.members.filter(e => e !== receiver.id).map(e => '#' + e)}]`
-        )
-        break
-      case MessageType.ContributorPing:
-        console.log(`${tag} received a contribution ping from node #${this.emitterId}`)
-        break
-      case MessageType.PingTimeout:
-        console.log(
-          `${tag} timed out waiting for contribution pings, found ${receiver.pingList.length}: [${receiver.pingList
-            .slice()
-            .sort()
-            .map(e => '#' + e)}]`
-        )
-        break
       case MessageType.ConfirmContributors:
         console.log(
           `${tag} received a${
@@ -203,29 +175,6 @@ export class Message {
         break
       case MessageType.HandleFailure:
         console.log(`${tag} is handling a failure`)
-        break
-      case MessageType.ContinueMulticast:
-        if (receiver.continueMulticast) console.log(`${tag} tries to continue multicasting to backups`)
-        else console.log(`${tag} does not need top continue multicasting`)
-        break
-      case MessageType.ContactBackup:
-        console.log(`${tag} received a request from node #${this.emitterId} to replace #${this.content.failedNode}`)
-        break
-      case MessageType.BackupResponse:
-        console.log(
-          `${tag} received a ${this.content.backupIsAvailable ? 'positive' : 'negative'} response from backup #${
-            this.emitterId
-          } to replace #${this.content.failedNode}`
-        )
-        break
-      case MessageType.ConfirmBackup:
-        console.log(
-          `${tag} received a ${this.content.useAsBackup ? 'positive' : 'negative'} response from the parent #${
-            this.emitterId
-          } to join group [${this.content.targetGroup?.members.map(e => '#' + e)}] to replace #${
-            this.content.failedNode
-          }`
-        )
         break
       case MessageType.NotifyGroup:
         console.log(

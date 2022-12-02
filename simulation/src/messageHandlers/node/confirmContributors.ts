@@ -1,4 +1,4 @@
-import { ProtocolStrategy } from '../../experimentRunner'
+import { FailureHandlingBlock, SynchronizationBlock } from '../../experimentRunner'
 import { arrayEquals, intersectLists } from '../../helpers'
 import { Message, MessageType } from '../../message'
 import { Node, NodeRole } from '../../node'
@@ -50,10 +50,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       )
     }
 
-    if (
-      newContributors.length > 0 &&
-      (this.config.strategy === ProtocolStrategy.Optimistic || this.config.strategy === ProtocolStrategy.Eager)
-    ) {
+    if (newContributors.length > 0 && this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
       // In the optimistic versions, add a synchronization trigger if the backup asked for data
       // This happens only for backups joining
       messages.push(
@@ -69,7 +66,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     }
   }
 
-  if (this.config.strategy === ProtocolStrategy.Pessimistic) {
+  if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
     this.contributorsList[this.id] = intersection
 
     if (!arrayEquals(oldContributors || [], intersection)) {

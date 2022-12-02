@@ -31,7 +31,9 @@ def get_data(path):
 
     df.rename(
         mapper={
-            "seed": "run_id",
+            "seed": "seed",
+            "name": "run_id",
+            "buildingBlocks": "strategy",
             "failureRate": "failure_probability",
             "observedFailureRate": "failure_rate",
             "emissionTime": "emitter_time",
@@ -120,6 +122,7 @@ if __name__ == "__main__":
             "receiver_id",
             "emitter_id",
             "run_id",
+            "status",
         ],
     )
     version_timeline_fig = px.scatter(
@@ -418,6 +421,7 @@ if __name__ == "__main__":
                 "receiver_id",
                 "emitter_id",
                 "run_id",
+                "status",
             ],
         )
         version_timeline_fig = px.scatter(

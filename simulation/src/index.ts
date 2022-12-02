@@ -1,4 +1,4 @@
-import { ExperimentRunner, ProtocolStrategy, RunConfig, STRATEGIES } from './experimentRunner'
+import { ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
 import fs from 'fs'
 
 let checkpoint: { checkpoint: number; name: string; path: string }
@@ -14,13 +14,12 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
+const debug = false
 const fullExport = true
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      strategy: ProtocolStrategy.Optimistic,
       buildingBlocks: STRATEGIES.STRAWMAN,
       selectivity: 0.1,
       maxToAverageRatio: 10,
@@ -30,19 +29,18 @@ if (debug) {
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
-      deadline: 150000,
-      failureRate: 1000000,
+      deadline: 500000,
+      failureRate: 500000,
       depth: 3,
       fanout: 4,
       groupSize: 5,
       concentration: 0,
-      random: true,
-      seed: 'EAGER-f0.00005-s5-d5-c0-760',
+      random: false,
+      seed: '0',
     },
   ]
 } else {
   const baseConfig = {
-    strategy: ProtocolStrategy.Optimistic,
     buildingBlocks: STRATEGIES.STRAWMAN,
     selectivity: 0.1,
     maxToAverageRatio: 10,
@@ -54,7 +52,7 @@ if (debug) {
     multicastSize: 5,
     deadline: 500 * 1000,
     failureRate: 0.00007,
-    depth: 6,
+    depth: 3,
     fanout: 4,
     groupSize: 5,
     concentration: 0,
@@ -62,40 +60,53 @@ if (debug) {
     seed: `OPTI-f0.00005-s5-d6-c0-0`,
   }
   const retries = 5
-  const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
-  const depths = [7, 6, 5, 4]
+  // const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
+  // const depths = [7, 6, 5, 4]
 
-  for (let retry = 0; retry < retries; retry++) {
-    for (const strategy of strategies) {
-      for (const failure of [0.0, 0.00007, 0.00014, 0.00024]) {
-        configs.push(
-          Object.assign({}, baseConfig, {
-            strategy,
-            failureRate: failure,
-            seed: `${strategy}-f${failure}-s5-d6-c0-${configs.length}`,
-          })
-        )
-      }
-      for (const size of [3, 4, 5, 6]) {
-        configs.push(
-          Object.assign({}, baseConfig, {
-            strategy,
-            groupSize: size,
-            seed: `${strategy}-f0.00007-s${size}-d6-c0-${configs.length}`,
-          })
-        )
-      }
-      for (const depth of depths) {
-        configs.push(
-          Object.assign({}, baseConfig, {
-            strategy,
-            depth,
-            seed: `${strategy}-f0.00007-s5-d${depth}-c0-${configs.length}`,
-          })
-        )
-      }
+  for (const failure of Array(5)
+    .fill(0)
+    .map((_, i) => 5 * i * 10 ** 5)) {
+    for (let retry = 0; retry < retries; retry++) {
+      configs.push(
+        Object.assign({}, baseConfig, {
+          failureRate: failure,
+          seed: `${retry}`,
+        })
+      )
     }
   }
+
+  // for (let retry = 0; retry < retries; retry++) {
+  //   for (const strategy of strategies) {
+  //     for (const failure of [0.0, 0.00007, 0.00014, 0.00024]) {
+  //       configs.push(
+  //         Object.assign({}, baseConfig, {
+  //           strategy,
+  //           failureRate: failure,
+  //           seed: `${strategy}-f${failure}-s5-d6-c0-${configs.length}`,
+  //         })
+  //       )
+  //     }
+  //     for (const size of [3, 4, 5, 6]) {
+  //       configs.push(
+  //         Object.assign({}, baseConfig, {
+  //           strategy,
+  //           groupSize: size,
+  //           seed: `${strategy}-f0.00007-s${size}-d6-c0-${configs.length}`,
+  //         })
+  //       )
+  //     }
+  //     for (const depth of depths) {
+  //       configs.push(
+  //         Object.assign({}, baseConfig, {
+  //           strategy,
+  //           depth,
+  //           seed: `${strategy}-f0.00007-s5-d${depth}-c0-${configs.length}`,
+  //         })
+  //       )
+  //     }
+  //   }
+  // }
 }
 
 const runner = new ExperimentRunner(configs, {

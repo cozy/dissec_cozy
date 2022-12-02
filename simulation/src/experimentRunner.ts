@@ -7,13 +7,6 @@ import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
 import TreeNode from './treeNode'
 
-export enum ProtocolStrategy {
-  Pessimistic = 'PESS',
-  Optimistic = 'OPTI',
-  Eager = 'EAGER',
-  Strawman = 'STRAW',
-}
-
 export enum FailurePropagationBlock {
   FullFailurePropagation = 'FFP',
   LocalFailurePropagation = 'LFP',
@@ -45,7 +38,6 @@ export interface BuildingBlocks {
 }
 
 export interface RunConfig {
-  strategy: ProtocolStrategy
   buildingBlocks: BuildingBlocks
   selectivity: number
   maxToAverageRatio: number
@@ -82,7 +74,6 @@ export const STRATEGIES: { [key: string]: BuildingBlocks } = {
 
 export function defaultConfig(): RunConfig {
   return {
-    strategy: ProtocolStrategy.Optimistic,
     buildingBlocks: STRATEGIES.STRAWMAN,
     selectivity: 0.1,
     maxToAverageRatio: 10,
@@ -146,6 +137,7 @@ export class ExperimentRunner {
 
     // These keys will not be in the name
     const skippedKeys = [
+      'strategy',
       'multicastSize',
       'selectivity',
       'deadline',
@@ -156,11 +148,14 @@ export class ExperimentRunner {
       'averageCryptoTime',
       'averageComputeTime',
       'maxR',
+      'random',
+      'concentration',
     ]
 
     // Shorter names for keys
     const translation: { [k: string]: string } = {
       strategy: 'strat',
+      buildingBlocks: 'blocks',
       maxToAverageRatio: 'maxR',
       averageLatency: 'lat',
       averageCryptoTime: 'crypto',
@@ -174,7 +169,7 @@ export class ExperimentRunner {
         const translatedKey = translation[k] ? translation[k] : k
 
         if (!uniqueValues[translatedKey]) uniqueValues[translatedKey] = []
-        if (values[translatedKey]) values[translatedKey].push(v)
+        if (values[translatedKey]) values[translatedKey].push(typeof v !== 'object' ? v : Object.values(v).join('.'))
         else values[translatedKey] = [v]
       })
     )
@@ -226,7 +221,11 @@ export class ExperimentRunner {
         fs.writeFileSync(
           outputPath,
           Object.entries(items)
-            .map(([k, e]) => (typeof e === 'number' && k !== 'failureRate' ? e.toFixed(2) : e))
+            .map(([k, e]) => {
+              if (typeof e === 'number' && k !== 'failureRate') return e.toFixed(2)
+              else if (typeof e === 'object') return Object.values(e).join('.')
+              else return e
+            })
             .join(';')
             .replaceAll('.', ',') + '\n',
           { flag: 'a' }
@@ -243,7 +242,7 @@ export class ExperimentRunner {
 
         if (i === 0 && ((this.checkpoint && this.checkpoint?.checkpoint === 0) || !this.checkpoint)) {
           // Add columns titles
-          fs.writeFileSync(outputPath, columns.join(';') + '\n')
+          fs.writeFileSync(outputPath, columns.join(';') + ';name\n')
         }
 
         fs.writeFileSync(
@@ -253,9 +252,13 @@ export class ExperimentRunner {
               const assign: { [k: string]: any } = Object.assign(items, message)
               return (
                 columns
-                  .map(e => (typeof assign[e] === 'number' && e !== 'failureRate' ? assign[e].toFixed(2) : assign[e]))
+                  .map(e => {
+                    if (typeof assign[e] === 'number' && e !== 'failureRate') return assign[e].toFixed(2)
+                    else if (typeof assign[e] === 'object') return Object.values(assign[e]).join('-')
+                    else return assign[e]
+                  })
                   .join(';')
-                  .replaceAll('.', ',') + '\n'
+                  .replaceAll('.', ',') + `;f${assign.failureRate}-s${assign.seed}\n`
               )
             })
             .join(''),
@@ -416,7 +419,11 @@ export class ExperimentRunner {
 
     if (manager.status === StopStatus.Unfinished) {
       // No messages and not checking health, add a fake message to update
-      manager.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
+      manager.messages = [
+        new Message(MessageType.StopSimulator, manager.globalTime, manager.globalTime, 0, 0, {
+          status: StopStatus.ExceededDeadline,
+        }),
+      ]
       manager.handleNextMessage()
     }
 
@@ -430,11 +437,17 @@ export class ExperimentRunner {
       `Simulation finished with status ${manager.status} (${completeness}% completeness); time = ${manager.globalTime}`
     )
 
-    const failedNodes = Object.values(manager.nodes).filter(e => !(e.deathTime > manager.globalTime || e.deathTime < 0))
+    const nodes = Object.values(manager.nodes).filter(e => e.role !== NodeRole.Backup)
+    const failedNodes = nodes.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
     console.log(
-      `${(failedNodes.length / Object.values(manager.nodes).length) * 100}% of nodes failed (${failedNodes.length} / ${
-        Object.values(manager.nodes).length
-      })`
+      `${(failedNodes.length / nodes.length) * 100}% of nodes failed (${failedNodes.length} / ${nodes.length})`
+    )
+    console.log(
+      `${
+        (Object.values(manager.nodes).filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0).length /
+          Object.values(manager.nodes).length) *
+        100
+      }% of nodes failed network-wide`
     )
 
     if (this.debug) {
@@ -460,7 +473,7 @@ export class ExperimentRunner {
       completeness,
       circulatingAggregateIds: Object.keys(manager.circulatingAggregateIds).length,
       finalUsedBandwidth: manager.usedBandwidth,
-      observedFailureRate: (failedNodes.length / Object.values(manager.nodes).length) * 100,
+      observedFailureRate: (failedNodes.length / nodes.length) * 100,
       ...manager.statisticsPerRole(),
       messages: oldMessages,
     }

@@ -3,17 +3,10 @@ import cloneDeep from 'lodash/cloneDeep'
 import { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType } from './message'
 import {
-  handleBackupResponse,
-  handleConfirmBackup,
   handleConfirmContributors,
-  handleContactBackup,
-  handleContributionTimeout,
-  handleContributorPing,
-  handleContributorsPolling,
   handleGiveUpChild,
   handleNotifyGroup,
   handleNotifyGroupTimeout,
-  handlePingTimeout,
   handlePrepareContribution,
   handleRequestContribution,
   handleRequestData,
@@ -39,7 +32,7 @@ export class Node {
   config: ManagerArguments
   localTime: number = 0
   deathTime: number = -1
-  role: NodeRole
+  role = NodeRole.Backup
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
   lookingForBackup: { [nodeId: number]: boolean }
@@ -59,21 +52,14 @@ export class Node {
   finalAggregates: { [aggregateId: string]: { [nodeId: number]: Aggregate } } = {}
 
   handleRequestContribution = handleRequestContribution
-  handleContributorPing = handleContributorPing
-  handlePingTimeout = handlePingTimeout
   handlePrepareContribution = handlePrepareContribution
   handleSendContribution = handleSendContribution
-  handleContributionTimeout = handleContributionTimeout
   handleConfirmContributors = handleConfirmContributors
   handleSynchronizationTimeout = handleSynchronizationTimeout
   handleSendAggregate = handleSendAggregate
   handleFailure = handleFailure
-  handleContactBackup = handleContactBackup
-  handleBackupResponse = handleBackupResponse
-  handleConfirmBackup = handleConfirmBackup
   handleNotifyGroup = handleNotifyGroup
   handleNotifyGroupTimeout = handleNotifyGroupTimeout
-  handleContributorsPolling = handleContributorsPolling
   handleSendChildren = handleSendChildren
   handleRequestData = handleRequestData
   handleGiveUpChild = handleGiveUpChild
@@ -84,7 +70,6 @@ export class Node {
     this.id = id
     this.node = node
     this.config = config
-    this.role = NodeRole.Aggregator
     this.secretValue = 50 // TODO: Better value, not always 50
     this.ongoingHealthChecks = {}
     this.finishedWorking = false
@@ -130,20 +115,11 @@ export class Node {
       case MessageType.RequestContribution:
         messages.push(...this.handleRequestContribution(receivedMessage))
         break
-      case MessageType.ContributorPing:
-        messages.push(...this.handleContributorPing(receivedMessage))
-        break
-      case MessageType.PingTimeout:
-        messages.push(...this.handlePingTimeout())
-        break
       case MessageType.PrepareContribution:
         messages.push(...this.handlePrepareContribution(receivedMessage))
         break
       case MessageType.SendContribution:
         messages.push(...this.handleSendContribution(receivedMessage))
-        break
-      case MessageType.ContributionTimeout:
-        messages.push(...this.handleContributionTimeout(receivedMessage))
         break
       case MessageType.ConfirmContributors:
         messages.push(...this.handleConfirmContributors(receivedMessage))
@@ -157,23 +133,11 @@ export class Node {
       case MessageType.HandleFailure:
         messages.push(...this.handleFailure(receivedMessage))
         break
-      case MessageType.ContactBackup:
-        messages.push(...this.handleContactBackup(receivedMessage))
-        break
-      case MessageType.BackupResponse:
-        messages.push(...this.handleBackupResponse(receivedMessage))
-        break
-      case MessageType.ConfirmBackup:
-        messages.push(...this.handleConfirmBackup(receivedMessage))
-        break
       case MessageType.NotifyGroup:
         messages.push(...this.handleNotifyGroup(receivedMessage))
         break
       case MessageType.NotifyGroupTimeout:
         messages.push(...this.handleNotifyGroupTimeout(receivedMessage))
-        break
-      case MessageType.ContributorsPolling:
-        messages.push(...this.handleContributorsPolling(receivedMessage))
         break
       case MessageType.SendChildren:
         messages.push(...this.handleSendChildren(receivedMessage))

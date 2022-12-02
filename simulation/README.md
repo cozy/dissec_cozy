@@ -26,10 +26,8 @@ It focuses on the part of the protocol after the tree has been constructed, so n
 
 - Failures generation
   - Failures on all nodes are generated at the beginning of the simulation.
-  - Failures are generated following an exponential distribution
-    - This distribution is often used to model memoryless failures (no deterioration), which is reasonnable in our contet because an execution of the protocol is not enough to for devices to deteriorate.
-  - This distribution is parameterized by $\lambda$ such that the mean failure time is $\frac{1}{\lambda}$
-    - It has a positive skew, meaning that the median is below the mean.
+  - Failures are generated following a uniform distribution over a window
+    - This distribution is parameterized by the size of the window, such that all nodes are dead by the end of the time window.
 - Failure Detection
   - Failures are planned at the start of the execution according to a random seed
   - Nodes do not monitor each other

@@ -10,12 +10,6 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
   if (!receivedMessage.content.role) {
     throw new Error('The message did not contain a role')
   }
-  if (!receivedMessage.content.backupList) {
-    throw new Error('The message did not contain a backup list')
-  }
-  if (!receivedMessage.content.children) {
-    throw new Error('The message did not contain children')
-  }
   if (!receivedMessage.content.targetGroup) {
     throw new Error('The message did not contain member version')
   }
@@ -27,7 +21,6 @@ export function handleSendChildren(this: Node, receivedMessage: Message): Messag
     // Verifying the member's certificate and signature.
     // Also sign the request for the children
     this.localTime += 3 * this.cryptoLatency()
-    this.node.children = receivedMessage.content.children
     this.role = receivedMessage.content.role
 
     const position = this.node.members.indexOf(this.id)

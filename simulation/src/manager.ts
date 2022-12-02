@@ -81,7 +81,8 @@ export class NodesManager {
     let i = root.members[0]
     let node = root.findGroup(i)
     while (node) {
-      manager.addNode(node)
+      const n = manager.addNode(node)
+      n.role = NodeRole.Aggregator
       i += 1
       node = root.findGroup(i)
     }
@@ -122,7 +123,11 @@ export class NodesManager {
     if (this.failureRate > 0) {
       for (const node of Object.values(this.nodes)) {
         if (node.role !== NodeRole.Querier) {
-          node.deathTime = -this.failureRate * Math.log(1 - this.generator())
+          // Exponential law
+          // node.deathTime = -this.failureRate * Math.log(1 - this.generator())
+
+          // Uniform distribution over a window
+          node.deathTime = this.failureRate * this.generator()
           this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
         }
       }
@@ -152,8 +157,22 @@ export class NodesManager {
     this.globalTime = message.receptionTime
 
     if (message.receptionTime > this.config.deadline) {
-      this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
+      this.messages = [
+        new Message(MessageType.StopSimulator, this.globalTime, this.globalTime, 0, 0, {
+          status: StopStatus.ExceededDeadline,
+        }),
+      ]
     } else if (isSystemMessage(message.type)) {
+      if (this.config.fullExport) {
+        // Save messages for exporting
+        this.oldMessages.push({
+          ...message,
+          currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
+          bandwidth: this.usedBandwidth,
+          ...this.statisticsPerRole(),
+        })
+      }
+
       switch (message.type) {
         case MessageType.StopSimulator:
           this.handleStopSimulator(message)
@@ -246,25 +265,13 @@ export class NodesManager {
     if (b.receptionTime === a.receptionTime) {
       const priorityBonus = (type: MessageType) => {
         switch (type) {
-          case MessageType.PingTimeout:
-            return 1000
-          case MessageType.ContributionTimeout:
-            return 1000
           case MessageType.NotifyGroupTimeout:
             return 1000
           case MessageType.Failing:
             return 900
           case MessageType.NotifyGroup:
             return 800
-          case MessageType.ContactBackup:
-            return 800
-          case MessageType.ConfirmBackup:
-            return 800
-          case MessageType.BackupResponse:
-            return 800
           case MessageType.GiveUpChild:
-            return 800
-          case MessageType.ContributorPing:
             return 800
           case MessageType.ConfirmContributors:
             return 800

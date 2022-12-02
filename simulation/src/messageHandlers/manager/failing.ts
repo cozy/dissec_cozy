@@ -50,22 +50,43 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
         )
       )
     } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {
-      // When dropping, ignore contributors failures
-      if (node.role !== NodeRole.Contributor && !node.finishedWorking) {
+      if (node.role === NodeRole.Contributor) {
+        // Notify parents of the failure of a contributor
+        if (!this.nodes[node.node.parents[0]].finishedWorking) {
+          // One of the parent did not finish aggregating.
+          // Notify all parents that a contributor will be missing
+          const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+          for (const parent of node.node.parents) {
+            messages.push(
+              new Message(MessageType.HandleFailure, this.globalTime, this.globalTime + latency, node.id, parent, {
+                targetGroup: node.node,
+                failedNode: receivedMessage.emitterId,
+              })
+            )
+          }
+        }
+      } else if (!node.finishedWorking) {
         // Propagate the failure of nodes who died before contributing
         if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
           // TODO: Count incurred comms
+          const timeout = this.config.averageLatency * this.config.maxToAverageRatio
           const propagationLatency = (2 * this.config.depth - node.node.depth) * this.config.averageLatency
-          this.globalTime += propagationLatency
           messages.push(
-            new Message(MessageType.StopSimulator, this.globalTime, this.globalTime, node.id, node.id, {
-              status: StopStatus.FullFailurePropagation,
-              failedNode: node.id,
-            })
+            new Message(
+              MessageType.StopSimulator,
+              this.globalTime,
+              this.globalTime + timeout + propagationLatency,
+              node.id,
+              node.id,
+              {
+                status: StopStatus.FullFailurePropagation,
+                failedNode: node.id,
+              }
+            )
           )
 
           // Set all nodes as dead
-          Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime))
+          Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime + timeout + propagationLatency))
         } else {
           throw new Error('Not implemented')
         }

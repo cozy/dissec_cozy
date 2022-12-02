@@ -14,22 +14,6 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   const messages: Message[] = []
 
-  // Retransmit and answer to pings without verifications because it's does not leak info
-  // TODO: Split pings in separate messages
-  // Inform every parent that they will contribute
-  for (const parent of receivedMessage.content.parents) {
-    messages.push(
-      new Message(
-        MessageType.ContributorPing,
-        this.localTime,
-        0, // Don't specify time to let the manager add the latency
-        this.id,
-        parent,
-        {}
-      )
-    )
-  }
-
   // Verifying the parent's certificate and signature when sending the data
   // Prepare shares
   this.localTime += 2 * this.cryptoLatency() + this.config.averageComputeTime
