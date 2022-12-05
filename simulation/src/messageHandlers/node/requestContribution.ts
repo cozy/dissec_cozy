@@ -28,13 +28,13 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   this.shares[this.shares.length - 1] = this.secretValue - accumulator
 
   // Schedule the actual data emission once all the work has been done
-  // TODO:
   const computeTime = (this.config.averageCryptoTime + this.config.averageComputeTime) * this.config.groupSize
+  const transmissionTime = this.config.modelSize * this.config.averageLatency
   messages.push(
     new Message(
       MessageType.PrepareContribution,
       this.localTime,
-      this.localTime + computeTime, // Don't specify time to let the manager add the latency
+      this.localTime + computeTime + transmissionTime,
       this.id,
       this.id,
       {}

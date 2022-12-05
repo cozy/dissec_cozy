@@ -115,7 +115,7 @@ export class NodesManager {
   addNode(node: TreeNode, querier?: number): Node {
     if (querier) this.querier = querier
     const id = Object.keys(this.nodes).length
-    this.nodes[id] = new Node({ node, id, config: this.config })
+    this.nodes[id] = new Node({ manager: this, node, id, config: this.config })
     return this.nodes[id]
   }
 

@@ -44,6 +44,7 @@ export interface RunConfig {
   averageLatency: number
   averageCryptoTime: number
   averageComputeTime: number
+  modelSize: number
   failCheckPeriod: number
   healthCheckPeriod: number
   multicastSize: number
@@ -77,20 +78,21 @@ export function defaultConfig(): RunConfig {
     buildingBlocks: STRATEGIES.STRAWMAN,
     selectivity: 0.1,
     maxToAverageRatio: 10,
-    averageLatency: 100,
-    averageCryptoTime: 100,
+    averageLatency: 10,
+    averageCryptoTime: 10,
     averageComputeTime: 100,
     failCheckPeriod: 100,
+    modelSize: 15000,
     healthCheckPeriod: 3,
     multicastSize: 5,
     deadline: 500 * 1000,
-    failureRate: 0.00007,
+    failureRate: 10 ** 9,
     depth: 3,
     fanout: 4,
     groupSize: 5,
     concentration: 0,
     random: false,
-    seed: `OPTI-f0.00005-s5-d6-c0-0`,
+    seed: `1`,
   }
 }
 
@@ -258,7 +260,7 @@ export class ExperimentRunner {
                     else return assign[e]
                   })
                   .join(';')
-                  .replaceAll('.', ',') + `;f${assign.failureRate}-s${assign.seed}\n`
+                  .replaceAll('.', ',') + `;model${assign.modelSize}-fail${assign.failureRate}-s${assign.seed}\n`
               )
             })
             .join(''),
@@ -353,7 +355,7 @@ export class ExperimentRunner {
     const backups = []
     // Create as many backup as nodes in the tree
     for (let i = 0; i < backupListSize; i++) {
-      const backup = new Node({ id: backupListStart + i, config: manager.config })
+      const backup = new Node({ manager, id: backupListStart + i, config: manager.config })
       backup.role = NodeRole.Backup
       manager.nodes[backupListStart + i] = backup
       backups.push(backup)

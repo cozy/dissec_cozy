@@ -55,23 +55,17 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
       if (!this.finishedWorking && contributors.length === contributions.length) {
         const parent = this.node!.parents[this.node!.members.indexOf(this.id)]
+        const transmissionTime = this.config.modelSize * this.config.averageLatency
         this.lastSentAggregateId = this.aggregationId(contributors.map(String))
         this.finishedWorking = true
         messages.push(
-          new Message(
-            MessageType.SendAggregate,
-            this.localTime,
-            0, // Don't specify time to let the manager add the latency
-            this.id,
-            parent,
-            {
-              aggregate: {
-                counter: contributors.length,
-                data: contributions.reduce((prev, curr) => prev + curr),
-                id: this.lastSentAggregateId,
-              },
-            }
-          )
+          new Message(MessageType.SendAggregate, this.localTime, this.localTime + transmissionTime, this.id, parent, {
+            aggregate: {
+              counter: contributors.length,
+              data: contributions.reduce((prev, curr) => prev + curr),
+              id: this.lastSentAggregateId,
+            },
+          })
         )
       }
 

@@ -86,12 +86,13 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       // Stop regularly checking children's health
       this.finishedWorking = true
 
+      const transmissionTime = this.config.modelSize * this.config.averageLatency
       this.lastSentAggregateId = aggregate.id
       messages.push(
         new Message(
           MessageType.SendAggregate,
           this.localTime,
-          0, // Don't specify time to let the manager add the latency
+          this.localTime + transmissionTime,
           this.id,
           this.node.parents[this.node.members.indexOf(this.id)],
           {

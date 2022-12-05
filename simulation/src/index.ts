@@ -1,4 +1,4 @@
-import { ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
+import { defaultConfig, ExperimentRunner, RunConfig } from './experimentRunner'
 import fs from 'fs'
 
 let checkpoint: { checkpoint: number; name: string; path: string }
@@ -18,61 +18,28 @@ const debug = false
 const fullExport = true
 const useCheckpoint = false
 if (debug) {
-  configs = [
-    {
-      buildingBlocks: STRATEGIES.STRAWMAN,
-      selectivity: 0.1,
-      maxToAverageRatio: 10,
-      averageLatency: 100,
-      averageCryptoTime: 100,
-      averageComputeTime: 100,
-      failCheckPeriod: 100,
-      healthCheckPeriod: 3,
-      multicastSize: 5,
-      deadline: 500000,
-      failureRate: 500000,
-      depth: 3,
-      fanout: 4,
-      groupSize: 5,
-      concentration: 0,
-      random: false,
-      seed: '0',
-    },
-  ]
+  configs = [defaultConfig()]
 } else {
-  const baseConfig = {
-    buildingBlocks: STRATEGIES.STRAWMAN,
-    selectivity: 0.1,
-    maxToAverageRatio: 10,
-    averageLatency: 100,
-    averageCryptoTime: 100,
-    averageComputeTime: 100,
-    failCheckPeriod: 100,
-    healthCheckPeriod: 3,
-    multicastSize: 5,
-    deadline: 500 * 1000,
-    failureRate: 0.00007,
-    depth: 3,
-    fanout: 4,
-    groupSize: 5,
-    concentration: 0,
-    random: false,
-    seed: `OPTI-f0.00005-s5-d6-c0-0`,
-  }
+  const baseConfig = defaultConfig()
   const retries = 5
   // const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
   // const depths = [7, 6, 5, 4]
 
-  for (const failure of Array(5)
+  for (const failure of Array(10)
     .fill(0)
-    .map((_, i) => 5 * i * 10 ** 5)) {
-    for (let retry = 0; retry < retries; retry++) {
-      configs.push(
-        Object.assign({}, baseConfig, {
-          failureRate: failure,
-          seed: `${retry}`,
-        })
-      )
+    .map((_, i) => i * 10 ** 6)) {
+    for (const modelSize of Array(5)
+      .fill(0)
+      .map((_, i) => 10 ** i)) {
+      for (let retry = 0; retry < retries; retry++) {
+        configs.push(
+          Object.assign({}, baseConfig, {
+            failureRate: failure,
+            modelSize,
+            seed: `${retry}`,
+          })
+        )
+      }
     }
   }
 
@@ -112,7 +79,7 @@ if (debug) {
 const runner = new ExperimentRunner(configs, {
   debug,
   fullExport,
-  intermediateExport: 1,
+  intermediateExport: 5,
   checkpoint: useCheckpoint ? checkpoint : undefined,
 })
 runner.run()

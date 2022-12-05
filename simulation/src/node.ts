@@ -1,6 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep'
 
-import { ManagerArguments } from './manager'
+import NodesManager, { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType } from './message'
 import {
   handleConfirmContributors,
@@ -28,6 +28,7 @@ export enum NodeRole {
 
 export class Node {
   id: number
+  manager: NodesManager
   node?: TreeNode
   config: ManagerArguments
   localTime: number = 0
@@ -64,9 +65,20 @@ export class Node {
   handleRequestData = handleRequestData
   handleGiveUpChild = handleGiveUpChild
 
-  constructor({ node, id, config }: { node?: TreeNode; id: number; config: ManagerArguments }) {
+  constructor({
+    manager,
+    node,
+    id,
+    config,
+  }: {
+    manager: NodesManager
+    node?: TreeNode
+    id: number
+    config: ManagerArguments
+  }) {
     if (!node && !id) return //throw new Error("Initializing a node without id")
 
+    this.manager = manager
     this.id = id
     this.node = node
     this.config = config

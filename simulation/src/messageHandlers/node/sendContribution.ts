@@ -28,13 +28,14 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
     ) {
       // Non blocking sync send the result ASAP
       const parent = this.node.parents[this.node.members.indexOf(this.id)]
+      const transmissionTime = this.config.averageLatency * this.config.modelSize
       this.lastSentAggregateId = this.aggregationId(contributors.map(String))
       this.finishedWorking = true
       messages.push(
         new Message(
           MessageType.SendAggregate,
           this.localTime,
-          0, // Don't specify time to let the manager add the latency
+          this.localTime + this.manager.standardLatency() + transmissionTime,
           this.id,
           parent,
           {
