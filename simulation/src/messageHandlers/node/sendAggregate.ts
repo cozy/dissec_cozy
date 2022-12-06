@@ -13,7 +13,8 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
 
   const aggregate = receivedMessage.content.aggregate
 
-  // Cryptographic verification have been executed during the tree setup except for backups
+  // Decyphering the data
+  this.localTime += this.config.averageComputeTime
 
   if (this.role === NodeRole.Querier) {
     this.aggregates[receivedMessage.emitterId] = aggregate

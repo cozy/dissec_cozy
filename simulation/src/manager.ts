@@ -156,13 +156,8 @@ export class NodesManager {
     // Advance simulation time
     this.globalTime = message.receptionTime
 
-    if (message.receptionTime > this.config.deadline) {
-      this.messages = [
-        new Message(MessageType.StopSimulator, this.globalTime, this.globalTime, 0, 0, {
-          status: StopStatus.ExceededDeadline,
-        }),
-      ]
-    } else if (isSystemMessage(message.type)) {
+    if (isSystemMessage(message.type)) {
+      // Treat system messages first
       if (this.config.fullExport) {
         // Save messages for exporting
         this.oldMessages.push({
@@ -183,7 +178,14 @@ export class NodesManager {
         default:
           throw new Error('Unimplemented system message')
       }
+    } else if (message.receptionTime > this.config.deadline) {
+      this.messages = [
+        new Message(MessageType.StopSimulator, this.globalTime, this.globalTime, 0, 0, {
+          status: StopStatus.ExceededDeadline,
+        }),
+      ]
     } else if (alive) {
+      this.oldMessages.findIndex
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId]
         .receiveMessage(message)

@@ -164,11 +164,6 @@ export class Node {
         throw new Error('Receiving unknown message type')
     }
 
-    // Invariant: the node is a member of its group
-    if (this.node && !this.node.members.includes(this.id)) {
-      throw new Error(`${this.tag()} is not in its members ([${this.node.members}])`)
-    }
-
     receivedMessage.work = this.localTime - startTime
 
     return messages

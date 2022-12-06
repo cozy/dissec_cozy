@@ -17,5 +17,7 @@ export function handlePrepareContribution(this: Node, _: Message): Message[] {
     )
   }
 
+  this.finishedWorking = true
+
   return messages
 }

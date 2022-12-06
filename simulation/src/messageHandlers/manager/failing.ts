@@ -51,8 +51,8 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
       )
     } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {
       if (node.role === NodeRole.Contributor) {
-        // Notify parents of the failure of a contributor
-        if (!this.nodes[node.node.parents[0]].finishedWorking) {
+        // Notify parents of the failure of a contributor when the parent is not done and the contributor is not done
+        if (!this.nodes[node.node.parents[0]].finishedWorking && !node.finishedWorking) {
           // One of the parent did not finish aggregating.
           // Notify all parents that a contributor will be missing
           const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
@@ -69,7 +69,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
         // Propagate the failure of nodes who died before contributing
         if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
           // TODO: Count incurred comms
-          const timeout = this.config.averageLatency * this.config.maxToAverageRatio
+          const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
           const propagationLatency = (2 * this.config.depth - node.node.depth) * this.config.averageLatency
           messages.push(
             new Message(

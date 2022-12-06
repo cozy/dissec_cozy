@@ -78,17 +78,17 @@ export function defaultConfig(): RunConfig {
     buildingBlocks: STRATEGIES.STRAWMAN,
     selectivity: 0.1,
     maxToAverageRatio: 10,
-    averageLatency: 10,
+    averageLatency: 1,
     averageCryptoTime: 10,
-    averageComputeTime: 100,
+    averageComputeTime: 63,
+    modelSize: 1000,
     failCheckPeriod: 100,
-    modelSize: 15000,
     healthCheckPeriod: 3,
     multicastSize: 5,
-    deadline: 500 * 1000,
-    failureRate: 10 ** 9,
+    deadline: 5 * 10 ** 7,
+    failureRate: 5 * 10 ** 7,
     depth: 3,
-    fanout: 4,
+    fanout: 8,
     groupSize: 5,
     concentration: 0,
     random: false,
@@ -410,13 +410,8 @@ export class ExperimentRunner {
     manager.initialNodeRoles = manager.countNodesPerRole()
 
     // Running the simulator the end
-    const startTime = Date.now()
     while (manager.messages.length > 0) {
       manager.handleNextMessage()
-      if (Date.now() - startTime > 1800000) {
-        // It's been more than 1/2 hour, abort and retry
-        return
-      }
     }
 
     if (manager.status === StopStatus.Unfinished) {
@@ -436,7 +431,7 @@ export class ExperimentRunner {
     const completeness = (100 * receivedNumberContributors) / initialNumberContributors
 
     console.log(
-      `Simulation finished with status ${manager.status} (${completeness}% completeness); time = ${manager.globalTime}`
+      `Simulation finished with status ${manager.status} (${completeness}% completeness = ${receivedNumberContributors}/${initialNumberContributors}); time = ${manager.globalTime}`
     )
 
     const nodes = Object.values(manager.nodes).filter(e => e.role !== NodeRole.Backup)

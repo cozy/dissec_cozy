@@ -1,4 +1,12 @@
-import { defaultConfig, ExperimentRunner, RunConfig } from './experimentRunner'
+import {
+  defaultConfig,
+  ExperimentRunner,
+  FailureHandlingBlock,
+  FailurePropagationBlock,
+  RunConfig,
+  StandbyBlock,
+  SynchronizationBlock,
+} from './experimentRunner'
 import fs from 'fs'
 
 let checkpoint: { checkpoint: number; name: string; path: string }
@@ -18,7 +26,33 @@ const debug = false
 const fullExport = true
 const useCheckpoint = false
 if (debug) {
-  configs = [defaultConfig()]
+  configs = [
+    {
+      buildingBlocks: {
+        failurePropagation: FailurePropagationBlock.FullFailurePropagation,
+        failureHandling: FailureHandlingBlock.Drop,
+        standby: StandbyBlock.Stop,
+        synchronization: SynchronizationBlock.None,
+      },
+      selectivity: 0.1,
+      maxToAverageRatio: 10,
+      averageLatency: 1,
+      averageCryptoTime: 10,
+      averageComputeTime: 63,
+      modelSize: 100,
+      failCheckPeriod: 100,
+      healthCheckPeriod: 3,
+      multicastSize: 5,
+      deadline: 50000000,
+      failureRate: 8000000,
+      depth: 3,
+      fanout: 8,
+      groupSize: 5,
+      concentration: 0,
+      random: false,
+      seed: '1',
+    },
+  ]
 } else {
   const baseConfig = defaultConfig()
   const retries = 5
@@ -79,7 +113,7 @@ if (debug) {
 const runner = new ExperimentRunner(configs, {
   debug,
   fullExport,
-  intermediateExport: 5,
+  intermediateExport: 0,
   checkpoint: useCheckpoint ? checkpoint : undefined,
 })
 runner.run()
