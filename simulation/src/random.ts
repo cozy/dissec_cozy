@@ -31,8 +31,8 @@ export class Generator {
 
   private constructor() {}
 
-  static get(seed: string = '42'): () => number {
-    if (!this.instances[seed]) {
+  static get(seed: string = '42', restart = false): () => number {
+    if (!this.instances[seed] || restart) {
       let seedFunction = xmur3(seed)
       this.instances[seed] = mulberry32(seedFunction())
     }

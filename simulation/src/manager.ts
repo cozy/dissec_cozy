@@ -57,7 +57,7 @@ export class NodesManager {
     this.multicastSize = options.multicastSize
     this.failureRate = options.failureRate
     this.status = StopStatus.Unfinished
-    this.generator = Generator.get(options.seed)
+    this.generator = Generator.get(options.seed, true)
 
     // Sigma such that the median is the desired latency
     const sigma = options.averageLatency / Math.sqrt(Math.PI / 2)
@@ -210,8 +210,8 @@ export class NodesManager {
           this.circulatingAggregateIds[message.content.aggregate!.id] = true
         }
         if (message.content.share || message.content.aggregate?.data) {
-          this.usedBandwidth += 1
-          this.bandwidthPerRole[this.nodes[message.emitterId].role] += 1
+          this.usedBandwidth += this.config.modelSize
+          this.bandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
         }
 
         if (this.config.fullExport) {

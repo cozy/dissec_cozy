@@ -36,21 +36,21 @@ if (debug) {
       },
       selectivity: 0.1,
       maxToAverageRatio: 10,
-      averageLatency: 1,
+      averageLatency: 10,
       averageCryptoTime: 10,
-      averageComputeTime: 63,
+      averageComputeTime: 5,
       modelSize: 100,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 8000000,
+      failureRate: 4000000,
       depth: 3,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '1',
+      seed: '2',
     },
   ]
 } else {
@@ -59,10 +59,10 @@ if (debug) {
   // const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
   // const depths = [7, 6, 5, 4]
 
-  for (const failure of Array(10)
+  for (const failure of Array(5)
     .fill(0)
     .map((_, i) => i * 10 ** 6)) {
-    for (const modelSize of Array(5)
+    for (const modelSize of Array(4)
       .fill(0)
       .map((_, i) => 10 ** i)) {
       for (let retry = 0; retry < retries; retry++) {

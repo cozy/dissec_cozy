@@ -8,11 +8,13 @@ import {
   handleNotifyGroup,
   handleNotifyGroupTimeout,
   handlePrepareContribution,
+  handlePrepareSendAggregate,
   handleRequestContribution,
   handleRequestData,
   handleSendAggregate,
   handleSendChildren,
   handleSendContribution,
+  handleStartSendingContribution,
   handleSynchronizationTimeout,
 } from './messageHandlers/node'
 import { handleFailure } from './messageHandlers/node/handleFailure'
@@ -54,9 +56,11 @@ export class Node {
 
   handleRequestContribution = handleRequestContribution
   handlePrepareContribution = handlePrepareContribution
+  handleStartSendingContribution = handleStartSendingContribution
   handleSendContribution = handleSendContribution
   handleConfirmContributors = handleConfirmContributors
   handleSynchronizationTimeout = handleSynchronizationTimeout
+  handlePrepareSendAggregate = handlePrepareSendAggregate
   handleSendAggregate = handleSendAggregate
   handleFailure = handleFailure
   handleNotifyGroup = handleNotifyGroup
@@ -130,6 +134,9 @@ export class Node {
       case MessageType.PrepareContribution:
         messages.push(...this.handlePrepareContribution(receivedMessage))
         break
+      case MessageType.StartSendingContribution:
+        messages.push(...this.handleStartSendingContribution(receivedMessage))
+        break
       case MessageType.SendContribution:
         messages.push(...this.handleSendContribution(receivedMessage))
         break
@@ -138,6 +145,9 @@ export class Node {
         break
       case MessageType.SynchronizationTimeout:
         messages.push(...this.handleSynchronizationTimeout(receivedMessage))
+        break
+      case MessageType.PrepareSendAggregate:
+        messages.push(...this.handlePrepareSendAggregate(receivedMessage))
         break
       case MessageType.SendAggregate:
         messages.push(...this.handleSendAggregate(receivedMessage))

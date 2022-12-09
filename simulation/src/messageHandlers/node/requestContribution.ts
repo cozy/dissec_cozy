@@ -16,7 +16,7 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
 
   // Verifying the parent's certificate and signature when sending the data
   // Prepare shares
-  this.localTime += 2 * this.cryptoLatency() + this.config.averageComputeTime
+  this.localTime += 2 * this.cryptoLatency()
   this.shares = Array(this.config.groupSize).fill(0)
   let accumulator = 0
   for (let i = 0; i < this.config.groupSize - 1; i++) {
@@ -28,13 +28,12 @@ export function handleRequestContribution(this: Node, receivedMessage: Message):
   this.shares[this.shares.length - 1] = this.secretValue - accumulator
 
   // Schedule the actual data emission once all the work has been done
-  const computeTime = 16 * this.config.averageComputeTime * this.config.groupSize
-  const transmissionTime = this.config.groupSize * this.config.modelSize * this.config.averageLatency
+  const computeTime = 2 * this.config.averageComputeTime * this.config.modelSize * this.config.groupSize
   messages.push(
     new Message(
-      MessageType.PrepareContribution,
+      MessageType.StartSendingContribution,
       this.localTime,
-      this.localTime + computeTime + transmissionTime,
+      this.localTime + computeTime,
       this.id,
       this.id,
       {}

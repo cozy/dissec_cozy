@@ -9,11 +9,13 @@ export enum MessageType {
   Failing = 'Failing',
   // Contribution
   RequestContribution = 'ReqContrib',
-  PrepareContribution = 'PrepareContrib',
+  PrepareContribution = 'FinishContrib',
+  StartSendingContribution = 'StartSendContrib',
   SendContribution = 'SendContrib',
   // Synchronization
   ConfirmContributors = 'ConfContrib',
   SynchronizationTimeout = 'SynchroTO',
+  PrepareSendAggregate = 'PrepAgg',
   SendAggregate = 'SendAgg',
   // Failure detection
   HandleFailure = 'Failure',
@@ -136,6 +138,9 @@ export class Message {
       case MessageType.PrepareContribution:
         console.log(`${tag} is processing share to send to node #${this.content.targetNode}`)
         break
+      case MessageType.StartSendingContribution:
+        console.log(`${tag} starts to send contribution`)
+        break
       case MessageType.SendContribution:
         console.log(
           `${tag} received contribution #${Object.values(receiver.contributions).length + 1} (${
@@ -165,6 +170,9 @@ export class Message {
             contributors.length - contributors.map(e => receiver.contributions[e]).filter(Boolean).length
           } contributors`
         )
+        break
+      case MessageType.PrepareSendAggregate:
+        console.log(`${tag} is starting to transmit its aggregate to parent`)
         break
       case MessageType.SendAggregate:
         console.log(

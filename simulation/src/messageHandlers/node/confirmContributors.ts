@@ -99,7 +99,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
           this.localTime,
           0, // Don't specify time to let the manager add the latency
           this.id,
-          this.node.parents[this.node.members.indexOf(this.id)],
+          this.id,
           {
             aggregate: {
               counter: this.contributorsList[this.id]!.length,
@@ -109,6 +109,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
               ),
               id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
             },
+            targetNode: this.node.parents[this.node.members.indexOf(this.id)],
           }
         )
       )
@@ -143,7 +144,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
           this.localTime,
           0, // Don't specify time to let the manager add the latency
           this.id,
-          this.node.parents[this.node.members.indexOf(this.id)],
+          this.id,
           {
             aggregate: {
               counter: this.contributorsList[this.id]!.length,
@@ -153,6 +154,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
               ),
               id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
             },
+            targetNode: this.node.parents[this.node.members.indexOf(this.id)],
           }
         )
       )

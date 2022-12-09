@@ -1,5 +1,5 @@
 import { FailureHandlingBlock, StandbyBlock, SynchronizationBlock } from '../../experimentRunner'
-import { Message, MessageType } from '../../message'
+import { Message, MessageType, StopStatus } from '../../message'
 import Node, { NodeRole } from '../../node'
 
 export function handleFailure(this: Node, receivedMessage: Message): Message[] {
@@ -55,17 +55,25 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
       if (!this.finishedWorking && contributors.length === contributions.length) {
         const parent = this.node!.parents[this.node!.members.indexOf(this.id)]
-        const transmissionTime = this.config.modelSize * this.config.averageLatency
+        const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
         this.lastSentAggregateId = this.aggregationId(contributors.map(String))
         this.finishedWorking = true
         messages.push(
-          new Message(MessageType.SendAggregate, this.localTime, this.localTime + transmissionTime, this.id, parent, {
-            aggregate: {
-              counter: contributors.length,
-              data: contributions.reduce((prev, curr) => prev + curr),
-              id: this.lastSentAggregateId,
-            },
-          })
+          new Message(
+            MessageType.PrepareSendAggregate,
+            this.localTime,
+            this.localTime + transmissionTime,
+            this.id,
+            this.id,
+            {
+              aggregate: {
+                counter: contributors.length,
+                data: contributions.reduce((prev, curr) => prev + curr),
+                id: this.lastSentAggregateId,
+              },
+              targetNode: parent,
+            }
+          )
         )
       }
 
@@ -76,6 +84,43 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
               contributors,
             })
+          )
+        }
+      }
+    } else if (this.role === NodeRole.Backup) {
+      // The node is a backup being inserted
+      this.node = receivedMessage.content.targetGroup
+      this.node!.members = this.node?.members.map(e => (e === receivedMessage.content.failedNode ? this.id : e))!
+      this.role = this.node?.depth === 1 ? NodeRole.LeafAggregator : NodeRole.Aggregator
+
+      // Ask child for their data
+      const position = this.node?.members.indexOf(this.id)!
+      if (this.config.buildingBlocks.standby === StandbyBlock.Stop) {
+        // On Stop mode, propagate failure if any child finished working
+        if (
+          this.node!.children.map(e => (e.depth === 0 ? e.members[0] : e.members[position])).filter(
+            e => this.manager.nodes[e].finishedWorking || this.manager.nodes[e].deathTime <= this.manager.globalTime
+          ).length > 0
+        ) {
+          // Some child already sent their data or failed, failing
+          const propagationLatency = (2 * this.config.depth - this.node!.depth) * this.config.averageLatency
+          messages.push(
+            new Message(
+              MessageType.StopSimulator,
+              this.localTime,
+              this.localTime + propagationLatency,
+              this.id,
+              this.id,
+              {
+                status: StopStatus.FullFailurePropagation,
+                failedNode: this.id,
+              }
+            )
+          )
+
+          // Set all nodes as dead
+          Object.values(this.manager.nodes).forEach(
+            node => (node.deathTime = this.manager.globalTime + propagationLatency)
           )
         }
       }

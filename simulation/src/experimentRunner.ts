@@ -78,10 +78,10 @@ export function defaultConfig(): RunConfig {
     buildingBlocks: STRATEGIES.STRAWMAN,
     selectivity: 0.1,
     maxToAverageRatio: 10,
-    averageLatency: 1,
+    averageLatency: 10,
     averageCryptoTime: 10,
-    averageComputeTime: 63,
-    modelSize: 1000,
+    averageComputeTime: 5, // Time spent working for each packet
+    modelSize: 100,
     failCheckPeriod: 100,
     healthCheckPeriod: 3,
     multicastSize: 5,

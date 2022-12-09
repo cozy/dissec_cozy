@@ -13,7 +13,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
   }
 
   // Verifying the child's certificate, signature and decrypt the symmetric key
-  this.localTime += this.config.averageComputeTime
+  this.localTime += this.config.averageComputeTime * this.config.modelSize
 
   // Store the share
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
@@ -28,22 +28,23 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
     ) {
       // Non blocking sync send the result ASAP
       const parent = this.node.parents[this.node.members.indexOf(this.id)]
-      const transmissionTime = this.config.averageLatency * this.config.modelSize
+      const transmissionTime = this.config.averageLatency * (this.config.modelSize - 1)
       this.lastSentAggregateId = this.aggregationId(contributors.map(String))
       this.finishedWorking = true
       messages.push(
         new Message(
-          MessageType.SendAggregate,
+          MessageType.PrepareSendAggregate,
           this.localTime,
-          this.localTime + this.manager.standardLatency() + transmissionTime,
+          this.localTime + transmissionTime,
           this.id,
-          parent,
+          this.id,
           {
             aggregate: {
               counter: contributors.length,
               data: contributions.reduce((prev, curr) => prev + curr),
               id: this.lastSentAggregateId,
             },
+            targetNode: parent,
           }
         )
       )

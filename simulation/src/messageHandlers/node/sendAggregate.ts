@@ -14,7 +14,7 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
   const aggregate = receivedMessage.content.aggregate
 
   // Decyphering the data
-  this.localTime += this.config.averageComputeTime
+  this.localTime += this.config.averageComputeTime * this.config.modelSize
 
   if (this.role === NodeRole.Querier) {
     this.aggregates[receivedMessage.emitterId] = aggregate
@@ -35,7 +35,6 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
 
     const finalAggregates = Object.values(this.finalAggregates[aggregate.id])
     if (finalAggregates.length === this.config.groupSize) {
-      // if (expectedAggregates.length === this.config.groupSize && uniqueIds.length === 1) {
       // Received all shares
       this.finishedWorking = true
 
@@ -48,7 +47,9 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       // TODO: Use a dynamic result
       const errorMargin = 0.0001 // 0.1%, due to numerical precision
       if (finalResult < 50 * (1 - errorMargin) || finalResult > 50 * (1 + errorMargin)) {
-        messages.push(new Message(MessageType.StopSimulator, 0, -1, this.id, this.id, { status: StopStatus.BadResult }))
+        messages.push(
+          new Message(MessageType.StopSimulator, 0, this.localTime, this.id, this.id, { status: StopStatus.BadResult })
+        )
       } else {
         // TODO: Send the number of contributors differently
         messages.push(
@@ -84,20 +85,19 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
         id: this.aggregationId(aggregates.map(e => e.id)),
       }))
 
-      // Stop regularly checking children's health
+      const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
       this.finishedWorking = true
-
-      const transmissionTime = this.config.modelSize * this.config.averageLatency
       this.lastSentAggregateId = aggregate.id
       messages.push(
         new Message(
-          MessageType.SendAggregate,
+          MessageType.PrepareSendAggregate,
           this.localTime,
           this.localTime + transmissionTime,
           this.id,
-          this.node.parents[this.node.members.indexOf(this.id)],
+          this.id,
           {
             aggregate,
+            targetNode: this.node.parents[this.node.members.indexOf(this.id)],
           }
         )
       )

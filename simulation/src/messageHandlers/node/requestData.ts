@@ -31,19 +31,22 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     this.localTime += 3 * this.cryptoLatency()
 
     this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
+    const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
+    this.finishedWorking = true
     messages.push(
       new Message(
-        MessageType.SendAggregate,
+        MessageType.PrepareSendAggregate,
         this.localTime,
-        0, // ASAP
+        this.localTime + transmissionTime,
         this.id,
-        receivedMessage.emitterId,
+        this.id,
         {
           aggregate: {
             counter: this.contributorsList[this.id]!.length,
             data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
             id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
           },
+          targetNode: receivedMessage.emitterId,
         }
       )
     )
@@ -61,14 +64,16 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     this.localTime += 3 * this.cryptoLatency()
 
     const aggregationId = this.aggregationId(children.map(child => this.aggregates[child].id))
+    const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
     this.lastSentAggregateId = aggregationId
+    this.finishedWorking = true
     messages.push(
       new Message(
-        MessageType.SendAggregate,
+        MessageType.PrepareSendAggregate,
         this.localTime,
-        0, // ASAP
+        this.localTime + transmissionTime, // ASAP
         this.id,
-        receivedMessage.emitterId,
+        this.id,
         {
           aggregate: children
             .map(child => this.aggregates[child])
@@ -77,6 +82,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
               data: prev.data + curr.data,
               id: aggregationId,
             })),
+          targetNode: receivedMessage.emitterId,
         }
       )
     )
