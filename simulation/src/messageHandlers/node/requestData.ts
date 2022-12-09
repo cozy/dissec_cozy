@@ -30,25 +30,12 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     // Verifying the parent's certificate, signature and open an encrypted channel
     this.localTime += 3 * this.cryptoLatency()
 
-    this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
-    const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
-    this.finishedWorking = true
     messages.push(
-      new Message(
-        MessageType.PrepareSendAggregate,
-        this.localTime,
-        this.localTime + transmissionTime,
-        this.id,
-        this.id,
-        {
-          aggregate: {
-            counter: this.contributorsList[this.id]!.length,
-            data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
-          },
-          targetNode: receivedMessage.emitterId,
-        }
-      )
+      this.sendAggregate({
+        counter: this.contributorsList[this.id]!.length,
+        data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
+        id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+      })
     )
   } else {
     const position = this.node.members.indexOf(this.id)
@@ -63,27 +50,15 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     // Verifying the parent's certificate, signature and open an encrypted channel
     this.localTime += 3 * this.cryptoLatency()
 
-    const aggregationId = this.aggregationId(children.map(child => this.aggregates[child].id))
-    const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
-    this.lastSentAggregateId = aggregationId
-    this.finishedWorking = true
     messages.push(
-      new Message(
-        MessageType.PrepareSendAggregate,
-        this.localTime,
-        this.localTime + transmissionTime, // ASAP
-        this.id,
-        this.id,
-        {
-          aggregate: children
-            .map(child => this.aggregates[child])
-            .reduce((prev, curr) => ({
-              counter: prev.counter + curr.counter,
-              data: prev.data + curr.data,
-              id: aggregationId,
-            })),
-          targetNode: receivedMessage.emitterId,
-        }
+      this.sendAggregate(
+        children
+          .map(child => this.aggregates[child])
+          .reduce((prev, curr) => ({
+            counter: prev.counter + curr.counter,
+            data: prev.data + curr.data,
+            id: this.aggregationId(children.map(child => this.aggregates[child].id)),
+          }))
       )
     )
   }

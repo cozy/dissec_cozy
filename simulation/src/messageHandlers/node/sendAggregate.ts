@@ -85,22 +85,7 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
         id: this.aggregationId(aggregates.map(e => e.id)),
       }))
 
-      const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
-      this.finishedWorking = true
-      this.lastSentAggregateId = aggregate.id
-      messages.push(
-        new Message(
-          MessageType.PrepareSendAggregate,
-          this.localTime,
-          this.localTime + transmissionTime,
-          this.id,
-          this.id,
-          {
-            aggregate,
-            targetNode: this.node.parents[this.node.members.indexOf(this.id)],
-          }
-        )
-      )
+      messages.push(this.sendAggregate(aggregate))
     }
   }
 

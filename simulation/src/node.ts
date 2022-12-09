@@ -179,6 +179,26 @@ export class Node {
     return messages
   }
 
+  sendAggregate(aggregate: Aggregate) {
+    // Non blocking sync send the result ASAP
+    const parent = this.node!.parents[this.node!.members.indexOf(this.id)]
+    const transmissionTime = this.config.averageLatency * (this.config.modelSize - 1)
+    this.lastSentAggregateId = aggregate.id
+    this.finishedWorking = true
+
+    return new Message(
+      MessageType.PrepareSendAggregate,
+      this.localTime,
+      this.localTime + transmissionTime,
+      this.id,
+      this.id,
+      {
+        aggregate,
+        targetNode: parent,
+      }
+    )
+  }
+
   tag() {
     return `[@${this.localTime}] (${this.role}) Node #${this.id}`
   }

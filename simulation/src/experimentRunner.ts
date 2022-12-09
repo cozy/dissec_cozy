@@ -66,7 +66,7 @@ export const STRATEGIES: { [key: string]: BuildingBlocks } = {
     synchronization: SynchronizationBlock.None,
   },
   EAGER: {
-    failurePropagation: FailurePropagationBlock.FullFailurePropagation,
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.NonBlocking,
@@ -75,7 +75,7 @@ export const STRATEGIES: { [key: string]: BuildingBlocks } = {
 
 export function defaultConfig(): RunConfig {
   return {
-    buildingBlocks: STRATEGIES.STRAWMAN,
+    buildingBlocks: STRATEGIES.EAGER,
     selectivity: 0.1,
     maxToAverageRatio: 10,
     averageLatency: 10,

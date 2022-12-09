@@ -1,6 +1,6 @@
-import { FailureHandlingBlock, FailurePropagationBlock, StandbyBlock } from '../../experimentRunner'
+import { FailureHandlingBlock, FailurePropagationBlock } from '../../experimentRunner'
 import NodesManager from '../../manager'
-import { Message, MessageType, StopStatus } from '../../message'
+import { Message, MessageType } from '../../message'
 import { NodeRole } from '../../node'
 
 export function handleFailing(this: NodesManager, receivedMessage: Message) {
@@ -19,7 +19,8 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
       replacement = this.replacementNodes.pop()!
     }
     if (!replacement) {
-      throw new Error('Out of backup')
+      this.fullFailurePropagation(node)
+      return
     }
     replacement.localTime = this.globalTime
     return replacement
@@ -30,33 +31,50 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
     // Send notification to nodes with a channel open
     const messages: Message[] = []
 
-    if (
-      this.config.buildingBlocks.standby === StandbyBlock.Stay &&
-      this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace &&
-      node.role !== NodeRole.Contributor
-    ) {
+    if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
       // Always replacing failed nodes except contributors
+      if (node.role !== NodeRole.Contributor) {
+        // Timeout + ask + confirm + open secure channels
+        const replacementLatency =
+          this.config.averageLatency * (2 * this.config.maxToAverageRatio + 4) + this.config.averageCryptoTime * 6
+        const replacement = getReplacement(this.globalTime + replacementLatency)
+        if (!replacement) return
 
-      // Timeout + ask + confirm + open secure channels
-      const replacementLatency =
-        this.config.averageLatency * (2 * this.config.maxToAverageRatio + 4) + this.config.averageCryptoTime * 6
-      const replacement = getReplacement(this.globalTime + replacementLatency)
-      messages.push(
-        new Message(
-          MessageType.HandleFailure,
-          this.globalTime + replacementLatency,
-          this.globalTime + replacementLatency,
-          replacement.id,
-          replacement.id,
-          {
-            targetGroup: node.node,
-            failedNode: receivedMessage.emitterId,
-          }
+        messages.push(
+          new Message(
+            MessageType.HandleFailure,
+            this.globalTime + replacementLatency,
+            this.globalTime + replacementLatency,
+            replacement.id,
+            replacement.id,
+            {
+              targetGroup: node.node,
+              failedNode: receivedMessage.emitterId,
+            }
+          )
         )
-      )
+      } else {
+        // Alert parents of the contributor
+        const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+        for (const parent of node.node.parents) {
+          messages.push(
+            new Message(
+              MessageType.HandleFailure,
+              this.globalTime + latency,
+              this.globalTime + latency,
+              parent,
+              parent,
+              {
+                targetGroup: node.node,
+                failedNode: receivedMessage.emitterId,
+              }
+            )
+          )
+        }
+      }
     } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {
       const position = node.node.members.indexOf(node.id)!
-      // When dropping, we stop replacing nodesas soon as they have done their work or if they're contribubtors
+      // When dropping, we stop replacing nodes as soon as they have done their work or if they're contribubtors
       if (node.finishedWorking) {
         if (
           this.nodes[node.node.parents[position]].finishedWorking ||
@@ -78,25 +96,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
         } else {
           // Propagate the failure of nodes who died before contributing
           if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
-            // TODO: Count incurred comms
-            const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
-            const propagationLatency = (2 * this.config.depth - node.node.depth) * this.config.averageLatency
-            messages.push(
-              new Message(
-                MessageType.StopSimulator,
-                this.globalTime,
-                this.globalTime + timeout + propagationLatency,
-                node.id,
-                node.id,
-                {
-                  status: StopStatus.FullFailurePropagation,
-                  failedNode: node.id,
-                }
-              )
-            )
-
-            // Set all nodes as dead
-            Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime + timeout + propagationLatency))
+            this.fullFailurePropagation(node)
           }
         }
       } else {
@@ -122,6 +122,8 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
           const replacementLatency =
             this.config.averageLatency * (2 * this.config.maxToAverageRatio + 4) + this.config.averageCryptoTime * 6
           const replacement = getReplacement(this.globalTime + replacementLatency)
+          if (!replacement) return
+
           messages.push(
             new Message(
               MessageType.HandleFailure,

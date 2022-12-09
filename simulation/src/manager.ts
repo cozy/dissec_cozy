@@ -231,6 +231,27 @@ export class NodesManager {
     }
   }
 
+  fullFailurePropagation(node: Node) {
+    // TODO: Count incurred comms
+    const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+    const propagationLatency = (2 * this.config.depth - node.node!.depth) * this.config.averageLatency
+    this.insertMessage(
+      new Message(
+        MessageType.StopSimulator,
+        this.globalTime,
+        this.globalTime + timeout + propagationLatency,
+        node.id,
+        node.id,
+        {
+          status: StopStatus.FullFailurePropagation,
+          failedNode: node.id,
+        }
+      )
+    )
+    // Set all nodes as dead
+    Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime + timeout + propagationLatency))
+  }
+
   displayAggregateId() {
     const querier = Object.values(this.nodes).filter(e => e.role === NodeRole.Querier)[0]
 

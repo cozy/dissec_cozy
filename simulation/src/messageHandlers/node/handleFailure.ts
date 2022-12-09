@@ -7,37 +7,71 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
-  if (
-    this.config.buildingBlocks.standby === StandbyBlock.Stay &&
-    this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace
-  ) {
-    // Always replacing failed nodes
-    // The node handling the failure is the replacement
-
-    // Update the tree
-    // Memory is shared across groups so it also updates parent and child groups
-    this.node = receivedMessage.content.targetGroup!
-    const position = this.node.members.indexOf(receivedMessage.content.failedNode!)!
-    this.node.members[position] = this.id
-
-    const msg = (child: number) =>
-      new Message(
-        MessageType.RequestData,
-        this.localTime,
-        this.localTime + this.config.averageLatency,
-        this.id,
-        child,
-        {}
-      )
-    if (this.node.depth === 1) {
-      // Asking contributors
-      for (const child of this.node.children.flatMap(e => e.members)) {
-        messages.push(msg(child))
+  if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
+    // Always replacing failed nodes except contributors
+    if (this.role === NodeRole.LeafAggregator) {
+      // A contributor failed
+      if (this.finishedWorking) {
+        // Nodes
       }
-    } else {
-      // Asking aggregators
-      for (const child of this.node.children.map(e => e.members[position])) {
-        messages.push(msg(child))
+      // Remove the contributor from the children
+      const childIndex = this.node!.children.findIndex(e => e.members.includes(receivedMessage.content.failedNode!))
+      if (childIndex >= 0) {
+        this.node!.children.splice(childIndex, 1)
+      }
+
+      // Send the aggregate if possible
+      const contributors = this.node!.children.flatMap(e => e.members)
+      const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
+      if (contributors.length === 0) {
+        this.manager.fullFailurePropagation(this)
+        return []
+      } else if (contributions.length === contributors.length) {
+        messages.push(
+          this.sendAggregate({
+            counter: contributors.length,
+            data: contributions.reduce((prev, curr) => prev + curr),
+            id: this.aggregationId(contributors.map(String)),
+          })
+        )
+
+        for (const member of this.node!.members) {
+          messages.push(
+            new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+              contributors,
+            })
+          )
+        }
+      }
+    } else if (this.role === NodeRole.Backup) {
+      // The node handling the failure is the replacement
+
+      // Update the tree
+      // Memory is shared across groups so it also updates parent and child groups
+      this.node = receivedMessage.content.targetGroup!
+      this.role = this.node.depth === 1 ? NodeRole.LeafAggregator : NodeRole.Aggregator
+      const position = this.node.members.indexOf(receivedMessage.content.failedNode!)!
+      this.node.members[position] = this.id
+
+      const msg = (child: number) =>
+        new Message(
+          MessageType.RequestData,
+          this.localTime,
+          this.localTime + this.config.averageLatency,
+          this.id,
+          child,
+          {}
+        )
+      if (this.node.depth === 1) {
+        // Asking contributors
+        for (const child of this.node.children.flatMap(e => e.members)) {
+          messages.push(msg(child))
+        }
+      } else {
+        // Asking aggregators
+        for (const child of this.node.children.map(e => e.members[position])) {
+          messages.push(msg(child))
+        }
       }
     }
   } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {
@@ -54,26 +88,12 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const contributors = this.node!.children.flatMap(e => e.members)
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
       if (!this.finishedWorking && contributors.length === contributions.length) {
-        const parent = this.node!.parents[this.node!.members.indexOf(this.id)]
-        const transmissionTime = (this.config.modelSize - 1) * this.config.averageLatency
-        this.lastSentAggregateId = this.aggregationId(contributors.map(String))
-        this.finishedWorking = true
         messages.push(
-          new Message(
-            MessageType.PrepareSendAggregate,
-            this.localTime,
-            this.localTime + transmissionTime,
-            this.id,
-            this.id,
-            {
-              aggregate: {
-                counter: contributors.length,
-                data: contributions.reduce((prev, curr) => prev + curr),
-                id: this.lastSentAggregateId,
-              },
-              targetNode: parent,
-            }
-          )
+          this.sendAggregate({
+            counter: contributors.length,
+            data: contributions.reduce((prev, curr) => prev + curr),
+            id: this.aggregationId(contributors.map(String)),
+          })
         )
       }
 

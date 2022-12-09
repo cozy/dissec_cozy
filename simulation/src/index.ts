@@ -1,12 +1,4 @@
-import {
-  defaultConfig,
-  ExperimentRunner,
-  FailureHandlingBlock,
-  FailurePropagationBlock,
-  RunConfig,
-  StandbyBlock,
-  SynchronizationBlock,
-} from './experimentRunner'
+import { defaultConfig, ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
 import fs from 'fs'
 
 let checkpoint: { checkpoint: number; name: string; path: string }
@@ -28,29 +20,24 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: {
-        failurePropagation: FailurePropagationBlock.FullFailurePropagation,
-        failureHandling: FailureHandlingBlock.Drop,
-        standby: StandbyBlock.Stop,
-        synchronization: SynchronizationBlock.None,
-      },
+      buildingBlocks: STRATEGIES.EAGER,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 10,
       averageCryptoTime: 10,
       averageComputeTime: 5,
-      modelSize: 100,
+      modelSize: 1000,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 4000000,
+      failureRate: 1000000,
       depth: 3,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '2',
+      seed: '0',
     },
   ]
 } else {

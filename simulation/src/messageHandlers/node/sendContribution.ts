@@ -26,27 +26,12 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
       this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking ||
       this.config.buildingBlocks.synchronization === SynchronizationBlock.None
     ) {
-      // Non blocking sync send the result ASAP
-      const parent = this.node.parents[this.node.members.indexOf(this.id)]
-      const transmissionTime = this.config.averageLatency * (this.config.modelSize - 1)
-      this.lastSentAggregateId = this.aggregationId(contributors.map(String))
-      this.finishedWorking = true
       messages.push(
-        new Message(
-          MessageType.PrepareSendAggregate,
-          this.localTime,
-          this.localTime + transmissionTime,
-          this.id,
-          this.id,
-          {
-            aggregate: {
-              counter: contributors.length,
-              data: contributions.reduce((prev, curr) => prev + curr),
-              id: this.lastSentAggregateId,
-            },
-            targetNode: parent,
-          }
-        )
+        this.sendAggregate({
+          counter: contributors.length,
+          data: contributions.reduce((prev, curr) => prev + curr),
+          id: this.aggregationId(contributors.map(String)),
+        })
       )
     }
 
