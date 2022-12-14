@@ -1,7 +1,7 @@
 import { Message, MessageType } from '../../message'
 import { Node } from '../../node'
 
-export function handlePrepareContribution(this: Node, _: Message): Message[] {
+export function handleFinishContribution(this: Node, _: Message): Message[] {
   if (!this.node) {
     throw new Error(`${this.tag()} is not initialized`)
   }

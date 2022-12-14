@@ -1,7 +1,7 @@
 import { Message, MessageType } from '../../message'
 import { Node } from '../../node'
 
-export function handlePrepareSendAggregate(this: Node, receivedMessage: Message): Message[] {
+export function handleFinishSendingAggregate(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
 
   if (!this.node) {

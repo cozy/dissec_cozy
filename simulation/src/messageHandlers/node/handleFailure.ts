@@ -1,4 +1,9 @@
-import { FailureHandlingBlock, StandbyBlock, SynchronizationBlock } from '../../experimentRunner'
+import {
+  FailureHandlingBlock,
+  FailurePropagationBlock,
+  StandbyBlock,
+  SynchronizationBlock,
+} from '../../experimentRunner'
 import { Message, MessageType, StopStatus } from '../../message'
 import Node, { NodeRole } from '../../node'
 
@@ -11,9 +16,6 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {
       // A contributor failed
-      if (this.finishedWorking) {
-        // Nodes
-      }
       // Remove the contributor from the children
       const childIndex = this.node!.children.findIndex(e => e.members.includes(receivedMessage.content.failedNode!))
       if (childIndex >= 0) {
@@ -95,16 +97,16 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             id: this.aggregationId(contributors.map(String)),
           })
         )
-      }
 
-      // Synchronize if needed
-      if (this.config.buildingBlocks.synchronization !== SynchronizationBlock.None) {
-        for (const member of this.node!.members.filter(e => this.id !== e)) {
-          messages.push(
-            new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
-              contributors,
-            })
-          )
+        // Synchronize if needed
+        if (this.config.buildingBlocks.synchronization !== SynchronizationBlock.None) {
+          for (const member of this.node!.members.filter(e => this.id !== e)) {
+            messages.push(
+              new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+                contributors,
+              })
+            )
+          }
         }
       }
     } else if (this.role === NodeRole.Backup) {
@@ -118,30 +120,71 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       if (this.config.buildingBlocks.standby === StandbyBlock.Stop) {
         // On Stop mode, propagate failure if any child finished working
         if (
-          this.node!.children.map(e => (e.depth === 0 ? e.members[0] : e.members[position])).filter(
-            e => this.manager.nodes[e].finishedWorking || this.manager.nodes[e].deathTime <= this.manager.globalTime
+          this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
+            e => this.manager.nodes[e].finishedWorking && this.manager.nodes[e].deathTime > this.manager.globalTime
           ).length > 0
         ) {
-          // Some child already sent their data or failed, failing
-          const propagationLatency = (2 * this.config.depth - this.node!.depth) * this.config.averageLatency
-          messages.push(
-            new Message(
-              MessageType.StopSimulator,
-              this.localTime,
-              this.localTime + propagationLatency,
-              this.id,
-              this.id,
-              {
-                status: StopStatus.FullFailurePropagation,
-                failedNode: this.id,
-              }
+          // At least one of the child finished working
+          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
+            this.manager.fullFailurePropagation(this)
+          } else {
+            this.manager.localeFailurePropagation(this)
+          }
+        } else if (
+          this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
+            e => this.manager.nodes[e].deathTime <= this.manager.globalTime
+          ).length > 0
+        ) {
+          // One node is dead, add a timeout
+          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
+            this.manager.fullFailurePropagation(this, true)
+          } else {
+            this.manager.localeFailurePropagation(this, true)
+          }
+        }
+      }
+    } else {
+      // An aggregator is handling the failure, the failure has already been propagated
+      // Drop the failed group
+      this.node!.children = this.node!.children.filter(e => !e.members.includes(receivedMessage.content.failedNode!))
+      const position = this.node!.members.indexOf(this.id)
+      const aggregates = this.node!.children.map(e => this.aggregates[e.members[position]]).filter(Boolean)
+      // Send the aggregate if possible
+      if (aggregates.length === this.node!.children.length && aggregates.length !== 0 && !this.finishedWorking) {
+        // Full synchro waits for a contribution, else sends immeditaly
+        if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
+          this.confirmedChildren[this.id] = this.node!.children
+          for (const member of this.node!.members.filter(e => this.id !== e)) {
+            messages.push(
+              new Message(MessageType.ConfirmChildren, this.localTime, 0, this.id, member, {
+                children: this.node?.children,
+              })
             )
-          )
-
-          // Set all nodes as dead
-          Object.values(this.manager.nodes).forEach(
-            node => (node.deathTime = this.manager.globalTime + propagationLatency)
-          )
+          }
+        } else {
+          const aggregate = aggregates.reduce((prev, curr) => ({
+            counter: prev.counter + curr.counter,
+            data: prev.data + curr.data,
+            id: this.aggregationId(aggregates.map(e => e.id)),
+          }))
+          messages.push(this.sendAggregate(aggregate))
+        }
+      } else if (this.node!.children.length === 0) {
+        // The children lost its last children
+        if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
+          this.manager.fullFailurePropagation(this)
+        } else {
+          if (this.role === NodeRole.Querier) {
+            // The querier lost its only child, 0 data received
+            messages.push(
+              new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+                status: StopStatus.Success,
+                contributors: Array(0), // Trick to send the number of contributors
+              })
+            )
+          } else {
+            this.manager.localeFailurePropagation(this)
+          }
         }
       }
     }

@@ -74,36 +74,36 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
       }
     } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {
       const position = node.node.members.indexOf(node.id)!
-      // When dropping, we stop replacing nodes as soon as they have done their work or if they're contribubtors
+      const parent = this.nodes[node.node.parents[position]]
+      // When dropping, we stop replacing nodes as soon as they have done their work or if they're contributors
       if (node.finishedWorking) {
-        if (
-          this.nodes[node.node.parents[position]].finishedWorking ||
-          this.nodes[node.node.parents[position]].contributions[node.id]
-        ) {
+        if (parent.finishedWorking || parent.contributions[node.id]) {
           // Ignore failures when the parent is also done working or has received the share
         } else if (node.role === NodeRole.Contributor) {
-          // The node is a contributor failing during the transmission of tis shares
+          // The node is a contributor failing during the transmission of his shares
           // Parents will notice the transmission's interruption and will discard the contributions
           const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
           for (const parent of node.node.parents) {
             messages.push(
               new Message(MessageType.HandleFailure, this.globalTime, this.globalTime + latency, node.id, parent, {
                 targetGroup: node.node,
-                failedNode: receivedMessage.emitterId,
+                failedNode: node.id,
               })
             )
           }
         } else {
           // Propagate the failure of nodes who died before contributing
           if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
-            this.fullFailurePropagation(node)
+            this.fullFailurePropagation(node, true)
+          } else {
+            this.localeFailurePropagation(node, true)
           }
         }
       } else {
         if (node.role === NodeRole.Contributor) {
           // Can't replace contributors, even if they didn't work
           // Notify parents of the failure of a contributor when the parent is not done
-          if (!this.nodes[node.node.parents[position]].finishedWorking && !node.finishedWorking) {
+          if (!parent.finishedWorking && !node.finishedWorking) {
             // One of the parent did not finish aggregating.
             // Notify all parents that a contributor will be missing
             const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
@@ -118,6 +118,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
           }
         } else {
           // Replace the node
+          // If the node can't be replaced, the replacement node will propagate the failure itself
           // Timeout + ask + confirm + open secure channels
           const replacementLatency =
             this.config.averageLatency * (2 * this.config.maxToAverageRatio + 4) + this.config.averageCryptoTime * 6
@@ -133,7 +134,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
               replacement.id,
               {
                 targetGroup: node.node,
-                failedNode: receivedMessage.emitterId,
+                failedNode: node.id,
               }
             )
           )

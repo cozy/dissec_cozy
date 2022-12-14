@@ -9,13 +9,14 @@ export enum MessageType {
   Failing = 'Failing',
   // Contribution
   RequestContribution = 'ReqContrib',
-  PrepareContribution = 'FinishContrib',
+  FinishContribution = 'FinishContrib',
   StartSendingContribution = 'StartSendContrib',
   SendContribution = 'SendContrib',
   // Synchronization
   ConfirmContributors = 'ConfContrib',
+  ConfirmChildren = 'ConfChildren',
   SynchronizationTimeout = 'SynchroTO',
-  PrepareSendAggregate = 'PrepAgg',
+  FinishSendingAggregate = 'FinishAgg',
   SendAggregate = 'SendAgg',
   // Failure detection
   HandleFailure = 'Failure',
@@ -111,14 +112,16 @@ export class Message {
     const position = receiver.node?.members.indexOf(receiver.id)
     let children: number[] =
       receiver.role === NodeRole.Querier
-        ? receiver.node?.children[0].members
+        ? receiver.node?.children.length === 0
+          ? []
+          : receiver.node?.children[0].members
         : (receiver.node?.children
             .map(e => (position ? e.members[position] : undefined))
             .filter(e => e !== undefined) as any)
 
     switch (receiver.role) {
       case NodeRole.Querier:
-        children = receiver.node!.children[0].members
+        children = receiver.node!.children.length === 0 ? [] : receiver.node!.children[0].members
         break
       case NodeRole.LeafAggregator:
         children = receiver.node!.children.flatMap(e => e.members)
@@ -135,8 +138,8 @@ export class Message {
       case MessageType.RequestContribution:
         console.log(`${tag} received a request for contribution`)
         break
-      case MessageType.PrepareContribution:
-        console.log(`${tag} is processing share to send to node #${this.content.targetNode}`)
+      case MessageType.FinishContribution:
+        console.log(`${tag} is sending the last packet to its parents`)
         break
       case MessageType.StartSendingContribution:
         console.log(`${tag} starts to send contribution`)
@@ -163,6 +166,16 @@ export class Message {
           }`
         )
         break
+      case MessageType.ConfirmChildren:
+        console.log(
+          `${tag} received a list of ${this.content.children?.length} children from node #${
+            this.emitterId
+          }, already received [${receiver
+            .node!.members.filter(e => receiver.confirmedChildren[e])
+            .map(e => '#' + e)
+            .join(', ')}]`
+        )
+        break
       case MessageType.SynchronizationTimeout:
         const contributors = receiver.contributorsList[receiver.id] || []
         console.log(
@@ -171,7 +184,7 @@ export class Message {
           } contributors`
         )
         break
-      case MessageType.PrepareSendAggregate:
+      case MessageType.FinishSendingAggregate:
         console.log(`${tag} is starting to transmit its aggregate to parent`)
         break
       case MessageType.SendAggregate:
@@ -182,7 +195,7 @@ export class Message {
         )
         break
       case MessageType.HandleFailure:
-        console.log(`${tag} is handling a failure`)
+        console.log(`${tag} is handling the failure of node #${this.content.failedNode}`)
         break
       case MessageType.NotifyGroup:
         console.log(

@@ -71,11 +71,17 @@ export const STRATEGIES: { [key: string]: BuildingBlocks } = {
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.NonBlocking,
   },
+  ONESHOT: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stop,
+    synchronization: SynchronizationBlock.FullSynchronization,
+  },
 }
 
 export function defaultConfig(): RunConfig {
   return {
-    buildingBlocks: STRATEGIES.EAGER,
+    buildingBlocks: STRATEGIES.ONESHOT,
     selectivity: 0.1,
     maxToAverageRatio: 10,
     averageLatency: 10,

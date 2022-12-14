@@ -1,5 +1,6 @@
-import { defaultConfig, ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
 import fs from 'fs'
+
+import { defaultConfig, ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
 
 let checkpoint: { checkpoint: number; name: string; path: string }
 const defaultPath = './checkpoint.json'
@@ -20,18 +21,18 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.EAGER,
+      buildingBlocks: STRATEGIES.ONESHOT,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 10,
       averageCryptoTime: 10,
       averageComputeTime: 5,
-      modelSize: 1000,
+      modelSize: 100,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 1000000,
+      failureRate: 3000000,
       depth: 3,
       fanout: 8,
       groupSize: 5,
@@ -42,7 +43,7 @@ if (debug) {
   ]
 } else {
   const baseConfig = defaultConfig()
-  const retries = 5
+  const retries = 2
   // const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
   // const depths = [7, 6, 5, 4]
 

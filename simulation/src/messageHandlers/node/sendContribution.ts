@@ -17,6 +17,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
 
   // Store the share
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
+  this.contributorsList[this.id]?.push(receivedMessage.emitterId)
 
   // Check if we received shares from all contributors
   const contributors = this.node.children.flatMap(e => e.members)

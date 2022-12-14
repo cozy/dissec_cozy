@@ -157,6 +157,14 @@ if __name__ == "__main__":
         hover_name="type",
         hover_data=["receiver_id", "emitter_id", "run_id"],
     )
+    completeness_fig = px.scatter(
+        pd.DataFrame(columns=data.columns),
+        x="receiver_time",
+        y="completeness",
+        color="run_id",
+        hover_name="type",
+        hover_data=["receiver_id", "emitter_id", "run_id"],
+    )
     message_stats_fig = px.box(
         pd.DataFrame(columns=data.columns),
         x="type",
@@ -332,6 +340,7 @@ if __name__ == "__main__":
             dcc.Graph(id="version_timeline", figure=version_timeline_fig),
             dcc.Graph(id="bandwidth_timeline", figure=version_timeline_fig),
             dcc.Graph(id="work_timeline", figure=work_timeline_fig),
+            dcc.Graph(id="completeness_timeline", figure=completeness_fig),
             dcc.Graph(id="messages_timeline", figure=messages_timeline_fig),
             dcc.Graph(id="message_stats", figure=message_stats_fig),
         ]
@@ -343,6 +352,9 @@ if __name__ == "__main__":
             dash.Output(component_id="version_timeline", component_property="figure"),
             dash.Output(component_id="bandwidth_timeline", component_property="figure"),
             dash.Output(component_id="work_timeline", component_property="figure"),
+            dash.Output(
+                component_id="completeness_timeline", component_property="figure"
+            ),
             dash.Output(component_id="messages_timeline", component_property="figure"),
             dash.Output(component_id="message_stats", component_property="figure"),
         ],
@@ -448,6 +460,14 @@ if __name__ == "__main__":
             hover_name="type",
             hover_data=["receiver_id", "emitter_id", "run_id"],
         )
+        completeness_fig = px.scatter(
+            df,
+            x="receiver_time",
+            y="completeness",
+            color="run_id",
+            hover_name="type",
+            hover_data=["receiver_id", "emitter_id", "run_id"],
+        )
         messages_timeline_fig = px.scatter(
             df,
             x="receiver_time",
@@ -470,6 +490,7 @@ if __name__ == "__main__":
             version_timeline_fig,
             bandwidth_timeline_fig,
             work_timeline_fig,
+            completeness_fig,
             messages_timeline_fig,
             new_message_stats_fig,
         ]

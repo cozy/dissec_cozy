@@ -1,3 +1,4 @@
+import { SynchronizationBlock } from '../../experimentRunner'
 import { Message, MessageType, StopStatus } from '../../message'
 import { Node, NodeRole } from '../../node'
 
@@ -78,14 +79,25 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       newAggregationId !== oldAggregationId &&
       this.parentLastReceivedAggregateId !== newAggregationId
     ) {
-      // Forwarding the new aggregate to the parent if it was never sent before
-      const aggregate = aggregates.reduce((prev, curr) => ({
-        counter: prev.counter + curr.counter,
-        data: prev.data + curr.data,
-        id: this.aggregationId(aggregates.map(e => e.id)),
-      }))
-
-      messages.push(this.sendAggregate(aggregate))
+      if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
+        // Sending a confirmation to members that all child data are received
+        for (const member of this.node!.members.filter(e => e !== this.id)) {
+          messages.push(
+            new Message(MessageType.ConfirmChildren, this.localTime, 0, this.id, member, {
+              children: this.node.children,
+            })
+          )
+        }
+        this.confirmedChildren[this.id] = this.node.children
+      } else {
+        // Forwarding the new aggregate to the parent if it was never sent before
+        const aggregate = aggregates.reduce((prev, curr) => ({
+          counter: prev.counter + curr.counter,
+          data: prev.data + curr.data,
+          id: this.aggregationId(aggregates.map(e => e.id)),
+        }))
+        messages.push(this.sendAggregate(aggregate))
+      }
     }
   }
 

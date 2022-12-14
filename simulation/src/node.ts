@@ -3,12 +3,13 @@ import cloneDeep from 'lodash/cloneDeep'
 import NodesManager, { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType } from './message'
 import {
+  handleConfirmChildren,
   handleConfirmContributors,
+  handleFinishContribution,
+  handleFinishSendingAggregate,
   handleGiveUpChild,
   handleNotifyGroup,
   handleNotifyGroupTimeout,
-  handlePrepareContribution,
-  handlePrepareSendAggregate,
   handleRequestContribution,
   handleRequestData,
   handleSendAggregate,
@@ -47,20 +48,23 @@ export class Node {
   pingList: number[] = []
   contributorsList: { [id: number]: number[] | undefined } = {}
   contributions: { [contributor: string]: number }
+  confirmedChildren: { [member: number]: TreeNode[] } = {}
   queriedNode?: number[]
   confirmContributors: boolean = true
+
   aggregates: { [nodeId: number]: Aggregate }
   lastSentAggregateId: string
   parentLastReceivedAggregateId?: string
   finalAggregates: { [aggregateId: string]: { [nodeId: number]: Aggregate } } = {}
 
   handleRequestContribution = handleRequestContribution
-  handlePrepareContribution = handlePrepareContribution
+  handleFinishContribution = handleFinishContribution
   handleStartSendingContribution = handleStartSendingContribution
   handleSendContribution = handleSendContribution
   handleConfirmContributors = handleConfirmContributors
+  handleConfirmChildren = handleConfirmChildren
   handleSynchronizationTimeout = handleSynchronizationTimeout
-  handlePrepareSendAggregate = handlePrepareSendAggregate
+  handleFinishSendingAggregate = handleFinishSendingAggregate
   handleSendAggregate = handleSendAggregate
   handleFailure = handleFailure
   handleNotifyGroup = handleNotifyGroup
@@ -131,8 +135,8 @@ export class Node {
       case MessageType.RequestContribution:
         messages.push(...this.handleRequestContribution(receivedMessage))
         break
-      case MessageType.PrepareContribution:
-        messages.push(...this.handlePrepareContribution(receivedMessage))
+      case MessageType.FinishContribution:
+        messages.push(...this.handleFinishContribution(receivedMessage))
         break
       case MessageType.StartSendingContribution:
         messages.push(...this.handleStartSendingContribution(receivedMessage))
@@ -143,11 +147,14 @@ export class Node {
       case MessageType.ConfirmContributors:
         messages.push(...this.handleConfirmContributors(receivedMessage))
         break
+      case MessageType.ConfirmChildren:
+        messages.push(...this.handleConfirmChildren(receivedMessage))
+        break
       case MessageType.SynchronizationTimeout:
         messages.push(...this.handleSynchronizationTimeout(receivedMessage))
         break
-      case MessageType.PrepareSendAggregate:
-        messages.push(...this.handlePrepareSendAggregate(receivedMessage))
+      case MessageType.FinishSendingAggregate:
+        messages.push(...this.handleFinishSendingAggregate(receivedMessage))
         break
       case MessageType.SendAggregate:
         messages.push(...this.handleSendAggregate(receivedMessage))
@@ -187,7 +194,7 @@ export class Node {
     this.finishedWorking = true
 
     return new Message(
-      MessageType.PrepareSendAggregate,
+      MessageType.FinishSendingAggregate,
       this.localTime,
       this.localTime + transmissionTime,
       this.id,

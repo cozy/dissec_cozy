@@ -13,14 +13,7 @@ export function handleStartSendingContribution(this: Node, receivedMessage: Mess
   // Schedule the actual data emission once all the work has been done
   const transmissionTime = this.config.groupSize * this.config.modelSize * this.config.averageLatency
   messages.push(
-    new Message(
-      MessageType.PrepareContribution,
-      this.localTime,
-      this.localTime + transmissionTime,
-      this.id,
-      this.id,
-      {}
-    )
+    new Message(MessageType.FinishContribution, this.localTime, this.localTime + transmissionTime, this.id, this.id, {})
   )
 
   return messages

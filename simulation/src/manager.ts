@@ -1,12 +1,12 @@
-import cloneDeep from 'lodash/cloneDeep'
 import rayleigh from '@stdlib/random-base-rayleigh'
+import cloneDeep from 'lodash/cloneDeep'
 
 import { RunConfig } from './experimentRunner'
 import { isSystemMessage, Message, MessageType, StopStatus } from './message'
+import { handleFailing, handleStopSimulator } from './messageHandlers/manager'
 import Node, { NodeRole } from './node'
 import { Generator, xmur3 } from './random'
 import TreeNode from './treeNode'
-import { handleStopSimulator, handleFailing } from './messageHandlers/manager'
 
 export interface ManagerArguments extends RunConfig {
   debug?: boolean
@@ -231,15 +231,16 @@ export class NodesManager {
     }
   }
 
-  fullFailurePropagation(node: Node) {
+  fullFailurePropagation(node: Node, addTimeout: boolean = false) {
     // TODO: Count incurred comms
     const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
     const propagationLatency = (2 * this.config.depth - node.node!.depth) * this.config.averageLatency
+
     this.insertMessage(
       new Message(
         MessageType.StopSimulator,
         this.globalTime,
-        this.globalTime + timeout + propagationLatency,
+        this.globalTime + propagationLatency + (addTimeout ? timeout : 0),
         node.id,
         node.id,
         {
@@ -249,7 +250,45 @@ export class NodesManager {
       )
     )
     // Set all nodes as dead
-    Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime + timeout + propagationLatency))
+    Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime + propagationLatency))
+  }
+
+  /**
+   * Stops all nodes below the target node, including the target.
+   *
+   * @param node The node below which the tree is cut
+   */
+  localeFailurePropagation(node: Node, addTimeout: boolean = false) {
+    // TODO: Count incurred comms
+    const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+    const propagationLatency = (1 + node.node!.depth) * this.config.averageLatency
+
+    // Set nodes as dead
+    const killSubtree = (node: TreeNode) => {
+      node.members.forEach(
+        n => (this.nodes[n].deathTime = this.globalTime + propagationLatency + (addTimeout ? timeout : 0))
+      )
+      node.children.forEach(n => killSubtree(n))
+    }
+    killSubtree(node.node!)
+
+    // Notify parent
+    const position = node.node!.members.indexOf(node.id)
+    for (const parent of node.node!.parents) {
+      this.insertMessage(
+        new Message(
+          MessageType.HandleFailure,
+          node.localTime,
+          node.localTime + this.standardLatency() + (addTimeout ? timeout : 0),
+          node.node!.parents[position], // The parent of the target node contacts its members
+          parent,
+          {
+            failedNode: node.id,
+            targetGroup: node.node,
+          }
+        )
+      )
+    }
   }
 
   displayAggregateId() {

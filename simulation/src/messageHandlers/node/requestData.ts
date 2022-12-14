@@ -9,16 +9,20 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
   }
 
   if (this.role === NodeRole.Contributor) {
+    if (!this.finishedWorking) {
+      // The has not finished preparing its contributions, it will answer later
+      return messages
+    }
     // Verifying the parent's certificate, signature and open an encrypted channel
     this.localTime += 3 * this.cryptoLatency()
     messages.push(
       new Message(
-        MessageType.SendContribution,
+        MessageType.StartSendingContribution,
         this.localTime,
         0, // ASAP
         this.id,
-        receivedMessage.emitterId,
-        { share: this.shares[this.node.parents.indexOf(receivedMessage.emitterId)] }
+        this.id,
+        {}
       )
     )
   } else if (this.role === NodeRole.LeafAggregator) {

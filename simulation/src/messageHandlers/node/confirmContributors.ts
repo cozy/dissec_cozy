@@ -92,28 +92,13 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
         .every(Boolean)
     ) {
       // The node has received the same list from each member, send the aggregate
-      this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
       messages.push(
-        new Message(
-          MessageType.SendAggregate,
-          this.localTime,
-          0, // Don't specify time to let the manager add the latency
-          this.id,
-          this.id,
-          {
-            aggregate: {
-              counter: this.contributorsList[this.id]!.length,
-              data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
-                (prev, curr) => prev + curr,
-                0
-              ),
-              id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
-            },
-            targetNode: this.node.parents[this.node.members.indexOf(this.id)],
-          }
-        )
+        this.sendAggregate({
+          counter: this.contributorsList[this.id]!.length,
+          data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr, 0),
+          id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+        })
       )
-      this.finishedWorking = true
     }
   } else {
     // The node is not a backup
@@ -137,29 +122,13 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     ) {
       // The aggregate version changed and the node has received all expected shares, resend the new version to the parent
       // It immediatly sends the updated aggregate to its parent
-      this.lastSentAggregateId = this.aggregationId(this.contributorsList[this.id]!.map(String))
       messages.push(
-        new Message(
-          MessageType.SendAggregate,
-          this.localTime,
-          0, // Don't specify time to let the manager add the latency
-          this.id,
-          this.id,
-          {
-            aggregate: {
-              counter: this.contributorsList[this.id]!.length,
-              data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce(
-                (prev, curr) => prev + curr,
-                0
-              ),
-              id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
-            },
-            targetNode: this.node.parents[this.node.members.indexOf(this.id)],
-          }
-        )
+        this.sendAggregate({
+          counter: this.contributorsList[this.id]!.length,
+          data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr, 0),
+          id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
+        })
       )
-
-      this.finishedWorking = true
     }
   }
 
