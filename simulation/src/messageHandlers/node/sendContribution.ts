@@ -23,6 +23,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
   const contributors = this.node.children.flatMap(e => e.members)
   const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
   if (contributors.length === contributions.length) {
+    this.contributorsList[this.id] = contributors
     if (
       this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking ||
       this.config.buildingBlocks.synchronization === SynchronizationBlock.None

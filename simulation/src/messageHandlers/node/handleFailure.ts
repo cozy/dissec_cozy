@@ -12,6 +12,10 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
+  if (this.id === 4071) {
+    console.log('ok')
+  }
+
   if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {
@@ -113,6 +117,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       // The node is a backup being inserted
       this.node = receivedMessage.content.targetGroup
       this.node!.members = this.node?.members.map(e => (e === receivedMessage.content.failedNode ? this.id : e))!
+      this.node?.children.forEach(childGroup => (childGroup.parents = this.node!.members))
       this.role = this.node?.depth === 1 ? NodeRole.LeafAggregator : NodeRole.Aggregator
 
       // Ask child for their data

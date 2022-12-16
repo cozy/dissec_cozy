@@ -142,7 +142,7 @@ export class Message {
         console.log(`${tag} is sending the last packet to its parents`)
         break
       case MessageType.StartSendingContribution:
-        console.log(`${tag} starts to send contribution`)
+        console.log(`${tag} starts sending its contribution`)
         break
       case MessageType.SendContribution:
         console.log(
@@ -195,7 +195,11 @@ export class Message {
         )
         break
       case MessageType.HandleFailure:
-        console.log(`${tag} is handling the failure of node #${this.content.failedNode}`)
+        console.log(
+          `${tag} is handling the failure of node #${this.content.failedNode} (${
+            receiver.manager.nodes[this.content.failedNode!].role
+          })`
+        )
         break
       case MessageType.NotifyGroup:
         console.log(

@@ -13,6 +13,9 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
     return messages
   }
 
+  if (this.id === 120) {
+    console.log(10)
+  }
   // Store the received list
   this.confirmedChildren[receivedMessage.emitterId] = receivedMessage.content.children
 

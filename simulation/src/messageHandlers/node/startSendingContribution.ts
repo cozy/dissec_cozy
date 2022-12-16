@@ -11,10 +11,22 @@ export function handleStartSendingContribution(this: Node, receivedMessage: Mess
   this.finishedWorking = true
 
   // Schedule the actual data emission once all the work has been done
-  const transmissionTime = this.config.groupSize * this.config.modelSize * this.config.averageLatency
-  messages.push(
-    new Message(MessageType.FinishContribution, this.localTime, this.localTime + transmissionTime, this.id, this.id, {})
-  )
+  const transmissionTime = this.config.modelSize * this.config.averageLatency
+  const parents = this.node.parents.filter(e => !this.sentContributions[e])
+  for (const parent of parents) {
+    this.sentContributions[parent] = true
+    messages.push(
+      new Message(
+        MessageType.FinishContribution,
+        this.localTime,
+        this.localTime + parents.length * transmissionTime,
+        this.id,
+        this.id,
+        { targetNode: parent }
+      )
+    )
+  }
+  this.localTime += parents.length * transmissionTime
 
   return messages
 }

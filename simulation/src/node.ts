@@ -46,6 +46,7 @@ export class Node {
   secretValue: number
   shares: number[]
   pingList: number[] = []
+  sentContributions: { [id: number]: boolean } = {}
   contributorsList: { [id: number]: number[] | undefined } = {}
   contributions: { [contributor: string]: number }
   confirmedChildren: { [member: number]: TreeNode[] } = {}

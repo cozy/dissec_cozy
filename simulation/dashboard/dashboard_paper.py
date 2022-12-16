@@ -39,7 +39,9 @@ def get_data(path, aggregate_message=True):
 
     df.rename(
         mapper={
-            "seed": "run_id",
+            "seed": "seed",
+            "name": "run_id",
+            "buildingBlocks": "strategy",
             "failureRate": "failure_probability",
             "observedFailureRate": "failure_rate",
             "emissionTime": "emitter_time",
@@ -49,6 +51,7 @@ def get_data(path, aggregate_message=True):
             "latency": "simulation_length",
             "work": "total_work",
             "groupSize": "group_size",
+            "modelSize": "model_size",
             "circulatingAggregateIds": "circulating_aggregate_ids",
             "currentlyCirculatingVersions": "currently_circulating_ids",
             "usedBandwidth": "bandwidth",
@@ -59,9 +62,6 @@ def get_data(path, aggregate_message=True):
     )
     df.reset_index(inplace=True)
     df.fillna(0, inplace=True)
-
-    df.loc[df["run_id"].str.startswith("OPTI-leader"), "strategy"] = "O_LEADER"
-    df.loc[df["run_id"].str.startswith("EAGER-leader"), "strategy"] = "E_LEADER"
 
     for r in roles:
         df[f"work_per_node_{r}"] = (
@@ -541,12 +541,13 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Final number of contributors",
     )
 
-    default_failure = 0.00007
-    default_depth = 6
+    default_failure = 3000000
+    default_depth = 3
     default_group = 5
+    default_size = 1
 
     graphs[f"work_failure_paper"] = px.box(
-        data[(data["depth"] == default_depth) & (data["group_size"] == default_group)],
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
         y="work_total",
         color="strategy",
@@ -557,7 +558,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs[f"work_depth_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
-            & (data["group_size"] == default_group)
+            & (data["model_size"] == default_size)
         ],
         x="depth",
         y="work_total",
@@ -571,80 +572,118 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             (data["failure_probability"] == default_failure)
             & (data["depth"] == default_depth)
         ],
-        x="group_size",
+        x="model_size",
         y="work_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for group",
+        log_x=True,
+        title=f"Work for model size",
     )
 
     graphs[f"latency_failure_paper"] = px.box(
-        data[(data["depth"] == default_depth) & (data["group_size"] == default_group)],
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
         y="simulation_length",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for Failure",
+        title=f"Latency for Failure",
     )
     graphs[f"latency_depth_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
-            & (data["group_size"] == default_group)
+            & (data["model_size"] == default_size)
         ],
         x="depth",
         y="simulation_length",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for depth",
+        title=f"Latency for depth",
     )
     graphs[f"latency_group_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
             & (data["depth"] == default_depth)
         ],
-        x="group_size",
+        x="model_size",
         y="simulation_length",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for group",
+        log_x=True,
+        title=f"Latency for model size",
     )
 
     graphs[f"completeness_failure_paper"] = px.box(
-        data[(data["depth"] == default_depth) & (data["group_size"] == default_group)],
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
         y="completeness",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for Failure",
+        title=f"Completeness for Failure",
     )
     graphs[f"completeness_depth_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
-            & (data["group_size"] == default_group)
+            & (data["model_size"] == default_size)
         ],
         x="depth",
         y="completeness",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for depth",
+        title=f"Completeness for depth",
     )
     graphs[f"completeness_group_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
             & (data["depth"] == default_depth)
         ],
-        x="group_size",
+        x="model_size",
         y="completeness",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Work for group",
+        log_x=True,
+        title=f"Completeness for model size",
+    )
+
+    graphs[f"bandwidth_failure_paper"] = px.box(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        x="failure_probability",
+        y="bandwidth",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Bandwidth for Failure",
+    )
+    graphs[f"bandwidth_depth_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        x="depth",
+        y="bandwidth",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Bandwidth for depth",
+    )
+    graphs[f"bandwidth_group_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        x="model_size",
+        y="bandwidth",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_x=True,
+        title=f"Bandwidth for model size",
     )
 
     return html.Div(
@@ -978,6 +1017,27 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     ),
                 ],
             ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"bandwidth_failure_paper",
+                        figure=graphs["bandwidth_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"bandwidth_depth_paper",
+                        figure=graphs["bandwidth_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"bandwidth_group_paper",
+                        figure=graphs["bandwidth_group_paper"],
+                    ),
+                ],
+            ),
         ]
     )
 
@@ -1040,16 +1100,16 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        0.001,
-                        0.00001,
-                        value=[0, 0.001],
+                        10**7,
+                        10**5,
+                        value=[0, 10**7],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
                     dcc.RangeSlider(
                         3,
-                        7,
-                        2,
+                        8,
+                        1,
                         value=[3, 7],
                         id="group-sizes-range",
                     ),
@@ -1060,6 +1120,14 @@ if __name__ == "__main__":
                         1,
                         value=[3, 7],
                         id="depths-range",
+                    ),
+                    html.H3("Depths"),
+                    dcc.RangeSlider(
+                        1,
+                        1000,
+                        10,
+                        value=[1, 1000],
+                        id="model-range",
                     ),
                 ]
             ),
@@ -1085,6 +1153,7 @@ if __name__ == "__main__":
             ),
             dash.Input(component_id="group-sizes-range", component_property="value"),
             dash.Input(component_id="depths-range", component_property="value"),
+            dash.Input(component_id="model-range", component_property="value"),
             dash.Input(component_id="tabs", component_property="value"),
         ],
         dash.State("store_file", "data"),
@@ -1093,6 +1162,7 @@ if __name__ == "__main__":
         selected_failures,
         selected_sizes,
         selected_depths,
+        selected_model,
         tab,
         store_file,
     ):

@@ -1,5 +1,5 @@
-import fs from 'fs'
 import { execSync } from 'child_process'
+import fs from 'fs'
 import cloneDeep from 'lodash/cloneDeep'
 
 import NodesManager, { AugmentedMessage } from './manager'
@@ -58,7 +58,7 @@ export interface RunConfig {
   seed: string
 }
 
-export const STRATEGIES: { [key: string]: BuildingBlocks } = {
+export const STRATEGIES = {
   STRAWMAN: {
     failurePropagation: FailurePropagationBlock.FullFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
@@ -81,7 +81,7 @@ export const STRATEGIES: { [key: string]: BuildingBlocks } = {
 
 export function defaultConfig(): RunConfig {
   return {
-    buildingBlocks: STRATEGIES.ONESHOT,
+    buildingBlocks: STRATEGIES.EAGER,
     selectivity: 0.1,
     maxToAverageRatio: 10,
     averageLatency: 10,
@@ -266,7 +266,10 @@ export class ExperimentRunner {
                     else return assign[e]
                   })
                   .join(';')
-                  .replaceAll('.', ',') + `;model${assign.modelSize}-fail${assign.failureRate}-s${assign.seed}\n`
+                  .replaceAll('.', ',') +
+                `;${Object.values(assign.buildingBlocks).join('-')}-model${assign.modelSize}-fail${
+                  assign.failureRate
+                }-s${assign.seed}\n`
               )
             })
             .join(''),

@@ -100,8 +100,11 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
         })
       )
     }
-  } else {
-    // The node is not a backup
+  } else if (
+    this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking &&
+    this.contributorsList[this.id]
+  ) {
+    // This node received a confirmation and has finished collecting its contributions
     this.contributorsList[this.id] = intersection
 
     // Send a contributors confirmation to members who might have different list
@@ -109,7 +112,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       if (!arrayEquals(this.contributorsList[this.id] || [], this.contributorsList[m] || [])) {
         messages.push(
           new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, m, {
-            contributors: this.contributorsList[this.id],
+            contributors: intersection,
           })
         )
       }
