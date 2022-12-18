@@ -12,10 +12,6 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
-  if (this.id === 4071) {
-    console.log('ok')
-  }
-
   if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {

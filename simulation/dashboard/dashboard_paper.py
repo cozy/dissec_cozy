@@ -343,7 +343,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     graphs["full_failure_proba_work"] = px.box(
-        data[data["strategy"] == "OPTI"][data["depth"] == depths[-1]],
+        data[data["strategy"] == "LFP-Replace-Stay-NonBlocking"],
         x="failure_probability",
         y="work_total",
         color="group_size",
@@ -352,7 +352,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title="Work by failure probability for different group sizes, full strategy",
     )
     graphs["full_failure_proba_bandwidth"] = px.box(
-        data[data["strategy"] == "OPTI"][data["depth"] == depths[-1]],
+        data[data["strategy"] == "LFP-Replace-Stay-NonBlocking"],
         x="failure_probability",
         y="bandwidth_total",
         color="group_size",
@@ -541,10 +541,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Final number of contributors",
     )
 
-    default_failure = 3000000
+    default_failure = 20
     default_depth = 3
     default_group = 5
-    default_size = 1
+    default_size = 100
 
     graphs[f"work_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
@@ -1058,9 +1058,11 @@ if __name__ == "__main__":
     outputs = glob("./outputs/*")
 
     # Remove strategies not present in the data
-    strategies_map = dict(
-        EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
-    )
+    strategies_map = {
+        "FFP-Drop-Stop-None": "Strawman",
+        "LFP-Drop-Stop-FullSync": "OneShot",
+        "LFP-Replace-Stay-NonBlocking": "Eager",
+    }
     for k in set(strategies_map.keys()).difference(strategies):
         del strategies_map[k]
 
@@ -1100,9 +1102,9 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        10**7,
-                        10**5,
-                        value=[0, 10**7],
+                        10**9,
+                        10**6,
+                        value=[0, 10**9],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
@@ -1110,7 +1112,7 @@ if __name__ == "__main__":
                         3,
                         8,
                         1,
-                        value=[3, 7],
+                        value=[3, 8],
                         id="group-sizes-range",
                     ),
                     html.H3("Depths"),
@@ -1121,7 +1123,7 @@ if __name__ == "__main__":
                         value=[3, 7],
                         id="depths-range",
                     ),
-                    html.H3("Depths"),
+                    html.H3("Model size"),
                     dcc.RangeSlider(
                         1,
                         1000,
@@ -1176,11 +1178,25 @@ if __name__ == "__main__":
         df["failure_probability"] = df["failure_probability"].round(6)
 
         # Remove strategies not present in the data
-        strategies_map = dict(
-            EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
-        )
+        strategies_map = {
+            "FFP-Drop-Stop-None": "Strawman",
+            "LFP-Drop-Stop-FullSync": "OneShot",
+            "LFP-Replace-Stay-NonBlocking": "Eager",
+        }
         for k in set(strategies_map.keys()).difference(strategies):
             del strategies_map[k]
+
+        print(
+            strategies,
+            strategies_map,
+            pd.unique(df["depth"]),
+            pd.unique(df["group_size"]),
+            pd.unique(df["failure_probability"]),
+            len(df),
+            selected_failures,
+            selected_sizes,
+            selected_depths,
+        )
 
         df = df[
             (df["failure_probability"] >= selected_failures[0])

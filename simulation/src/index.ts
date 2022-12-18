@@ -15,7 +15,7 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
+const debug = false
 const fullExport = true
 const useCheckpoint = false
 if (debug) {
@@ -27,12 +27,12 @@ if (debug) {
       averageLatency: 10,
       averageCryptoTime: 10,
       averageComputeTime: 5,
-      modelSize: 100,
+      modelSize: 1,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 1000000,
+      failureRate: 10,
       depth: 3,
       fanout: 8,
       groupSize: 5,
@@ -48,10 +48,10 @@ if (debug) {
   // const depths = [7, 6, 5, 4]
 
   for (const buildingBlocks of [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT]) {
-    for (const depth of [3, 4]) {
-      for (const failure of Array(5)
+    for (const depth of [3]) {
+      for (const failure of Array(10)
         .fill(0)
-        .map((_, i) => i * 10 ** 6)) {
+        .map((_, i) => i)) {
         for (const modelSize of Array(4)
           .fill(0)
           .map((_, i) => 10 ** i)) {
@@ -59,7 +59,7 @@ if (debug) {
             configs.push(
               Object.assign({}, baseConfig, {
                 buildingBlocks,
-                failureRate: failure,
+                failureRate: failure * 10,
                 modelSize,
                 depth,
                 seed: `${retry}`,

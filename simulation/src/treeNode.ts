@@ -23,12 +23,7 @@ class TreeNode {
   equals(other: TreeNode) {
     const members = other.members.map(member => !this.members.includes(member)).filter(Boolean).length === 0
     const parents = other.parents.map(parent => !this.parents.includes(parent)).filter(Boolean).length === 0
-    const children =
-      other.children
-        .flatMap(childGroup => childGroup.members)
-        .map(child => !this.children.flatMap(e => e.members).includes(child))
-        .filter(Boolean).length === 0
-    return members && parents && children
+    return members && parents
   }
 
   static createTree(run: RunConfig, depth: number, id: number): { nextId: number; node: TreeNode } {

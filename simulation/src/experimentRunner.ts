@@ -80,7 +80,7 @@ export const STRATEGIES = {
 }
 
 export function defaultConfig(): RunConfig {
-  return {
+  const baseConfig = {
     buildingBlocks: STRATEGIES.EAGER,
     selectivity: 0.1,
     maxToAverageRatio: 10,
@@ -100,6 +100,8 @@ export function defaultConfig(): RunConfig {
     random: false,
     seed: `1`,
   }
+
+  return baseConfig
 }
 
 export interface RunResult extends RunConfig {
