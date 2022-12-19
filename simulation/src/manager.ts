@@ -121,15 +121,18 @@ export class NodesManager {
 
   setFailures() {
     const contributorsWork = 2 * this.config.averageComputeTime * this.config.modelSize * this.config.groupSize
-    const contributorsTransmission = this.config.groupSize * this.config.modelSize * this.config.averageLatency
-    const aggregatorsWork = 2 * this.config.averageComputeTime * this.config.modelSize * this.config.groupSize
-    const aggregatorsTransmission = this.config.groupSize * this.config.modelSize * this.config.averageLatency
+    const contributorsTransmission =
+      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
+    const aggregatorsWork = this.config.averageComputeTime * this.config.modelSize
+    const aggregatorsTransmission =
+      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
     const querierWork = aggregatorsWork * this.config.groupSize
     const baseProtocolLatency =
       contributorsWork +
       contributorsTransmission +
       this.config.depth * (this.config.fanout * aggregatorsWork + aggregatorsTransmission) +
       querierWork
+
     if (this.failureRate > 0) {
       for (const node of Object.values(this.nodes)) {
         if (node.role !== NodeRole.Querier) {
@@ -159,7 +162,8 @@ export class NodesManager {
   }
 
   handleNextMessage() {
-    const message = this.messages.pop()!
+    const message = this.messages.pop()
+    if (!message) return
     const alive =
       this.nodes[message.receiverId].deathTime < 0 || this.nodes[message.receiverId].deathTime > message.receptionTime
 
@@ -260,7 +264,12 @@ export class NodesManager {
       )
     )
     // Set all nodes as dead
-    Object.values(this.nodes).forEach(node => (node.deathTime = this.globalTime + propagationLatency))
+    Object.values(this.nodes).forEach(node => {
+      if (!node.propagatedFailure) {
+        node.propagatedFailure = true
+        node.deathTime = this.globalTime + propagationLatency
+      }
+    })
   }
 
   /**
@@ -275,9 +284,15 @@ export class NodesManager {
 
     // Set nodes as dead
     const killSubtree = (node: TreeNode) => {
-      node.members.forEach(
-        n => (this.nodes[n].deathTime = this.globalTime + propagationLatency + (addTimeout ? timeout : 0))
-      )
+      node.members.forEach(n => {
+        if (n === 4017) {
+          console.log('weird')
+        }
+        if (!this.nodes[n].propagatedFailure) {
+          this.nodes[n].propagatedFailure = true
+          this.nodes[n].deathTime = this.globalTime + propagationLatency + (addTimeout ? timeout : 0)
+        }
+      })
       node.children.forEach(n => killSubtree(n))
     }
     killSubtree(node.node!)

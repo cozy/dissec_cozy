@@ -6,6 +6,7 @@ import { NodeRole } from '../../node'
 export function handleFailing(this: NodesManager, receivedMessage: Message) {
   const node = this.nodes[receivedMessage.emitterId]
   node.localTime = this.globalTime
+  node.propagatedFailure = true
 
   if (this.config.debug) {
     console.log(`${node.tag()} failed`)

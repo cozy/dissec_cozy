@@ -1,6 +1,99 @@
 import fs from 'fs'
 
-import { defaultConfig, ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
+import { BuildingBlocks, defaultConfig, ExperimentRunner, RunConfig, STRATEGIES } from './experimentRunner'
+
+function createRunConfigs({
+  strategies,
+  depths,
+  failures,
+  modelSizes,
+  retries,
+  fullSpace,
+  defaultValues,
+}: {
+  strategies: BuildingBlocks[]
+  depths: number[]
+  failures: number[]
+  modelSizes: number[]
+  retries: number
+  fullSpace: boolean
+  defaultValues?: {
+    depth: number
+    failure: number
+    modelSize: number
+  }
+}) {
+  let configs = []
+  const baseConfig = defaultConfig()
+
+  if (fullSpace) {
+    for (let retry = 0; retry < retries; retry++) {
+      for (const buildingBlocks of strategies) {
+        for (const depth of depths) {
+          for (const failure of failures) {
+            for (const modelSize of modelSizes) {
+              configs.push(
+                Object.assign({}, baseConfig, {
+                  buildingBlocks,
+                  failureRate: failure,
+                  modelSize,
+                  depth,
+                  seed: `${retry}`,
+                })
+              )
+            }
+          }
+        }
+      }
+    }
+  } else {
+    if (!defaultValues) {
+      throw new Error('Missing default values')
+    }
+
+    for (const retry of new Array(retries).fill(0)) {
+      for (const buildingBlocks of strategies) {
+        for (const depth of depths) {
+          configs.push(
+            Object.assign({}, baseConfig, {
+              buildingBlocks,
+              failureRate: defaultValues.failure,
+              modelSize: defaultValues.modelSize,
+              depth: depth,
+              seed: `${retry}`,
+            })
+          )
+        }
+
+        for (const failure of failures) {
+          configs.push(
+            Object.assign({}, baseConfig, {
+              buildingBlocks,
+              failureRate: failure,
+              modelSize: defaultValues.modelSize,
+              depth: defaultValues.depth,
+              seed: `${retry}`,
+            })
+          )
+        }
+
+        for (const modelSize of modelSizes) {
+          configs.push(
+            Object.assign({}, baseConfig, {
+              buildingBlocks,
+              failureRate: defaultValues.failure,
+              modelSize: modelSize,
+              depth: defaultValues.depth,
+              seed: `${retry}`,
+            })
+          )
+        }
+      }
+    }
+  }
+
+  return configs
+}
 
 let checkpoint: { checkpoint: number; name: string; path: string }
 const defaultPath = './checkpoint.json'
@@ -16,36 +109,54 @@ try {
 
 let configs: RunConfig[] = []
 const debug = false
-const fullExport = true
+const fullExport = false
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.ONESHOT,
+      buildingBlocks: STRATEGIES.EAGER,
       selectivity: 0.1,
       maxToAverageRatio: 10,
-      averageLatency: 10,
-      averageCryptoTime: 10,
-      averageComputeTime: 5,
-      modelSize: 1,
+      averageLatency: 0.033,
+      averageBandwidth: 1000,
+      averageCryptoTime: 0.01,
+      averageComputeTime: 0.00005,
+      modelSize: 100,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 10,
+      failureRate: 50,
+      adaptedFailures: false,
       depth: 3,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '1',
+      seed: '3',
     },
   ]
 } else {
   const baseConfig = defaultConfig()
   const retries = 5
-  // const strategies = [ProtocolStrategy.Optimistic, ProtocolStrategy.Eager, ProtocolStrategy.Strawman]
-  // const depths = [7, 6, 5, 4]
+
+  configs = createRunConfigs({
+    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
+    depths: [3, 4, 5, 6],
+    failures: Array(10)
+      .fill(0)
+      .map((_, i) => i * 10),
+    modelSizes: Array(10)
+      .fill(0)
+      .map((_, i) => 2 ** (12 + i)),
+    retries: 20,
+    fullSpace: true,
+    defaultValues: {
+      depth: 6,
+      failure: 10,
+      modelSize: 10000,
+    },
+  })
 
   for (const buildingBlocks of [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT]) {
     for (const depth of [3]) {

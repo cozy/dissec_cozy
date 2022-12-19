@@ -13,9 +13,16 @@ export function handleFinishContribution(this: Node, receivedMessage: Message): 
   const position = this.node.parents.indexOf(parent)
   if (position >= 0) {
     messages.push(
-      new Message(MessageType.SendContribution, this.localTime, 0, this.id, parent, {
-        share: this.shares[position],
-      })
+      new Message(
+        MessageType.SendContribution,
+        this.localTime,
+        this.localTime + 1 / this.config.averageBandwidth,
+        this.id,
+        parent,
+        {
+          share: this.shares[position],
+        }
+      )
     )
   }
 

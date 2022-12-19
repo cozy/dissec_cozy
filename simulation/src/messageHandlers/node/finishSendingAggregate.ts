@@ -10,14 +10,24 @@ export function handleFinishSendingAggregate(this: Node, receivedMessage: Messag
   if (!receivedMessage.content.aggregate) {
     throw new Error('Received an empty aggregate')
   }
+  if (receivedMessage.content.targetNode === undefined) {
+    throw new Error(`Invalid aggregate receiver`)
+  }
 
   // The last packet is being sent
 
   const aggregate = receivedMessage.content.aggregate
   messages.push(
-    new Message(MessageType.SendAggregate, this.localTime, 0, this.id, receivedMessage.content.targetNode!, {
-      aggregate,
-    })
+    new Message(
+      MessageType.SendAggregate,
+      this.localTime,
+      this.localTime + 1 / this.config.averageBandwidth,
+      this.id,
+      receivedMessage.content.targetNode,
+      {
+        aggregate,
+      }
+    )
   )
 
   return messages

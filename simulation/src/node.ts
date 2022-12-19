@@ -39,6 +39,7 @@ export class Node {
   role = NodeRole.Backup
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
+  propagatedFailure: boolean = false
   lookingForBackup: { [nodeId: number]: boolean }
   continueMulticast: boolean
   contactedAsABackup: boolean
@@ -105,7 +106,7 @@ export class Node {
     const messages: Message[] = []
 
     // When the node is busy, messages are put back into the queue at the earliest available time, except for health checks
-    if (receivedMessage.receptionTime < this.localTime && receivedMessage.type !== MessageType.Failing) {
+    if (receivedMessage.receptionTime < this.localTime) {
       receivedMessage.receptionTime = this.localTime
       return null
     }
@@ -188,16 +189,20 @@ export class Node {
   }
 
   sendAggregate(aggregate: Aggregate) {
+    if (!this.node || this.node.members.indexOf(this.id) < 0) {
+      throw new Error('Invalid node or parent')
+    }
+
     // Non blocking sync send the result ASAP
-    const parent = this.node!.parents[this.node!.members.indexOf(this.id)]
-    const transmissionTime = this.config.averageLatency * (this.config.modelSize - 1)
+    const parent = this.node.parents[this.node.members.indexOf(this.id)]
+    const transmissionTime = (this.config.modelSize - 1) / this.config.averageBandwidth
     this.lastSentAggregateId = aggregate.id
     this.finishedWorking = true
 
     return new Message(
       MessageType.FinishSendingAggregate,
       this.localTime,
-      this.localTime + transmissionTime,
+      this.localTime + this.config.averageLatency + transmissionTime,
       this.id,
       this.id,
       {

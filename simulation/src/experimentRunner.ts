@@ -42,6 +42,7 @@ export interface RunConfig {
   selectivity: number
   maxToAverageRatio: number
   averageLatency: number
+  averageBandwidth: number
   averageCryptoTime: number
   averageComputeTime: number
   modelSize: number
@@ -50,6 +51,7 @@ export interface RunConfig {
   multicastSize: number
   deadline: number
   failureRate: number
+  adaptedFailures: boolean
   depth: number
   fanout: number
   groupSize: number
@@ -84,15 +86,17 @@ export function defaultConfig(): RunConfig {
     buildingBlocks: STRATEGIES.EAGER,
     selectivity: 0.1,
     maxToAverageRatio: 10,
-    averageLatency: 10,
-    averageCryptoTime: 10,
-    averageComputeTime: 5, // Time spent working for each packet
-    modelSize: 100,
+    averageLatency: 0.033,
+    averageBandwidth: 1000,
+    averageCryptoTime: 0.01,
+    averageComputeTime: 0.00005, // Time spent working for each kbytes
+    modelSize: 1000,
     failCheckPeriod: 100,
     healthCheckPeriod: 3,
     multicastSize: 5,
     deadline: 5 * 10 ** 7,
-    failureRate: 5 * 10 ** 7,
+    failureRate: 20,
+    adaptedFailures: true,
     depth: 3,
     fanout: 8,
     groupSize: 5,
@@ -155,6 +159,7 @@ export class ExperimentRunner {
       'failCheckPeriod',
       'healthCheckPeriod',
       'averageLatency',
+      'averageBandwidth',
       'averageCryptoTime',
       'averageComputeTime',
       'maxR',
@@ -168,8 +173,9 @@ export class ExperimentRunner {
       buildingBlocks: 'blocks',
       maxToAverageRatio: 'maxR',
       averageLatency: 'lat',
+      averageBandwidth: 'bw',
       averageCryptoTime: 'crypto',
-      averageComputeTime: 'compute',
+      averageComputeTime: 'comp',
     }
 
     // Put values for each keys in an array
@@ -225,7 +231,7 @@ export class ExperimentRunner {
 
         if (i === 0 && ((this.checkpoint && this.checkpoint?.checkpoint === 0) || !this.checkpoint)) {
           // Add columns titles
-          fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
+          fs.writeFileSync(outputPath, Object.keys(items).join(';') + ';name\n')
         }
 
         fs.writeFileSync(
@@ -237,7 +243,10 @@ export class ExperimentRunner {
               else return e
             })
             .join(';')
-            .replaceAll('.', ',') + '\n',
+            .replaceAll('.', ',') +
+            `;${Object.values(items.buildingBlocks).join('-')}-model${items.modelSize}-fail${items.failureRate}-s${
+              items.seed
+            }\n`,
           { flag: 'a' }
         )
       }

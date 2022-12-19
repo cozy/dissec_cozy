@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import json
 from glob import glob
+import sys
+
 
 tabs = [
     dict(label="Probabilité de panne", value="failure_probability"),
@@ -654,7 +656,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs[f"bandwidth_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
-        y="bandwidth",
+        y="bandwidth_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
@@ -666,7 +668,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             & (data["model_size"] == default_size)
         ],
         x="depth",
-        y="bandwidth",
+        y="bandwidth_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
@@ -678,7 +680,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             & (data["depth"] == default_depth)
         ],
         x="model_size",
-        y="bandwidth",
+        y="bandwidth_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
@@ -1046,7 +1048,7 @@ if __name__ == "__main__":
     with open("./dissec.config.json") as f:
         config = json.load(f)
 
-    data = get_data(config["defaultGraph"])
+    data = get_data(config["defaultGraph"], True if "aggregate" in sys.argv else False)
 
     run_ids = pd.unique(data["run_id"])
     strategies = pd.unique(data["strategy"])
