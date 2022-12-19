@@ -137,9 +137,6 @@ if (debug) {
     },
   ]
 } else {
-  const baseConfig = defaultConfig()
-  const retries = 5
-
   configs = createRunConfigs({
     strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
     depths: [3, 4, 5, 6],
@@ -150,69 +147,13 @@ if (debug) {
       .fill(0)
       .map((_, i) => 2 ** (12 + i)),
     retries: 20,
-    fullSpace: true,
+    fullSpace: false,
     defaultValues: {
       depth: 6,
       failure: 10,
       modelSize: 10000,
     },
   })
-
-  for (const buildingBlocks of [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT]) {
-    for (const depth of [3]) {
-      for (const failure of Array(10)
-        .fill(0)
-        .map((_, i) => i)) {
-        for (const modelSize of Array(4)
-          .fill(0)
-          .map((_, i) => 10 ** i)) {
-          for (let retry = 0; retry < retries; retry++) {
-            configs.push(
-              Object.assign({}, baseConfig, {
-                buildingBlocks,
-                failureRate: failure * 10,
-                modelSize,
-                depth,
-                seed: `${retry}`,
-              })
-            )
-          }
-        }
-      }
-    }
-  }
-
-  // for (let retry = 0; retry < retries; retry++) {
-  //   for (const strategy of strategies) {
-  //     for (const failure of [0.0, 0.00007, 0.00014, 0.00024]) {
-  //       configs.push(
-  //         Object.assign({}, baseConfig, {
-  //           strategy,
-  //           failureRate: failure,
-  //           seed: `${strategy}-f${failure}-s5-d6-c0-${configs.length}`,
-  //         })
-  //       )
-  //     }
-  //     for (const size of [3, 4, 5, 6]) {
-  //       configs.push(
-  //         Object.assign({}, baseConfig, {
-  //           strategy,
-  //           groupSize: size,
-  //           seed: `${strategy}-f0.00007-s${size}-d6-c0-${configs.length}`,
-  //         })
-  //       )
-  //     }
-  //     for (const depth of depths) {
-  //       configs.push(
-  //         Object.assign({}, baseConfig, {
-  //           strategy,
-  //           depth,
-  //           seed: `${strategy}-f0.00007-s5-d${depth}-c0-${configs.length}`,
-  //         })
-  //       )
-  //     }
-  //   }
-  // }
 }
 
 const runner = new ExperimentRunner(configs, {
