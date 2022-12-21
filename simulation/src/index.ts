@@ -51,7 +51,7 @@ function createRunConfigs({
       throw new Error('Missing default values')
     }
 
-    for (const retry of new Array(retries).fill(0)) {
+    for (const retry in new Array(retries).fill(0)) {
       for (const buildingBlocks of strategies) {
         for (const depth of depths) {
           configs.push(
@@ -140,18 +140,18 @@ if (debug) {
   configs = createRunConfigs({
     strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
     depths: [3, 4, 5],
-    failures: Array(20)
+    failures: Array(10)
       .fill(0)
-      .map((_, i) => i * 5),
-    modelSizes: Array(8)
+      .map((_, i) => 50 + i * 5),
+    modelSizes: Array(6)
       .fill(0)
-      .map((_, i) => 2 ** (10 + i)),
+      .map((_, i) => 2 ** (4 * i)),
     retries: 10,
     fullSpace: false,
     defaultValues: {
       depth: 4,
       failure: 50,
-      modelSize: 2 ** 14,
+      modelSize: 2 ** 12,
     },
   })
 }

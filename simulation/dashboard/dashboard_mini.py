@@ -40,7 +40,8 @@ def get_data(path):
 
     df.rename(
         mapper={
-            "seed": "run_id",
+            "name": "run_id",
+            "buildingBlocks": "strategy",
             "failureRate": "failure_probability",
             "observedFailureRate": "failure_rate",
             "emissionTime": "emitter_time",
@@ -532,8 +533,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -547,8 +548,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -562,8 +563,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -577,8 +578,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -592,8 +593,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -607,8 +608,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -622,8 +623,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -637,8 +638,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -652,8 +653,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -668,8 +669,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -683,8 +684,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -698,8 +699,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -714,8 +715,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -729,8 +730,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -744,8 +745,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -818,9 +819,9 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        0.001,
-                        0.00005,
-                        value=[0, 0.001],
+                        1000000,
+                        100000,
+                        value=[0, 1000000],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
@@ -846,8 +847,8 @@ if __name__ == "__main__":
                     html.Div(
                         style={
                             "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "start",
+                            "flexDirection": "row",
+                            "justifyContent": "start",
                         },
                         children=[
                             html.H3("X Axis:"),
@@ -862,8 +863,8 @@ if __name__ == "__main__":
                     html.Div(
                         style={
                             "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "start",
+                            "flexDirection": "row",
+                            "justifyContent": "start",
                         },
                         children=[
                             html.H3("Y Axis:"),
@@ -880,15 +881,15 @@ if __name__ == "__main__":
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "start",
+                    "flexDirection": "row",
+                    "justifyContent": "start",
                 },
                 children=[
                     html.H3("Only display successful runs"),
                     dcc.Checklist(
                         style={
                             "display": "flex",
-                            "align-items": "center",
+                            "alignItems": "center",
                         },
                         id="display_failures",
                         options=["YES"],

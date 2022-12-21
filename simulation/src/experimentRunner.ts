@@ -87,7 +87,7 @@ export function defaultConfig(): RunConfig {
     selectivity: 0.1,
     maxToAverageRatio: 10,
     averageLatency: 0.033,
-    averageBandwidth: 1000,
+    averageBandwidth: 6000,
     averageCryptoTime: 0.01,
     averageComputeTime: 0.00005, // Time spent working for each kbytes
     modelSize: 1000,
@@ -244,9 +244,9 @@ export class ExperimentRunner {
             })
             .join(';')
             .replaceAll('.', ',') +
-            `;${Object.values(items.buildingBlocks).join('-')}-model${items.modelSize}-fail${items.failureRate}-s${
-              items.seed
-            }\n`,
+            `;${Object.values(items.buildingBlocks).join('-')}-m${items.modelSize}-f${items.failureRate}-d${
+              items.depth
+            }-s${items.seed}\n`,
           { flag: 'a' }
         )
       }
@@ -278,7 +278,7 @@ export class ExperimentRunner {
                   })
                   .join(';')
                   .replaceAll('.', ',') +
-                `;${Object.values(assign.buildingBlocks).join('-')}-model${assign.modelSize}-fail${
+                `;${Object.values(assign.buildingBlocks).join('-')}-m${assign.modelSize}-d${items.depth}-m${
                   assign.failureRate
                 }-s${assign.seed}\n`
               )

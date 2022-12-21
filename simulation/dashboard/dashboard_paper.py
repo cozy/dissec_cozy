@@ -548,6 +548,42 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     default_group = 5
     default_size = 2**14
 
+    graphs[f"count_failure_paper"] = px.box(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        x="failure_probability",
+        y="initial_nodes_Contributor",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Contributors for Failure",
+    )
+    graphs[f"count_depth_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        x="depth",
+        y="initial_nodes_Contributor",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_y=True,
+        title=f"Contributors for depth",
+    )
+    graphs[f"count_group_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        x="model_size",
+        y="initial_nodes_Contributor",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_x=True,
+        title=f"Contributors for model size",
+    )
+
     graphs[f"work_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
@@ -567,6 +603,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_y=True,
         title=f"Work for depth",
     )
     graphs[f"work_group_paper"] = px.box(
@@ -580,6 +617,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         hover_name="run_id",
         points=box_points,
         log_x=True,
+        log_y=True,
         title=f"Work for model size",
     )
 
@@ -602,6 +640,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_y=True,
         title=f"Latency for depth",
     )
     graphs[f"latency_group_paper"] = px.box(
@@ -615,6 +654,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         hover_name="run_id",
         points=box_points,
         log_x=True,
+        log_y=True,
         title=f"Latency for model size",
     )
 
@@ -672,6 +712,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_y=True,
         title=f"Bandwidth for depth",
     )
     graphs[f"bandwidth_group_paper"] = px.box(
@@ -685,6 +726,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         hover_name="run_id",
         points=box_points,
         log_x=True,
+        log_y=True,
         title=f"Bandwidth for model size",
     )
 
@@ -964,6 +1006,27 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 },
                 children=[
                     dcc.Graph(
+                        id=f"count_failure_paper",
+                        figure=graphs["count_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"count_depth_paper",
+                        figure=graphs["count_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"count_group_paper",
+                        figure=graphs["count_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
                         id=f"work_failure_paper",
                         figure=graphs["work_failure_paper"],
                     ),
@@ -1057,6 +1120,18 @@ if __name__ == "__main__":
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
 
+    print(
+        "on startup",
+        strategies,
+        pd.unique(data["depth"]),
+        pd.unique(data["group_size"]),
+        pd.unique(data["failure_probability"]),
+        len(data),
+        failure_probabilities,
+        np.sort(pd.unique(data["model_size"])),
+        np.sort(pd.unique(data["depth"])),
+    )
+
     outputs = glob("./outputs/*")
 
     # Remove strategies not present in the data
@@ -1128,8 +1203,8 @@ if __name__ == "__main__":
                     html.H3("Model size"),
                     dcc.RangeSlider(
                         1,
+                        1000000,
                         1000,
-                        10,
                         value=[1, 1000],
                         id="model-range",
                     ),
@@ -1171,7 +1246,9 @@ if __name__ == "__main__":
         store_file,
     ):
         if not store_file:
-            df = get_data(config["defaultGraph"])
+            df = get_data(
+                config["defaultGraph"], True if "aggregate" in sys.argv else False
+            )
         else:
             df = pd.read_json(store_file)
 
@@ -1189,6 +1266,7 @@ if __name__ == "__main__":
             del strategies_map[k]
 
         print(
+            "before filters",
             strategies,
             strategies_map,
             pd.unique(df["depth"]),
