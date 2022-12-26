@@ -67,6 +67,12 @@ export const STRATEGIES = {
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.None,
   },
+  STRAWMANPLUS: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stop,
+    synchronization: SynchronizationBlock.None,
+  },
   EAGER: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,

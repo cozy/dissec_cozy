@@ -138,20 +138,20 @@ if (debug) {
   ]
 } else {
   configs = createRunConfigs({
-    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
-    depths: [3, 4, 5],
+    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.STRAWMANPLUS, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
+    depths: [3, 4],
     failures: Array(10)
       .fill(0)
-      .map((_, i) => 50 + i * 5),
-    modelSizes: Array(6)
+      .map((_, i) => i * 10),
+    modelSizes: Array(10)
       .fill(0)
-      .map((_, i) => 2 ** (4 * i)),
+      .map((_, i) => 2 ** (10 + 2 * i)),
     retries: 10,
     fullSpace: false,
     defaultValues: {
       depth: 4,
       failure: 50,
-      modelSize: 2 ** 12,
+      modelSize: 2 ** 10,
     },
   })
 }

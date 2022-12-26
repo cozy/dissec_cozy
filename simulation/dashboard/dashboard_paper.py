@@ -543,10 +543,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Final number of contributors",
     )
 
-    default_failure = 80
-    default_depth = 4
+    default_failure = 50
+    default_depth = 3
     default_group = 5
-    default_size = 2**12
+    default_size = 2**10
 
     graphs[f"count_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
