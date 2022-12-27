@@ -1,4 +1,4 @@
-import { SynchronizationBlock } from '../../experimentRunner'
+import { StandbyBlock, SynchronizationBlock } from '../../experimentRunner'
 import { Message, MessageType, StopStatus } from '../../message'
 import { Node, NodeRole } from '../../node'
 
@@ -60,6 +60,14 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
           })
         )
       }
+    } else if (
+      expectedAggregates.length === this.config.groupSize &&
+      this.config.buildingBlocks.standby === StandbyBlock.Stop
+    ) {
+      // Received the right number of aggregates but they don't have matching IDs and we do not resend
+      messages.push(
+        new Message(MessageType.StopSimulator, 0, this.localTime, this.id, this.id, { status: StopStatus.BadResult })
+      )
     }
   } else {
     const position = this.node.members.indexOf(this.id)

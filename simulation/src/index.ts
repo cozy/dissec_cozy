@@ -108,32 +108,32 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = false
-const fullExport = false
+const debug = true
+const fullExport = true
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.EAGER,
+      buildingBlocks: STRATEGIES.STRAWMANPLUS,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
-      averageBandwidth: 1000,
+      averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 100,
+      modelSize: 1024,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 50,
+      failureRate: 10,
       adaptedFailures: false,
-      depth: 3,
+      depth: 4,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '3',
+      seed: '8',
     },
   ]
 } else {
@@ -143,7 +143,7 @@ if (debug) {
     failures: Array(10)
       .fill(0)
       .map((_, i) => i * 10),
-    modelSizes: Array(10)
+    modelSizes: Array(5)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
     retries: 10,

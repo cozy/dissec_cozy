@@ -544,7 +544,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     default_failure = 50
-    default_depth = 3
+    default_depth = 4
     default_group = 5
     default_size = 2**10
 

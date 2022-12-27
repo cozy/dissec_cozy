@@ -1,4 +1,4 @@
-import { FailureHandlingBlock, FailurePropagationBlock } from '../../experimentRunner'
+import { FailureHandlingBlock, FailurePropagationBlock, SynchronizationBlock } from '../../experimentRunner'
 import NodesManager from '../../manager'
 import { Message, MessageType } from '../../message'
 import { NodeRole } from '../../node'
@@ -32,7 +32,24 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
     // Send notification to nodes with a channel open
     const messages: Message[] = []
 
-    if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
+    if (
+      this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking &&
+      node.role === NodeRole.Contributor &&
+      node.finishedWorking
+    ) {
+      // A contributor is failing after it finished working but we're doing non blocking synchronization
+      // In this mode, contributor's failures always trigger resends
+      // Alert parents of the contributor
+      const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+      for (const parent of node.node.parents) {
+        messages.push(
+          new Message(MessageType.HandleFailure, this.globalTime + latency, this.globalTime + latency, parent, parent, {
+            targetGroup: node.node,
+            failedNode: receivedMessage.emitterId,
+          })
+        )
+      }
+    } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
       // Always replacing failed nodes except contributors
       if (node.role !== NodeRole.Contributor) {
         // Timeout + ask + confirm + open secure channels

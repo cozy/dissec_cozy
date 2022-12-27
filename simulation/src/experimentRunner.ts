@@ -71,7 +71,7 @@ export const STRATEGIES = {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
-    synchronization: SynchronizationBlock.None,
+    synchronization: SynchronizationBlock.NonBlocking,
   },
   EAGER: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,

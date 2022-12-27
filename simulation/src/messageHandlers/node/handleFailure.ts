@@ -89,7 +89,12 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       // Send shares if it's now possible
       const contributors = this.node!.children.flatMap(e => e.members)
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
-      if (!this.finishedWorking && contributors.length === contributions.length) {
+      if (
+        (!this.finishedWorking ||
+          (this.finishedWorking && this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking)) &&
+        contributors.length === contributions.length &&
+        contributions.length > 0
+      ) {
         messages.push(
           this.sendAggregate({
             counter: contributors.length,
