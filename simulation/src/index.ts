@@ -108,13 +108,13 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
-const fullExport = true
+const debug = false
+const fullExport = false
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.STRAWMANPLUS,
+      buildingBlocks: STRATEGIES.SAFESLOW,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
@@ -126,27 +126,33 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 10,
-      adaptedFailures: false,
-      depth: 4,
+      failureRate: 20,
+      adaptedFailures: true,
+      depth: 3,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '8',
+      seed: '4',
     },
   ]
 } else {
   configs = createRunConfigs({
-    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.STRAWMANPLUS, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
-    depths: [3, 4],
+    strategies: [
+      STRATEGIES.STRAWMAN,
+      STRATEGIES.STRAWMANPLUS,
+      STRATEGIES.EAGER,
+      STRATEGIES.ONESHOT,
+      STRATEGIES.SAFESLOW,
+    ],
+    depths: [3, 4, 5],
     failures: Array(10)
       .fill(0)
       .map((_, i) => i * 10),
     modelSizes: Array(5)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
-    retries: 10,
+    retries: 5,
     fullSpace: false,
     defaultValues: {
       depth: 4,

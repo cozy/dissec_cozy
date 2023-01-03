@@ -17,17 +17,19 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
 
   // Store the share
   this.contributions[receivedMessage.emitterId] = receivedMessage.content.share
-  this.contributorsList[this.id]?.push(receivedMessage.emitterId)
+  if (this.contributorsList[this.id] && !this.contributorsList[this.id]?.includes(receivedMessage.emitterId)) {
+    this.contributorsList[this.id]!.push(receivedMessage.emitterId)
+  }
 
   // Check if we received shares from all contributors
   const contributors = this.node.children.flatMap(e => e.members)
   const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
   if (contributors.length === contributions.length) {
-    this.contributorsList[this.id] = contributors
     if (
       this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking ||
       this.config.buildingBlocks.synchronization === SynchronizationBlock.None
     ) {
+      // We don't need synchronization
       messages.push(
         this.sendAggregate({
           counter: contributors.length,
@@ -37,6 +39,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
       )
     }
 
+    this.contributorsList[this.id] = contributors
     if (this.config.buildingBlocks.synchronization !== SynchronizationBlock.None) {
       // Most synchronization techniques send confirmations to neighbors when all contributions are received
       for (const member of this.node.members.filter(e => this.id !== e)) {

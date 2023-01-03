@@ -220,10 +220,10 @@ export class NodesManager {
         if (message.emitterId !== message.receiverId) {
           this.messagesPerRole[this.nodes[message.receiverId].role] += 1
         }
-        if (message.type === MessageType.SendAggregate) {
+        if (message.type === MessageType.FinishSendingAggregate) {
           this.circulatingAggregateIds[message.content.aggregate!.id] = true
         }
-        if (message.content.share || message.content.aggregate?.data) {
+        if (message.type === MessageType.FinishSendingAggregate || message.type === MessageType.FinishContribution) {
           this.usedBandwidth += this.config.modelSize
           this.bandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
         }

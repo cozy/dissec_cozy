@@ -31,6 +31,20 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
   // Keep a copy in case the node is sending the confirmation to itself
   const oldContributors = this.contributorsList[this.id]
   // Store the received list
+  if (
+    !this.contributorsList[receivedMessage.emitterId] &&
+    [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
+      this.config.buildingBlocks.synchronization
+    ) &&
+    intersection.map(e => this.contributions[e]).every(Boolean)
+  ) {
+    // Send back a confirmation for newly incomming confirmations
+    messages.push(
+      new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, receivedMessage.emitterId, {
+        contributors: intersection,
+      })
+    )
+  }
   this.contributorsList[receivedMessage.emitterId] = receivedMessage.content.contributors
 
   if (this.contactedAsABackup && !arrayEquals(oldContributors || [], intersection)) {
@@ -66,7 +80,11 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     }
   }
 
-  if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
+  if (
+    [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
+      this.config.buildingBlocks.synchronization
+    )
+  ) {
     this.contributorsList[this.id] = intersection
 
     if (!arrayEquals(oldContributors || [], intersection)) {
@@ -89,9 +107,13 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       !this.finishedWorking &&
       this.node.members
         .map(member => arrayEquals(this.contributorsList[this.id] || [], this.contributorsList[member] || []))
-        .every(Boolean)
+        .every(Boolean) &&
+      arrayEquals(
+        this.contributorsList[this.id] || [],
+        this.node!.children.flatMap(e => e.members).filter(e => this.contributions[e]) || []
+      )
     ) {
-      // The node has received the same list from each member, send the aggregate
+      // The node has received the same list from each member and has the data, send the aggregate
       messages.push(
         this.sendAggregate({
           counter: this.contributorsList[this.id]!.length,

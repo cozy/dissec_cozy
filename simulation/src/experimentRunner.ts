@@ -85,6 +85,12 @@ export const STRATEGIES = {
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.FullSynchronization,
   },
+  SAFESLOW: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.Stay,
+    synchronization: SynchronizationBlock.FullSynchronization,
+  },
 }
 
 export function defaultConfig(): RunConfig {
@@ -192,7 +198,7 @@ export class ExperimentRunner {
 
         if (!uniqueValues[translatedKey]) uniqueValues[translatedKey] = []
         if (values[translatedKey]) values[translatedKey].push(typeof v !== 'object' ? v : Object.values(v).join('.'))
-        else values[translatedKey] = [v]
+        else values[translatedKey] = [typeof v !== 'object' ? v : Object.values(v).join('.')]
       })
     )
 
@@ -226,6 +232,12 @@ export class ExperimentRunner {
           .replaceAll('}', '') +
         '.csv'
     }
+    this.outputPath = this.outputPath
+      .replaceAll('"', '')
+      .replaceAll(',', '_')
+      .replaceAll(':', '')
+      .replaceAll('{', '')
+      .replaceAll('}', '')
   }
 
   writeResults(outputPath: string, results: RunResult[]) {

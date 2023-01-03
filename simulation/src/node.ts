@@ -199,6 +199,9 @@ export class Node {
     this.lastSentAggregateId = aggregate.id
     this.finishedWorking = true
 
+    // Reset full synchro
+    this.confirmedChildren = {}
+
     return new Message(
       MessageType.FinishSendingAggregate,
       this.localTime,
@@ -234,6 +237,43 @@ export class Node {
 
   cryptoLatency(): number {
     return this.config.averageCryptoTime
+  }
+
+  intersectChildrenConfirmations() {
+    const lists = this.node!.members.map(e => this.confirmedChildren[e] || [])
+    const position = this.node!.members.indexOf(this.id)
+    let result: TreeNode[] = []
+
+    // TODO: Make it better
+    const shortestList = lists.find(list => list.length === Math.min(...lists.map(e => e.length)))!
+    for (const element of shortestList) {
+      // Checking if each element of the shortest list is included in EVERY other list
+      let occurrences = 0
+      for (const list of lists) {
+        if (list === shortestList) {
+          // Do not intersect the list with itself
+          continue
+        }
+
+        let missing = true
+        for (const other of list) {
+          if (other.members.includes(element.members[position])) {
+            // The element is in the other list
+            missing = false
+            break
+          }
+        }
+
+        if (!missing) {
+          occurrences += 1
+        }
+      }
+      if (occurrences === lists.length - 1) {
+        // The element is in every list
+        result.push(element)
+      }
+    }
+    return result
   }
 }
 

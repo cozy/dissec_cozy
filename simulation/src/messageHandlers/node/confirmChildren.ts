@@ -1,6 +1,5 @@
-import { Message } from '../../message'
+import { Message, MessageType } from '../../message'
 import { Node } from '../../node'
-import TreeNode from '../../treeNode'
 
 export function handleConfirmChildren(this: Node, receivedMessage: Message): Message[] {
   const messages: Message[] = []
@@ -9,52 +8,37 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
     throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
   }
   if (!receivedMessage.content.children) {
-    // Empty contributors
+    // Empty contributors means we'll need to redo synchronization if it already started
+    this.confirmedChildren = {}
+    this.finishedWorking = false
     return messages
   }
 
   // Store the received list
-  this.confirmedChildren[receivedMessage.emitterId] = receivedMessage.content.children
+  const position = this.node.members.indexOf(this.id)
 
-  const intersect = (lists: TreeNode[][]) => {
-    let result: TreeNode[] = []
-    // TODO: Make it better
-    const shortestList = lists.find(list => list.length === Math.min(...lists.map(e => e.length)))!
-    for (const element of shortestList) {
-      // Checking if each element of the shortest list is included in EVERY other list
-      let occurrences = 0
-      for (const list of lists) {
-        if (list === shortestList) {
-          // Do not intersect the list with itself
-          continue
-        }
-
-        let missing = true
-        for (const other of list) {
-          if (element.equals(other)) {
-            // The element is in the other list
-            missing = false
-            break
-          }
-        }
-
-        if (!missing) {
-          occurrences += 1
-        }
-      }
-      if (occurrences === lists.length - 1) {
-        // The element is in every list
-        result.push(element)
-      }
+  // Send back a confirmation when first receiving from a node and all the data is received
+  const expectedAggregates = this.node.children.map(childGroup => this.aggregates[childGroup.members[position]])
+  if (!this.confirmedChildren[receivedMessage.emitterId] && expectedAggregates.every(Boolean)) {
+    this.confirmedChildren[this.id] = this.node.children.filter(
+      childGroup => this.aggregates[childGroup.members[position]]
+    )
+    for (const member of this.node.members.filter(e => this.id !== e)) {
+      messages.push(
+        new Message(MessageType.ConfirmChildren, this.localTime, 0, this.id, member, {
+          children: this.confirmedChildren[this.id],
+        })
+      )
     }
-    return result
   }
+
+  this.confirmedChildren[receivedMessage.emitterId] = receivedMessage.content.children
   const children = this.node.members.map(e => this.confirmedChildren[e] as any)
 
-  if (!children.includes(undefined) && !this.finishedWorking) {
-    // All members have the same share
-    const intersection = intersect(children)
-    const position = this.node.members.indexOf(this.id)
+  if (children.every(Boolean) && expectedAggregates.every(Boolean) && !this.finishedWorking) {
+    // The node received a confirmation from all members and has received all expected aggregates
+    // Compute the intersection of confirmations
+    const intersection = this.intersectChildrenConfirmations()
     const aggregates = intersection.map(e => this.aggregates[e.members[position]])
     const aggregate = aggregates.reduce((prev, curr) => ({
       counter: prev.counter + curr.counter,

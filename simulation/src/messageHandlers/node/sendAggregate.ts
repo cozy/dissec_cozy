@@ -26,7 +26,9 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     this.finalAggregates[aggregate.id][receivedMessage.emitterId] = aggregate
 
     // Expecting one aggregate from each member of the child group
-    const expectedAggregates = this.node.children[0].members.map(child => this.aggregates[child]).filter(Boolean)
+    const expectedAggregates = (this.node.children[0] || { members: [] }).members
+      .map(child => this.aggregates[child])
+      .filter(Boolean)
 
     // Compute unique IDs
     const uniqueIds: string[] = []
@@ -82,23 +84,45 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     const aggregates = this.node.children.map(e => this.aggregates[e.members[position]])
     const newAggregationId = this.aggregationId(aggregates.map(e => e?.id || ''))
 
+    // Remove local confirmed list until all data are received
+    const receivedChildren = this.node.children.map(e => this.aggregates[e.members[position]])
+    if (!receivedChildren.every(Boolean)) {
+      delete this.confirmedChildren[this.id]
+    }
+
     if (
       aggregates.every(Boolean) &&
       newAggregationId !== oldAggregationId &&
       this.parentLastReceivedAggregateId !== newAggregationId
     ) {
-      if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
+      const position = this.node.members.indexOf(this.id)
+      const intersection = this.intersectChildrenConfirmations().map(e => e.members[position])
+      const children = this.node.children.map(e => e.members[position])
+
+      this.confirmedChildren[this.id] = this.node.children.filter(e => this.aggregates[e.members[position]])
+
+      if (
+        this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization &&
+        (!children.every(e => intersection.includes(e)) || !intersection.every(e => children.includes(e)))
+      ) {
+        // For Full synchro, send a confirmation to members when the local confirmation does not match received ones
         // Sending a confirmation to members that all child data are received
         for (const member of this.node!.members.filter(e => e !== this.id)) {
           messages.push(
             new Message(MessageType.ConfirmChildren, this.localTime, 0, this.id, member, {
-              children: this.node.children,
+              children: this.confirmedChildren[this.id],
             })
           )
         }
-        this.confirmedChildren[this.id] = this.node.children
-      } else {
+      }
+
+      const newIntersection = this.intersectChildrenConfirmations().map(e => e.members[position])
+      if (
+        this.config.buildingBlocks.synchronization !== SynchronizationBlock.FullSynchronization ||
+        (children.every(e => newIntersection.includes(e)) && newIntersection.every(e => children.includes(e)))
+      ) {
         // Forwarding the new aggregate to the parent if it was never sent before
+        // Full sync immediatly sends when the confirmation from all members is known and matches
         const aggregate = aggregates.reduce((prev, curr) => ({
           counter: prev.counter + curr.counter,
           data: prev.data + curr.data,

@@ -4,6 +4,7 @@ import {
   StandbyBlock,
   SynchronizationBlock,
 } from '../../experimentRunner'
+import { arrayEquals, intersectLists } from '../../helpers'
 import { Message, MessageType, StopStatus } from '../../message'
 import Node, { NodeRole } from '../../node'
 
@@ -25,24 +26,51 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       // Send the aggregate if possible
       const contributors = this.node!.children.flatMap(e => e.members)
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
+
       if (contributors.length === 0) {
         this.manager.fullFailurePropagation(this)
         return []
       } else if (contributions.length === contributors.length) {
-        messages.push(
-          this.sendAggregate({
-            counter: contributors.length,
-            data: contributions.reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(contributors.map(String)),
-          })
+        if (
+          [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
+            this.config.buildingBlocks.synchronization
+          )
+        ) {
+          // Reset confirmations
+          this.contributorsList = { [this.id]: contributors }
+        }
+        const intersectedList = this.node!.members.map(member => this.contributorsList[member]).reduce((a, b) =>
+          intersectLists(a, b)
         )
 
-        for (const member of this.node!.members) {
+        // The node received all expected data
+        if (
+          (this.config.buildingBlocks.standby === StandbyBlock.Stay &&
+            [SynchronizationBlock.NonBlocking, SynchronizationBlock.None].includes(
+              this.config.buildingBlocks.synchronization
+            )) ||
+          ([SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
+            this.config.buildingBlocks.synchronization
+          ) &&
+            arrayEquals(this.contributorsList[this.id] || [], intersectedList || []))
+        ) {
           messages.push(
-            new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
-              contributors,
+            this.sendAggregate({
+              counter: contributors.length,
+              data: contributions.reduce((prev, curr) => prev + curr),
+              id: this.aggregationId(contributors.map(String)),
             })
           )
+        }
+
+        if (this.config.buildingBlocks.synchronization !== SynchronizationBlock.None) {
+          for (const member of this.node!.members) {
+            messages.push(
+              new Message(MessageType.ConfirmContributors, this.localTime, 0, this.id, member, {
+                contributors,
+              })
+            )
+          }
         }
       }
     } else if (this.role === NodeRole.Backup) {
@@ -54,6 +82,16 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       this.role = this.node.depth === 1 ? NodeRole.LeafAggregator : NodeRole.Aggregator
       const position = this.node.members.indexOf(receivedMessage.content.failedNode!)!
       this.node.members[position] = this.id
+      this.contributorsList[this.id] = this.node.children.flatMap(e => e.members)
+
+      if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
+        // Members of the parent group are informed that children changed
+        for (const parent of this.node.parents) {
+          messages.push(
+            new Message(MessageType.ConfirmChildren, this.localTime, 0, this.node.parents[position], parent, {})
+          )
+        }
+      }
 
       const msg = (child: number) =>
         new Message(
@@ -153,17 +191,27 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       // An aggregator is handling the failure, the failure has already been propagated
       // Drop the failed group
       this.node!.children = this.node!.children.filter(e => !e.members.includes(receivedMessage.content.failedNode!))
+      this.node!.children.forEach(childGroup => (childGroup.parents = this.node!.members))
+      // Update each members knowledge of children
+      this.node!.members.forEach(member => (this.manager.nodes[member].node!.children = this.node!.children))
+      // Update each child knowledge of parents
+      this.node!.children.flatMap(e => e.members).forEach(
+        child => (this.manager.nodes[child].node!.parents = this.node!.members)
+      )
+
+      // Resetting confirmations
       const position = this.node!.members.indexOf(this.id)
       const aggregates = this.node!.children.map(e => this.aggregates[e.members[position]]).filter(Boolean)
+      this.confirmedChildren[this.id] = this.node!.children.filter(e => this.aggregates[e.members[position]])
       // Send the aggregate if possible
       if (aggregates.length === this.node!.children.length && aggregates.length !== 0 && !this.finishedWorking) {
+        // Received all aggregates
         // Full synchro waits for a contribution, else sends immeditaly
         if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
-          this.confirmedChildren[this.id] = this.node!.children
           for (const member of this.node!.members.filter(e => this.id !== e)) {
             messages.push(
               new Message(MessageType.ConfirmChildren, this.localTime, 0, this.id, member, {
-                children: this.node?.children,
+                children: this.confirmedChildren[this.id],
               })
             )
           }
