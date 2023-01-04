@@ -186,6 +186,13 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             this.manager.localeFailurePropagation(this, true)
           }
         }
+      } else {
+        // On Stay mode, request data
+        const children =
+          this.role === NodeRole.LeafAggregator
+            ? this.node!.children.map(e => e.members[0])
+            : this.node!.children.map(e => e.members[position])
+        messages.push(...children.map(e => new Message(MessageType.RequestData, this.localTime, 0, this.id, e, {})))
       }
     } else {
       // An aggregator is handling the failure, the failure has already been propagated
@@ -204,7 +211,11 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const aggregates = this.node!.children.map(e => this.aggregates[e.members[position]]).filter(Boolean)
       this.confirmedChildren[this.id] = this.node!.children.filter(e => this.aggregates[e.members[position]])
       // Send the aggregate if possible
-      if (aggregates.length === this.node!.children.length && aggregates.length !== 0 && !this.finishedWorking) {
+      if (
+        aggregates.length === this.node!.children.length &&
+        aggregates.length !== 0 &&
+        ((!this.finishedWorking && this.config.buildingBlocks.standby === StandbyBlock.Stop) || StandbyBlock.Stay)
+      ) {
         // Received all aggregates
         // Full synchro waits for a contribution, else sends immeditaly
         if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {

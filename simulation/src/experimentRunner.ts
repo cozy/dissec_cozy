@@ -35,6 +35,7 @@ export interface BuildingBlocks {
   failureHandling: FailureHandlingBlock
   standby: StandbyBlock
   synchronization: SynchronizationBlock
+  hybridLimit: number
 }
 
 export interface RunConfig {
@@ -66,30 +67,49 @@ export const STRATEGIES = {
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.None,
+    hybridLimit: 0,
   },
   STRAWMANPLUS: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.NonBlocking,
+    hybridLimit: 0,
+  },
+  STRAWMANPLUSPLUS: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stay,
+    synchronization: SynchronizationBlock.NonBlocking,
+    hybridLimit: 0,
   },
   EAGER: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.NonBlocking,
+    hybridLimit: 0,
   },
   ONESHOT: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.FullSynchronization,
+    hybridLimit: 0,
   },
   SAFESLOW: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.FullSynchronization,
+    hybridLimit: 0,
+  },
+  HYBRID: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.Stay,
+    synchronization: SynchronizationBlock.NonBlocking,
+    hybridLimit: 2,
   },
 }
 
@@ -110,7 +130,7 @@ export function defaultConfig(): RunConfig {
     failureRate: 20,
     adaptedFailures: true,
     depth: 3,
-    fanout: 8,
+    fanout: 16,
     groupSize: 5,
     concentration: 0,
     random: false,
@@ -367,7 +387,7 @@ export class ExperimentRunner {
   singleRun(run: RunConfig): RunResult | undefined {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
-    const backupListSize = nodesInTree * 10
+    const backupListSize = nodesInTree
 
     // Create the tree structure
     let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
