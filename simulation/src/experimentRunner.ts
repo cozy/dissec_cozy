@@ -35,7 +35,6 @@ export interface BuildingBlocks {
   failureHandling: FailureHandlingBlock
   standby: StandbyBlock
   synchronization: SynchronizationBlock
-  hybridLimit: number
 }
 
 export interface RunConfig {
@@ -67,49 +66,42 @@ export const STRATEGIES = {
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.None,
-    hybridLimit: 0,
   },
   STRAWMANPLUS: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.NonBlocking,
-    hybridLimit: 0,
   },
   STRAWMANPLUSPLUS: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.NonBlocking,
-    hybridLimit: 0,
   },
   EAGER: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.NonBlocking,
-    hybridLimit: 0,
   },
   ONESHOT: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
     synchronization: SynchronizationBlock.FullSynchronization,
-    hybridLimit: 0,
   },
   SAFESLOW: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     synchronization: SynchronizationBlock.FullSynchronization,
-    hybridLimit: 0,
   },
-  HYBRID: {
+  HYBRID_UTIL: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
-    synchronization: SynchronizationBlock.NonBlocking,
-    hybridLimit: 2,
+    synchronization: SynchronizationBlock.LeavesSynchronization,
   },
 }
 
@@ -130,7 +122,7 @@ export function defaultConfig(): RunConfig {
     failureRate: 20,
     adaptedFailures: true,
     depth: 3,
-    fanout: 16,
+    fanout: 8,
     groupSize: 5,
     concentration: 0,
     random: false,

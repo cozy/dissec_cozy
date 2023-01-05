@@ -133,15 +133,27 @@ export class NodesManager {
       this.config.depth * (this.config.fanout * aggregatorsWork + aggregatorsTransmission) +
       querierWork
 
-    if (this.failureRate > 0) {
-      for (const node of Object.values(this.nodes)) {
-        if (node.role !== NodeRole.Querier) {
-          // Exponential law
-          // node.deathTime = -this.failureRate * Math.log(1 - this.generator())
+    if (this.config.debug) {
+      const deaths = {
+        // 6: 2.1,
+        11: 2.1,
+        // 15: 2.1,
+      }
+      for (const [node, time] of Object.entries(deaths)) {
+        this.nodes[Number(node)].deathTime = time
+        this.insertMessage(new Message(MessageType.Failing, time, time, Number(node), Number(node), {}))
+      }
+    } else {
+      if (this.failureRate > 0) {
+        for (const node of Object.values(this.nodes)) {
+          if (node.role !== NodeRole.Querier) {
+            // Exponential law
+            // node.deathTime = -this.failureRate * Math.log(1 - this.generator())
 
-          // Uniform distribution over a window
-          node.deathTime = baseProtocolLatency * (100 - this.failureRate) * this.generator()
-          this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
+            // Uniform distribution over a window
+            node.deathTime = baseProtocolLatency * (100 - this.failureRate) * this.generator()
+            this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
+          }
         }
       }
     }

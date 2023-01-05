@@ -13,6 +13,9 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
+  if (this.id === 5) {
+    console.log()
+  }
   if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {
@@ -104,14 +107,54 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         )
       if (this.node.depth === 1) {
         // Asking contributors
-        for (const child of this.node.children.flatMap(e => e.members)) {
-          messages.push(msg(child))
+        if (this.config.buildingBlocks.synchronization === SynchronizationBlock.LeavesSynchronization) {
+          // Do not reask from contributors, propagate failure
+          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
+            this.manager.fullFailurePropagation(this, false)
+          } else {
+            this.manager.localeFailurePropagation(this, false)
+          }
+        } else {
+          // Reasking leaves
+          for (const child of this.node.children.flatMap(e => e.members)) {
+            messages.push(msg(child))
+          }
         }
       } else {
         // Asking aggregators
         for (const child of this.node.children.map(e => e.members[position])) {
           messages.push(msg(child))
         }
+      }
+    } else if (this.config.buildingBlocks.synchronization === SynchronizationBlock.LeavesSynchronization) {
+      // Dropping the nodes
+      // Drop the failed group
+      this.node!.children = this.node!.children.filter(e => !e.members.includes(receivedMessage.content.failedNode!))
+      this.node!.children.forEach(childGroup => (childGroup.parents = this.node!.members))
+      // Update each members knowledge of children
+      this.node!.members.forEach(member => (this.manager.nodes[member].node!.children = this.node!.children))
+      // Update each child knowledge of parents
+      this.node!.children.flatMap(e => e.members).forEach(
+        child => (this.manager.nodes[child].node!.parents = this.node!.members)
+      )
+
+      // Resetting confirmations
+      const position = this.node!.members.indexOf(this.id)
+      const aggregates = this.node!.children.map(e => this.aggregates[e.members[position]]).filter(Boolean)
+      this.confirmedChildren[this.id] = this.node!.children.filter(e => this.aggregates[e.members[position]])
+      // Send the aggregate if possible
+      if (
+        aggregates.length === this.node!.children.length &&
+        aggregates.length !== 0 &&
+        ((!this.finishedWorking && this.config.buildingBlocks.standby === StandbyBlock.Stop) || StandbyBlock.Stay)
+      ) {
+        // Received all aggregates
+        const aggregate = aggregates.reduce((prev, curr) => ({
+          counter: prev.counter + curr.counter,
+          data: prev.data + curr.data,
+          id: this.aggregationId(aggregates.map(e => e.id)),
+        }))
+        messages.push(this.sendAggregate(aggregate))
       }
     }
   } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {

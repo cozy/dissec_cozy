@@ -114,7 +114,7 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.STRAWMANPLUSPLUS,
+      buildingBlocks: STRATEGIES.HYBRID_UTIL,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
@@ -138,16 +138,16 @@ if (debug) {
   ]
 } else {
   configs = createRunConfigs({
-    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT],
-    depths: [3, 4],
-    failures: [0, 25, 50, 60, 70, 80, 85, 90, 95],
+    strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
+    depths: [3],
+    failures: [0, 50, 70, 85, 95],
     modelSizes: Array(5)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
-    retries: 10,
+    retries: 5,
     fullSpace: false,
     defaultValues: {
-      depth: 3,
+      depth: 4,
       failure: 50,
       modelSize: 2 ** 10,
     },
