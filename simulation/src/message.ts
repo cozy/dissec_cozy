@@ -185,7 +185,9 @@ export class Message {
         )
         break
       case MessageType.FinishSendingAggregate:
-        console.log(`${tag} is starting to transmit its aggregate to parent`)
+        console.log(
+          `${tag} finished sending its aggregate (ID=${this.content.aggregate?.id}) to parent ${this.content.targetNode}`
+        )
         break
       case MessageType.SendAggregate:
         console.log(

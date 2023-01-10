@@ -114,7 +114,7 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.HYBRID_UTIL,
+      buildingBlocks: STRATEGIES.EAGER,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
@@ -126,32 +126,49 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 30,
+      failureRate: 95,
       adaptedFailures: true,
+      backupToAggregatorsRatio: 0.5,
       depth: 3,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '1',
+      seed: '0',
     },
   ]
 } else {
   configs = createRunConfigs({
     strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
     depths: [3],
-    failures: [0, 50, 70, 85, 95],
-    modelSizes: Array(5)
+    failures: [0, 15, 30, 50, 70, 85, 95],
+    modelSizes: Array(2)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
     retries: 5,
     fullSpace: false,
     defaultValues: {
-      depth: 4,
+      depth: 3,
       failure: 50,
       modelSize: 2 ** 10,
     },
   })
+
+  // configs = createRunConfigs({
+  //   strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
+  //   depths: [3, 4, 5],
+  //   failures: [0, 15, 30, 50, 70, 85, 95],
+  //   modelSizes: Array(5)
+  //     .fill(0)
+  //     .map((_, i) => 2 ** (10 + 2 * i)),
+  //   retries: 10,
+  //   fullSpace: false,
+  //   defaultValues: {
+  //     depth: 4,
+  //     failure: 50,
+  //     modelSize: 2 ** 10,
+  //   },
+  // })
 }
 
 const runner = new ExperimentRunner(configs, {

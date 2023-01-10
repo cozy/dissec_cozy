@@ -19,8 +19,8 @@ export enum FailureHandlingBlock {
 
 export enum StandbyBlock {
   Stop = 'Stop',
-  Standby = 'Standby',
   Stay = 'Stay',
+  NoResync = '0Resync',
 }
 
 export enum SynchronizationBlock {
@@ -52,6 +52,7 @@ export interface RunConfig {
   deadline: number
   failureRate: number
   adaptedFailures: boolean
+  backupToAggregatorsRatio: number
   depth: number
   fanout: number
   groupSize: number
@@ -100,8 +101,8 @@ export const STRATEGIES = {
   HYBRID_UTIL: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
-    standby: StandbyBlock.Stay,
-    synchronization: SynchronizationBlock.LeavesSynchronization,
+    standby: StandbyBlock.NoResync,
+    synchronization: SynchronizationBlock.NonBlocking,
   },
 }
 
@@ -121,6 +122,7 @@ export function defaultConfig(): RunConfig {
     deadline: 5 * 10 ** 7,
     failureRate: 20,
     adaptedFailures: true,
+    backupToAggregatorsRatio: 0.5,
     depth: 3,
     fanout: 8,
     groupSize: 5,
@@ -379,7 +381,7 @@ export class ExperimentRunner {
   singleRun(run: RunConfig): RunResult | undefined {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
-    const backupListSize = nodesInTree
+    const backupListSize = Math.round(nodesInTree * run.backupToAggregatorsRatio)
 
     // Create the tree structure
     let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)

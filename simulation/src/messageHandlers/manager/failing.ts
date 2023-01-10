@@ -1,4 +1,4 @@
-import { FailureHandlingBlock, FailurePropagationBlock, SynchronizationBlock } from '../../experimentRunner'
+import { FailureHandlingBlock, SynchronizationBlock } from '../../experimentRunner'
 import NodesManager from '../../manager'
 import { Message, MessageType } from '../../message'
 import { NodeRole } from '../../node'
@@ -20,7 +20,8 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
       replacement = this.replacementNodes.pop()!
     }
     if (!replacement) {
-      this.fullFailurePropagation(node)
+      this.propagateFailure(node, false)
+      // this.fullFailurePropagation(node)
       return
     }
     replacement.localTime = this.globalTime
@@ -111,11 +112,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
           }
         } else {
           // Propagate the failure of nodes who died before contributing
-          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
-            this.fullFailurePropagation(node, true)
-          } else {
-            this.localeFailurePropagation(node, true)
-          }
+          this.propagateFailure(node, true)
         }
       } else {
         if (node.role === NodeRole.Contributor) {

@@ -13,9 +13,6 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
-  if (this.id === 5) {
-    console.log()
-  }
   if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {
@@ -31,7 +28,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
 
       if (contributors.length === 0) {
-        this.manager.fullFailurePropagation(this)
+        this.manager.propagateFailure(this, false)
         return []
       } else if (contributions.length === contributors.length) {
         if (
@@ -46,9 +43,10 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           intersectLists(a, b)
         )
 
-        // The node received all expected data
+        // The leaf aggregator received all expected data
+        // It may resend the updated data
         if (
-          (this.config.buildingBlocks.standby === StandbyBlock.Stay &&
+          (this.config.buildingBlocks.standby !== StandbyBlock.Stop &&
             [SynchronizationBlock.NonBlocking, SynchronizationBlock.None].includes(
               this.config.buildingBlocks.synchronization
             )) ||
@@ -105,15 +103,12 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           child,
           {}
         )
+
       if (this.node.depth === 1) {
         // Asking contributors
-        if (this.config.buildingBlocks.synchronization === SynchronizationBlock.LeavesSynchronization) {
+        if (this.config.buildingBlocks.standby === StandbyBlock.NoResync) {
           // Do not reask from contributors, propagate failure
-          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
-            this.manager.fullFailurePropagation(this, false)
-          } else {
-            this.manager.localeFailurePropagation(this, false)
-          }
+          this.manager.propagateFailure(this, false)
         } else {
           // Reasking leaves
           for (const child of this.node.children.flatMap(e => e.members)) {
@@ -123,11 +118,18 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       } else {
         // Asking aggregators
         for (const child of this.node.children.map(e => e.members[position])) {
-          messages.push(msg(child))
+          const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+          if (this.manager.nodes[child].deathTime > this.localTime + timeout) {
+            messages.push(msg(child))
+          } else {
+            // The child is dead and may have failed while no one could handle it, handle it now
+            this.manager.propagateFailure(this.manager.nodes[child], false)
+          }
         }
       }
-    } else if (this.config.buildingBlocks.synchronization === SynchronizationBlock.LeavesSynchronization) {
-      // Dropping the nodes
+    } else {
+      //if (this.config.buildingBlocks.standby === StandbyBlock.NoResync) {
+      // Aggregators handling failures means the below subtree was cut off
       // Drop the failed group
       this.node!.children = this.node!.children.filter(e => !e.members.includes(receivedMessage.content.failedNode!))
       this.node!.children.forEach(childGroup => (childGroup.parents = this.node!.members))
@@ -143,11 +145,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const aggregates = this.node!.children.map(e => this.aggregates[e.members[position]]).filter(Boolean)
       this.confirmedChildren[this.id] = this.node!.children.filter(e => this.aggregates[e.members[position]])
       // Send the aggregate if possible
-      if (
-        aggregates.length === this.node!.children.length &&
-        aggregates.length !== 0 &&
-        ((!this.finishedWorking && this.config.buildingBlocks.standby === StandbyBlock.Stop) || StandbyBlock.Stay)
-      ) {
+      if (aggregates.length === this.node!.children.length && aggregates.length !== 0) {
         // Received all aggregates
         const aggregate = aggregates.reduce((prev, curr) => ({
           counter: prev.counter + curr.counter,
@@ -155,6 +153,18 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           id: this.aggregationId(aggregates.map(e => e.id)),
         }))
         messages.push(this.sendAggregate(aggregate))
+      } else if (this.node?.children.length === 0) {
+        if (this.id !== this.manager.querier) {
+          // Ran out of children, cut the tree from here
+          this.manager.propagateFailure(this, false)
+        } else {
+          messages.push(
+            new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+              status: StopStatus.Success,
+              contributors: Array(0),
+            })
+          )
+        }
       }
     }
   } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Drop) {
@@ -172,7 +182,8 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
       if (
         (!this.finishedWorking ||
-          (this.finishedWorking && this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking)) &&
+          (this.finishedWorking &&
+            [SynchronizationBlock.NonBlocking].includes(this.config.buildingBlocks.synchronization))) &&
         contributors.length === contributions.length &&
         contributions.length > 0
       ) {
@@ -206,36 +217,41 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const position = this.node?.members.indexOf(this.id)!
       if (this.config.buildingBlocks.standby === StandbyBlock.Stop) {
         // On Stop mode, propagate failure if any child finished working
+        // If not, reask data from the ones alive
         if (
           this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
             e => this.manager.nodes[e].finishedWorking && this.manager.nodes[e].deathTime > this.manager.globalTime
           ).length > 0
         ) {
           // At least one of the child finished working
-          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
-            this.manager.fullFailurePropagation(this)
-          } else {
-            this.manager.localeFailurePropagation(this)
-          }
+          this.manager.propagateFailure(this, false)
         } else if (
           this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
             e => this.manager.nodes[e].deathTime <= this.manager.globalTime
           ).length > 0
         ) {
           // One node is dead, add a timeout
-          if (this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation) {
-            this.manager.fullFailurePropagation(this, true)
-          } else {
-            this.manager.localeFailurePropagation(this, true)
-          }
+          this.manager.propagateFailure(this, true)
         }
       } else {
-        // On Stay mode, request data
+        // On Stay mode, request data from all alive children
         const children =
           this.role === NodeRole.LeafAggregator
             ? this.node!.children.map(e => e.members[0])
             : this.node!.children.map(e => e.members[position])
-        messages.push(...children.map(e => new Message(MessageType.RequestData, this.localTime, 0, this.id, e, {})))
+        if (children.length > 0 && this.node!.depth > 2) {
+          children.map(child => {
+            const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+            if (this.manager.nodes[child].deathTime > this.localTime + timeout) {
+              messages.push(new Message(MessageType.RequestData, this.localTime, 0, this.id, child, {}))
+            } else {
+              this.manager.propagateFailure(this.manager.nodes[child], false)
+            }
+          })
+        } else {
+          // Ran out of nodes to request
+          this.manager.propagateFailure(this, false)
+        }
       }
     } else {
       // An aggregator is handling the failure, the failure has already been propagated

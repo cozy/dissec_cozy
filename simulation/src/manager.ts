@@ -1,7 +1,7 @@
 import rayleigh from '@stdlib/random-base-rayleigh'
 import cloneDeep from 'lodash/cloneDeep'
 
-import { RunConfig } from './experimentRunner'
+import { FailurePropagationBlock, RunConfig } from './experimentRunner'
 import { isSystemMessage, Message, MessageType, StopStatus } from './message'
 import { handleFailing, handleStopSimulator } from './messageHandlers/manager'
 import Node, { NodeRole } from './node'
@@ -133,7 +133,8 @@ export class NodesManager {
       this.config.depth * (this.config.fanout * aggregatorsWork + aggregatorsTransmission) +
       querierWork
 
-    if (this.config.debug) {
+    if (false) {
+      // @ts-ignore
       const deaths = {
         // 6: 2.1,
         11: 2.1,
@@ -297,9 +298,6 @@ export class NodesManager {
     // Set nodes as dead
     const killSubtree = (node: TreeNode) => {
       node.members.forEach(n => {
-        if (n === 4017) {
-          console.log('weird')
-        }
         if (!this.nodes[n].propagatedFailure) {
           this.nodes[n].propagatedFailure = true
           this.nodes[n].deathTime = this.globalTime + propagationLatency + (addTimeout ? timeout : 0)
@@ -325,6 +323,19 @@ export class NodesManager {
           }
         )
       )
+    }
+  }
+
+  propagateFailure(node: Node, addTimeout: boolean) {
+    if (
+      this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation ||
+      node.id === this.querier
+    ) {
+      // Propagate a full failure if the querier is failing.
+      // This can happen when the querier lost its last child
+      this.fullFailurePropagation(node, addTimeout)
+    } else {
+      this.localeFailurePropagation(node, addTimeout)
     }
   }
 
