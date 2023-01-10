@@ -15,7 +15,8 @@ export interface ManagerArguments extends RunConfig {
 
 export interface AugmentedMessage extends Omit<Message, 'log'> {
   currentlyCirculatingVersions: number
-  bandwidth: number
+  inboundBandwidth: number
+  outboundBandwidth: number
 }
 
 export class NodesManager {
@@ -42,9 +43,11 @@ export class NodesManager {
   messagesPerRole: { [role: string]: number } = {}
   workPerRole: { [role: string]: number } = {}
   failuresPerRole: { [role: string]: number } = {}
-  bandwidthPerRole: { [role: string]: number } = {}
+  inboundBandwidthPerRole: { [role: string]: number } = {}
+  outboundBandwidthPerRole: { [role: string]: number } = {}
   circulatingAggregateIds: { [id: string]: boolean } = {}
-  usedBandwidth: number = 0
+  inboundBandwidth: number = 0
+  outboundBandwidth: number = 0
   totalWork = 0
   finalNumberContributors = 0
 
@@ -70,7 +73,8 @@ export class NodesManager {
       this.workPerRole[e] = 0
       this.failuresPerRole[e] = 0
       this.messagesPerRole[e] = 0
-      this.bandwidthPerRole[e] = 0
+      this.inboundBandwidthPerRole[e] = 0
+      this.outboundBandwidthPerRole[e] = 0
     })
   }
 
@@ -107,7 +111,8 @@ export class NodesManager {
       res[`messages_${r}`] = this.messagesPerRole[r]
       res[`initial_nodes_${r}`] = this.initialNodeRoles[r]
       res[`final_nodes_${r}`] = this.finalNodeRoles[r]
-      res[`bandwidth_${r}`] = this.bandwidthPerRole[r]
+      res[`inbound_bandwidth_${r}`] = this.inboundBandwidthPerRole[r]
+      res[`outbound_bandwidth_${r}`] = this.outboundBandwidthPerRole[r]
     }
     return res
   }
@@ -190,7 +195,8 @@ export class NodesManager {
         this.oldMessages.push({
           ...message,
           currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
-          bandwidth: this.usedBandwidth,
+          inboundBandwidth: this.inboundBandwidth,
+          outboundBandwidth: this.outboundBandwidth,
           ...this.statisticsPerRole(),
         })
       }
@@ -237,8 +243,10 @@ export class NodesManager {
           this.circulatingAggregateIds[message.content.aggregate!.id] = true
         }
         if (message.type === MessageType.FinishSendingAggregate || message.type === MessageType.FinishContribution) {
-          this.usedBandwidth += this.config.modelSize
-          this.bandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
+          this.inboundBandwidth += this.config.modelSize
+          this.outboundBandwidth += this.config.modelSize
+          this.inboundBandwidthPerRole[this.nodes[message.receiverId].role] += this.config.modelSize
+          this.inboundBandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
         }
 
         if (this.config.fullExport) {
@@ -246,7 +254,8 @@ export class NodesManager {
           this.oldMessages.push({
             ...message,
             currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
-            bandwidth: this.usedBandwidth,
+            inboundBandwidth: this.inboundBandwidth,
+            outboundBandwidth: this.outboundBandwidth,
             ...this.statisticsPerRole(),
           })
         }

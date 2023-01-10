@@ -13,7 +13,8 @@ statistics = [
     "messages",
     "work_per_node",
     "delta_nodes",
-    "bandwidth",
+    "inbound_bandwidth",
+    "outbound_bandwidth",
 ]
 
 
@@ -45,8 +46,10 @@ def get_data(path):
             "groupSize": "group_size",
             "circulatingAggregateIds": "circulating_ids",
             "currentlyCirculatingVersions": "currently_circulating_ids",
-            "usedBandwidth": "bandwidth",
-            "finalUsedBandwidth": "final_bandwidth",
+            "inboundBandwidth": "inbound_bandwidth",
+            "outboundBandwidth": "outbound_bandwidth",
+            "finalInboundBandwidth": "final_inbound_bandwidth",
+            "finalOutboundBandwidth": "final_outbound_bandwidth",
         },
         axis=1,
         inplace=True,
@@ -136,7 +139,7 @@ if __name__ == "__main__":
     bandwidth_timeline_fig = px.scatter(
         pd.DataFrame(columns=data.columns),
         x="receiver_time",
-        y="bandwidth",
+        y="outbound_bandwidth",
         color="run_id",
         hover_name="type",
         hover_data=["receiver_id", "emitter_id", "run_id"],
@@ -447,7 +450,7 @@ if __name__ == "__main__":
         bandwidth_timeline_fig = px.scatter(
             df,
             x="receiver_time",
-            y="bandwidth",
+            y="outbound_bandwidth",
             color="run_id",
             hover_name="type",
             hover_data=["receiver_id", "emitter_id", "run_id"],

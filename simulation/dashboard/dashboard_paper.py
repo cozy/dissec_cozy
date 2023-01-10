@@ -23,7 +23,8 @@ statistics = [
     "messages",
     "work_per_node",
     "delta_nodes",
-    "bandwidth",
+    "inbound_bandwidth",
+    "outbound_bandwidth",
 ]
 
 
@@ -56,8 +57,10 @@ def get_data(path, aggregate_message=True):
             "modelSize": "model_size",
             "circulatingAggregateIds": "circulating_aggregate_ids",
             "currentlyCirculatingVersions": "currently_circulating_ids",
-            "usedBandwidth": "bandwidth",
-            "finalUsedBandwidth": "final_bandwidth",
+            "inboundBandwidth": "inbound_bandwidth",
+            "outboundBandwidth": "outbound_bandwidth",
+            "finalInboundBandwidth": "final_inbound_bandwidth",
+            "finalOutboundBandwidth": "final_outbound_bandwidth",
         },
         axis=1,
         inplace=True,
@@ -356,7 +359,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs["full_failure_proba_bandwidth"] = px.box(
         data[data["strategy"] == "LFP-Replace-Stay-NonBlocking"],
         x="failure_probability",
-        y="bandwidth_total",
+        y="inbound_bandwidth_total",
         color="group_size",
         hover_name="run_id",
         points=box_points,
@@ -658,6 +661,43 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Latency for model size",
     )
 
+    graphs[f"bandwidth_failure_paper"] = px.box(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        x="failure_probability",
+        y="inbound_bandwidth_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Bandwidth for Failure",
+    )
+    graphs[f"bandwidth_depth_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        x="depth",
+        y="inbound_bandwidth_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_y=True,
+        title=f"Bandwidth for depth",
+    )
+    graphs[f"bandwidth_group_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        x="model_size",
+        y="inbound_bandwidth_total",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_x=True,
+        log_y=True,
+        title=f"Bandwidth for model size",
+    )
+
     graphs[f"completeness_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
@@ -691,43 +731,6 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         points=box_points,
         log_x=True,
         title=f"Completeness for model size",
-    )
-
-    graphs[f"bandwidth_failure_paper"] = px.box(
-        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
-        x="failure_probability",
-        y="bandwidth_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Bandwidth for Failure",
-    )
-    graphs[f"bandwidth_depth_paper"] = px.box(
-        data[
-            (data["failure_probability"] == default_failure)
-            & (data["model_size"] == default_size)
-        ],
-        x="depth",
-        y="bandwidth_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        log_y=True,
-        title=f"Bandwidth for depth",
-    )
-    graphs[f"bandwidth_group_paper"] = px.box(
-        data[
-            (data["failure_probability"] == default_failure)
-            & (data["depth"] == default_depth)
-        ],
-        x="model_size",
-        y="bandwidth_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        log_x=True,
-        log_y=True,
-        title=f"Bandwidth for model size",
     )
 
     return html.Div(
@@ -1069,16 +1072,16 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 },
                 children=[
                     dcc.Graph(
-                        id=f"completeness_failure_paper",
-                        figure=graphs["completeness_failure_paper"],
+                        id=f"bandwidth_failure_paper",
+                        figure=graphs["bandwidth_failure_paper"],
                     ),
                     dcc.Graph(
-                        id=f"completeness_depth_paper",
-                        figure=graphs["completeness_depth_paper"],
+                        id=f"bandwidth_depth_paper",
+                        figure=graphs["bandwidth_depth_paper"],
                     ),
                     dcc.Graph(
-                        id=f"completeness_group_paper",
-                        figure=graphs["completeness_group_paper"],
+                        id=f"bandwidth_group_paper",
+                        figure=graphs["bandwidth_group_paper"],
                     ),
                 ],
             ),
@@ -1090,16 +1093,16 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 },
                 children=[
                     dcc.Graph(
-                        id=f"bandwidth_failure_paper",
-                        figure=graphs["bandwidth_failure_paper"],
+                        id=f"completeness_failure_paper",
+                        figure=graphs["completeness_failure_paper"],
                     ),
                     dcc.Graph(
-                        id=f"bandwidth_depth_paper",
-                        figure=graphs["bandwidth_depth_paper"],
+                        id=f"completeness_depth_paper",
+                        figure=graphs["completeness_depth_paper"],
                     ),
                     dcc.Graph(
-                        id=f"bandwidth_group_paper",
-                        figure=graphs["bandwidth_group_paper"],
+                        id=f"completeness_group_paper",
+                        figure=graphs["completeness_group_paper"],
                     ),
                 ],
             ),

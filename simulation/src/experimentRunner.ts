@@ -140,7 +140,8 @@ export interface RunResult extends RunConfig {
   latency: number
   completeness: number
   circulatingAggregateIds: number
-  finalUsedBandwidth: number
+  finalInboundBandwidth: number
+  finalOutboundBandwidth: number
   observedFailureRate: number
   messages: AugmentedMessage[]
 }
@@ -521,7 +522,8 @@ export class ExperimentRunner {
       latency: manager.globalTime,
       completeness,
       circulatingAggregateIds: Object.keys(manager.circulatingAggregateIds).length,
-      finalUsedBandwidth: manager.usedBandwidth,
+      finalInboundBandwidth: manager.inboundBandwidth,
+      finalOutboundBandwidth: manager.outboundBandwidth,
       observedFailureRate: (failedNodes.length / nodes.length) * 100,
       ...manager.statisticsPerRole(),
       messages: oldMessages,

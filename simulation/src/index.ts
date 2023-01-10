@@ -126,7 +126,7 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 95,
+      failureRate: 0,
       adaptedFailures: true,
       backupToAggregatorsRatio: 0.5,
       depth: 3,
@@ -140,35 +140,19 @@ if (debug) {
 } else {
   configs = createRunConfigs({
     strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
-    depths: [3],
+    depths: [3, 4, 5],
     failures: [0, 15, 30, 50, 70, 85, 95],
-    modelSizes: Array(2)
+    modelSizes: Array(5)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
-    retries: 5,
+    retries: 10,
     fullSpace: false,
     defaultValues: {
-      depth: 3,
+      depth: 4,
       failure: 50,
       modelSize: 2 ** 10,
     },
   })
-
-  // configs = createRunConfigs({
-  //   strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
-  //   depths: [3, 4, 5],
-  //   failures: [0, 15, 30, 50, 70, 85, 95],
-  //   modelSizes: Array(5)
-  //     .fill(0)
-  //     .map((_, i) => 2 ** (10 + 2 * i)),
-  //   retries: 10,
-  //   fullSpace: false,
-  //   defaultValues: {
-  //     depth: 4,
-  //     failure: 50,
-  //     modelSize: 2 ** 10,
-  //   },
-  // })
 }
 
 const runner = new ExperimentRunner(configs, {
