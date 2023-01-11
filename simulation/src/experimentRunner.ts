@@ -192,6 +192,8 @@ export class ExperimentRunner {
       'maxR',
       'random',
       'concentration',
+      'adaptedFailures',
+      'maxR',
     ]
 
     // Shorter names for keys
@@ -203,6 +205,7 @@ export class ExperimentRunner {
       averageBandwidth: 'bw',
       averageCryptoTime: 'crypto',
       averageComputeTime: 'comp',
+      backupToAggregatorsRatio: 'backups',
     }
 
     // Put values for each keys in an array
