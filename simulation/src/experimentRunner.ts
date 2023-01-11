@@ -385,7 +385,15 @@ export class ExperimentRunner {
   singleRun(run: RunConfig): RunResult | undefined {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
-    const backupListSize = Math.round(nodesInTree * run.backupToAggregatorsRatio)
+    // Take back from the necessary
+    const backupListSize =
+      run.buildingBlocks.failureHandling === FailureHandlingBlock.Drop
+        ? 0
+        : Math.round(
+            (run.buildingBlocks.standby === StandbyBlock.NoResync
+              ? run.fanout ** (run.depth - 2) * run.groupSize
+              : nodesInTree) * run.backupToAggregatorsRatio
+          )
 
     // Create the tree structure
     let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)

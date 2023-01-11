@@ -2,9 +2,7 @@ import NodesManager from '../../manager'
 import { Message, StopStatus } from '../../message'
 
 export function handleStopSimulator(this: NodesManager, receivedMessage: Message) {
-  const alive =
-    this.nodes[receivedMessage.receiverId].deathTime < 0 ||
-    this.nodes[receivedMessage.receiverId].deathTime > receivedMessage.receptionTime
+  const alive = this.nodes[receivedMessage.receiverId].isAlive(receivedMessage.receptionTime)
 
   // Flushing the message queue
   this.messages = []

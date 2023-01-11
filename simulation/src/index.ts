@@ -141,11 +141,11 @@ if (debug) {
   configs = createRunConfigs({
     strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
     depths: [3, 4, 5],
-    failures: [0, 15, 30, 50, 70, 85, 95],
+    failures: [0, 25, 50, 75, 90],
     modelSizes: Array(5)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
-    retries: 10,
+    retries: 5,
     fullSpace: false,
     defaultValues: {
       depth: 4,

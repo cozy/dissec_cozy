@@ -119,7 +119,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         // Asking aggregators
         for (const child of this.node.children.map(e => e.members[position])) {
           const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
-          if (this.manager.nodes[child].deathTime > this.localTime + timeout) {
+          if (this.manager.nodes[child].isAlive(this.localTime + timeout)) {
             messages.push(msg(child))
           } else {
             // The child is dead and may have failed while no one could handle it, handle it now
@@ -220,14 +220,14 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         // If not, reask data from the ones alive
         if (
           this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
-            e => this.manager.nodes[e].finishedWorking && this.manager.nodes[e].deathTime > this.manager.globalTime
+            e => this.manager.nodes[e].finishedWorking && this.manager.nodes[e].isAlive(this.manager.globalTime)
           ).length > 0
         ) {
           // At least one of the child finished working
           this.manager.propagateFailure(this, false)
         } else if (
           this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
-            e => this.manager.nodes[e].deathTime <= this.manager.globalTime
+            e => !this.manager.nodes[e].isAlive(this.manager.globalTime)
           ).length > 0
         ) {
           // One node is dead, add a timeout
@@ -242,7 +242,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         if (children.length > 0 && this.node!.depth > 2) {
           children.map(child => {
             const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
-            if (this.manager.nodes[child].deathTime > this.localTime + timeout) {
+            if (this.manager.nodes[child].isAlive(this.localTime + timeout)) {
               messages.push(new Message(MessageType.RequestData, this.localTime, 0, this.id, child, {}))
             } else {
               this.manager.propagateFailure(this.manager.nodes[child], false)

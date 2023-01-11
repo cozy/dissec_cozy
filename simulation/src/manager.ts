@@ -166,14 +166,12 @@ export class NodesManager {
   }
 
   transmitMessage(unsentMessage: Message) {
-    // Messages wtihout arrival date are added a standard latency
+    // Messages without arrival date are added a standard latency
     if (unsentMessage.receptionTime === 0)
       unsentMessage.receptionTime = unsentMessage.emissionTime + this.standardLatency()
 
-    if (
-      this.nodes[unsentMessage.emitterId].deathTime < 0 ||
-      this.nodes[unsentMessage.emitterId].deathTime > unsentMessage.emissionTime
-    ) {
+    if (this.nodes[unsentMessage.emitterId].isAlive(unsentMessage.emissionTime)) {
+      // The node is alive to send the message
       this.insertMessage(cloneDeep(unsentMessage))
       this.messageCounter++
     }
@@ -182,8 +180,7 @@ export class NodesManager {
   handleNextMessage() {
     const message = this.messages.pop()
     if (!message) return
-    const alive =
-      this.nodes[message.receiverId].deathTime < 0 || this.nodes[message.receiverId].deathTime > message.receptionTime
+    const alive = this.nodes[message.receiverId].isAlive(message.receptionTime)
 
     // Advance simulation time
     this.globalTime = message.receptionTime
@@ -289,7 +286,7 @@ export class NodesManager {
     Object.values(this.nodes).forEach(node => {
       if (!node.propagatedFailure) {
         node.propagatedFailure = true
-        node.deathTime = this.globalTime + propagationLatency
+        node.killed = this.globalTime + propagationLatency
       }
     })
   }
@@ -309,7 +306,7 @@ export class NodesManager {
       node.members.forEach(n => {
         if (!this.nodes[n].propagatedFailure) {
           this.nodes[n].propagatedFailure = true
-          this.nodes[n].deathTime = this.globalTime + propagationLatency + (addTimeout ? timeout : 0)
+          this.nodes[n].killed = this.globalTime + propagationLatency + (addTimeout ? timeout : 0)
         }
       })
       node.children.forEach(n => killSubtree(n))

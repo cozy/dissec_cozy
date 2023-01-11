@@ -36,6 +36,7 @@ export class Node {
   config: ManagerArguments
   localTime: number = 0
   deathTime: number = -1
+  killed: number = -1
   role = NodeRole.Backup
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
@@ -212,6 +213,13 @@ export class Node {
         aggregate,
         targetNode: parent,
       }
+    )
+  }
+
+  isAlive(atTime: number) {
+    return (
+      ((this.deathTime > atTime && this.deathTime >= 0) || this.deathTime < 0) &&
+      !(this.killed < atTime && this.killed >= 0)
     )
   }
 

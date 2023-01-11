@@ -15,7 +15,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
   const getReplacement = (minDeathTime: number) => {
     // Find a live replacement
     let replacement = this.replacementNodes.pop()!
-    while (replacement?.deathTime !== -1 && replacement?.deathTime < Math.max(minDeathTime, this.globalTime)) {
+    while (!replacement?.isAlive(Math.max(minDeathTime, this.globalTime))) {
       if (this.replacementNodes.length === 0) break
       replacement = this.replacementNodes.pop()!
     }
