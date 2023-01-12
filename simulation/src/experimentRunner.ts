@@ -122,7 +122,7 @@ export function defaultConfig(): RunConfig {
     deadline: 5 * 10 ** 7,
     failureRate: 20,
     adaptedFailures: true,
-    backupToAggregatorsRatio: 0.5,
+    backupToAggregatorsRatio: 0.1,
     depth: 3,
     fanout: 8,
     groupSize: 5,
@@ -501,7 +501,9 @@ export class ExperimentRunner {
     const nodes = Object.values(manager.nodes).filter(e => e.role !== NodeRole.Backup)
     const failedNodes = nodes.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
     console.log(
-      `${(failedNodes.length / nodes.length) * 100}% of nodes failed (${failedNodes.length} / ${nodes.length})`
+      `${(failedNodes.length / nodes.length) * 100}% of nodes failed (${failedNodes.length} / ${
+        nodes.length
+      }, ${backupListSize} backups)`
     )
     console.log(
       `${
