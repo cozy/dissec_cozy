@@ -104,6 +104,12 @@ export const STRATEGIES = {
     standby: StandbyBlock.NoResync,
     synchronization: SynchronizationBlock.NonBlocking,
   },
+  HYBRID_BLOCK: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    synchronization: SynchronizationBlock.LeavesSynchronization,
+  },
 }
 
 export function defaultConfig(): RunConfig {
@@ -205,7 +211,7 @@ export class ExperimentRunner {
       averageBandwidth: 'bw',
       averageCryptoTime: 'crypto',
       averageComputeTime: 'comp',
-      backupToAggregatorsRatio: 'backups',
+      backupsToAggregatorsRatio: 'backups',
     }
 
     // Put values for each keys in an array

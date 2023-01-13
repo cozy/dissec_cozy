@@ -16,13 +16,13 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
-const fullExport = true
+const debug = false
+const fullExport = false
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.HYBRID_UTIL,
+      buildingBlocks: STRATEGIES.EAGER,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
@@ -34,31 +34,31 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 80,
+      failureRate: 75,
       adaptedFailures: true,
-      backupToAggregatorsRatio: 0.05,
+      backupToAggregatorsRatio: 0.5,
       depth: 4,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '0',
+      seed: '2',
     },
   ]
 } else {
   configs = createRunConfigs({
-    strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
+    strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL, STRATEGIES.HYBRID_BLOCK],
     depths: [3, 4, 5],
-    failures: [0, 25, 50, 75, 90],
-    modelSizes: Array(5)
+    failures: [30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70],
+    modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
-    backupsToAggregatorsRatios: [0.1, 0.2, 0.3],
+    backupsToAggregatorsRatios: [0.1],
     retries: 5,
     fullSpace: false,
     defaultValues: {
       depth: 4,
-      failure: 25,
+      failure: 50,
       modelSize: 2 ** 10,
       backupsToAggregatorsRatio: 0.1,
     },

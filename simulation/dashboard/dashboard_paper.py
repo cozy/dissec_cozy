@@ -6,7 +6,8 @@ import pandas as pd
 import json
 from glob import glob
 import sys
-
+from itertools import cycle
+from plotly.subplots import make_subplots
 
 tabs = [
     dict(label="Probabilité de panne", value="failure_probability"),
@@ -14,7 +15,7 @@ tabs = [
     dict(label="Fanout", value="fanout"),
     dict(label="Profondeur", value="depth"),
 ]
-roles = ["Aggregator", "LeafAggregator", "Contributor", "Backup", "Querier"]
+roles = ["Aggregator", "LeafAggregator", "Contributor", "Backup", "Querier", "Worker"]
 statistics = [
     "initial_nodes",
     "final_nodes",
@@ -22,6 +23,7 @@ statistics = [
     "work",
     "messages",
     "work_per_node",
+    "bandwidth_per_node",
     "delta_nodes",
     "inbound_bandwidth",
     "outbound_bandwidth",
@@ -68,9 +70,28 @@ def get_data(path, aggregate_message=True):
     df.reset_index(inplace=True)
     df.fillna(0, inplace=True)
 
+    for stat in statistics:
+        if (
+            "work_per_node" in stat
+            or "delta_nodes" in stat
+            or "bandwidth_per_node" in stat
+        ):
+            continue
+
+        df[f"{stat}_Worker"] = (
+            df[f"{stat}_Aggregator"]
+            + df[f"{stat}_LeafAggregator"]
+            + df[f"{stat}_Querier"]
+        )
+
     for r in roles:
         df[f"work_per_node_{r}"] = (
             df[f"work_{r}"] / df[f"final_nodes_{r}"]
+            if (df[f"final_nodes_{r}"] != 0).any()
+            else 0
+        )
+        df[f"bandwidth_per_node_{r}"] = (
+            df[f"inbound_bandwidth_{r}"] / df[f"final_nodes_{r}"]
             if (df[f"final_nodes_{r}"] != 0).any()
             else 0
         )
@@ -145,406 +166,13 @@ def generate_summary(data, status, strategies):
 def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs = dict()
 
+    strategies = pd.unique(data["strategy"])
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     group_sizes = np.sort(pd.unique(data["group_size"]))
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
 
     box_points = "all"
-
-    graphs["failure_rate_per_latency"] = px.scatter(
-        data,
-        x="simulation_length",
-        y="failure_rate",
-        color="failure_probability",
-        hover_name="run_id",
-        title=f"Failure rate by protocol latency",
-        render_mode="svg",
-    )
-
-    graphs["failure_rate_per_failure_proba_protocol"] = px.box(
-        data,
-        x="failure_probability",
-        y="failure_rate",
-        color="strategy",
-        points=box_points,
-        title=f"Failure rate by failure probability, by protocol",
-    )
-
-    graphs["work_failure_rate_strategy_violin"] = px.violin(
-        data,
-        x=tab,
-        y="work_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Travail selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
-    )
-    graphs["work_failure_rate_strategy"] = px.box(
-        data,
-        x=tab,
-        y="work_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Travail selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
-    )
-
-    graphs["latency_failure_rate_strategy_violin"] = px.violin(
-        data,
-        x=tab,
-        y="simulation_length",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Latence selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
-    )
-    graphs["latency_failure_rate_strategy"] = px.box(
-        data,
-        x=tab,
-        y="simulation_length",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Latence selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
-    )
-
-    graphs["messages_strategy_violin"] = px.violin(
-        data,
-        x=tab,
-        y="messages_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Messages selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
-    )
-    graphs["messages_strategy"] = px.box(
-        data,
-        x=tab,
-        y="messages_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Messages selon {'la probabilité de panne' if tab == 'failure_probability' else 'la taille de groupe'} par stratégie",
-    )
-
-    for strat in strategies_map:
-        strat_df = data[data["strategy"] == strat].copy()
-        tmp_mean = strat_df.groupby(
-            ["strategy", "failure_probability"], as_index=False
-        ).mean()
-        tmp_median = strat_df.groupby(
-            ["strategy", "failure_probability"], as_index=False
-        ).median()
-        tmp_lower = strat_df.groupby(
-            ["strategy", "failure_probability"], as_index=False
-        ).quantile(0.25)
-        tmp_upper = strat_df.groupby(
-            ["strategy", "failure_probability"], as_index=False
-        ).quantile(0.75)
-        graphs[f"{strategies_map[strat]}_length_scatter_strategy"] = px.scatter(
-            strat_df,
-            x="simulation_length",
-            y="failure_rate",
-            color="status",
-            hover_name="run_id",
-            title=f"{strategies_map[strat]} execution latency",
-            render_mode="svg",
-        )
-        graphs[f"{strategies_map[strat]}_length_scatter_depth"] = px.scatter(
-            strat_df,
-            x="simulation_length",
-            y="failure_rate",
-            color="depth",
-            hover_name="run_id",
-            title=f"{strategies_map[strat]} execution latency",
-            render_mode="svg",
-        )
-        graphs[f"{strategies_map[strat]}_length_scatter_group"] = px.scatter(
-            strat_df,
-            x="simulation_length",
-            y="failure_rate",
-            color="group_size",
-            hover_name="run_id",
-            title=f"{strategies_map[strat]} execution latency",
-            render_mode="svg",
-        )
-
-        graphs[f"{strategies_map[strat]}_work_scatter_strategy"] = px.scatter(
-            strat_df,
-            x="simulation_length",
-            y="work_total",
-            color="status",
-            hover_name="run_id",
-            title=f"{strategies_map[strat]} total work",
-            render_mode="svg",
-        )
-        graphs[f"{strategies_map[strat]}_work_scatter_depth"] = px.scatter(
-            strat_df,
-            x="simulation_length",
-            y="work_total",
-            color="depth",
-            hover_name="run_id",
-            title=f"{strategies_map[strat]} total work",
-            render_mode="svg",
-        )
-        graphs[f"{strategies_map[strat]}_work_scatter_group"] = px.scatter(
-            strat_df,
-            x="simulation_length",
-            y="work_total",
-            color="group_size",
-            hover_name="run_id",
-            title=f"{strategies_map[strat]} total work",
-            render_mode="svg",
-        )
-
-        graphs[f"{strategies_map[strat]}_completeness"] = px.line(
-            dict(
-                x=tmp_median["failure_probability"],
-                mean=tmp_mean["completeness"],
-                median=tmp_median["completeness"],
-                lower=tmp_lower["completeness"],
-                upper=tmp_upper["completeness"],
-            ),
-            x="x",
-            y=["mean", "median", "lower", "upper"],
-            range_y=[0, 100],
-            markers=True,
-            title=f"{strategies_map[strat]} completeness",
-        )
-
-    gmean = data.groupby([tab, "strategy"], as_index=False).mean()
-    tmp_std = data.groupby([tab, "strategy"], as_index=False).std()
-    gmean["total_work_std"] = tmp_std["work_total"]
-    gmean["simulation_length_std"] = tmp_std["simulation_length"]
-    gmean["completeness_std"] = tmp_std["completeness"]
-
-    graphs["work_failure_prob_strategy"] = px.line(
-        gmean,
-        x=tab,
-        y="work_total",
-        error_y="total_work_std",
-        color="strategy",
-        markers=True,
-        title="Average work per strategy",
-    )
-    graphs["latency_failure_prob_strategy"] = px.line(
-        gmean,
-        x=tab,
-        y="simulation_length",
-        error_y="simulation_length_std",
-        color="strategy",
-        markers=True,
-        title="Average latency per strategy",
-    )
-    graphs["completeness_failure_prob_strategy"] = px.line(
-        gmean,
-        x=tab,
-        y="completeness",
-        error_y="completeness_std",
-        color="strategy",
-        markers=True,
-        title="Average completeness per strategy",
-    )
-
-    graphs["full_failure_proba_work"] = px.box(
-        data[data["strategy"] == "LFP-Replace-Stay-NonBlocking"],
-        x="failure_probability",
-        y="work_total",
-        color="group_size",
-        hover_name="run_id",
-        points=box_points,
-        title="Work by failure probability for different group sizes, full strategy",
-    )
-    graphs["full_failure_proba_bandwidth"] = px.box(
-        data[data["strategy"] == "LFP-Replace-Stay-NonBlocking"],
-        x="failure_probability",
-        y="inbound_bandwidth_total",
-        color="group_size",
-        hover_name="run_id",
-        points=box_points,
-        title="Bandwidth by failure probability for different group sizes, full strategy",
-    )
-
-    band_plot_width = 0.5
-    data_median = data.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).median()
-    y_upper = data.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).quantile(0.5 + band_plot_width / 2)
-    y_lower = data.groupby(
-        ["failure_probability", "strategy"], as_index=False
-    ).quantile(0.5 - band_plot_width / 2)
-    for strat in strategies_map:
-        graphs[f"{strategies_map[strat]}_work_band"] = go.Figure(
-            [
-                go.Scatter(
-                    x=data_median[data_median["strategy"] == strat][
-                        "failure_probability"
-                    ],
-                    y=data_median[data_median["strategy"] == strat]["work_total"],
-                    line=dict(color="rgb(0, 100, 80)"),
-                    name=strategies_map[strat],
-                    mode="lines",
-                ),
-                go.Scatter(
-                    x=pd.concat(
-                        [
-                            data_median[data_median["strategy"] == strat][
-                                "failure_probability"
-                            ],
-                            data_median[data_median["strategy"] == strat][
-                                "failure_probability"
-                            ][::-1],
-                        ]
-                    ),
-                    y=pd.concat(
-                        [
-                            y_lower[y_lower["strategy"] == strat]["work_total"],
-                            y_upper[y_upper["strategy"] == strat]["work_total"][::-1],
-                        ]
-                    ),
-                    fill="toself",
-                    fillcolor="rgba(0, 100, 80, 0.2)",
-                    line=dict(color="rgba(255,255,255,0)"),
-                    hoverinfo="skip",
-                    showlegend=False,
-                ),
-            ]
-        )
-        graphs[f"{strategies_map[strat]}_latency_band"] = go.Figure(
-            [
-                go.Scatter(
-                    x=data_median[data_median["strategy"] == strat][
-                        "failure_probability"
-                    ],
-                    y=data_median[data_median["strategy"] == strat][
-                        "simulation_length"
-                    ],
-                    line=dict(color="rgb(0, 100, 80)"),
-                    name=strategies_map[strat],
-                    mode="lines",
-                ),
-                go.Scatter(
-                    x=pd.concat(
-                        [
-                            data_median[data_median["strategy"] == strat][
-                                "failure_probability"
-                            ],
-                            data_median[data_median["strategy"] == strat][
-                                "failure_probability"
-                            ][::-1],
-                        ]
-                    ),
-                    y=pd.concat(
-                        [
-                            y_lower[y_lower["strategy"] == strat]["simulation_length"],
-                            y_upper[y_upper["strategy"] == strat]["simulation_length"][
-                                ::-1
-                            ],
-                        ]
-                    ),
-                    fill="toself",
-                    fillcolor="rgba(0, 100, 80, 0.2)",
-                    line=dict(color="rgba(255,255,255,0)"),
-                    hoverinfo="skip",
-                    showlegend=False,
-                ),
-            ]
-        )
-        graphs[f"{strategies_map[strat]}_completeness_band"] = go.Figure(
-            [
-                go.Scatter(
-                    x=data_median[data_median["strategy"] == strat][
-                        "failure_probability"
-                    ],
-                    y=data_median[data_median["strategy"] == strat]["completeness"],
-                    line=dict(color="rgb(0, 100, 80)"),
-                    name=strategies_map[strat],
-                    mode="lines",
-                ),
-                go.Scatter(
-                    x=pd.concat(
-                        [
-                            data_median[data_median["strategy"] == strat][
-                                "failure_probability"
-                            ],
-                            data_median[data_median["strategy"] == strat][
-                                "failure_probability"
-                            ][::-1],
-                        ]
-                    ),
-                    y=pd.concat(
-                        [
-                            y_lower[y_lower["strategy"] == strat]["completeness"],
-                            y_upper[y_upper["strategy"] == strat]["completeness"][::-1],
-                        ]
-                    ),
-                    fill="toself",
-                    fillcolor="rgba(0, 100, 80, 0.2)",
-                    line=dict(color="rgba(255,255,255,0)"),
-                    hoverinfo="skip",
-                    showlegend=False,
-                ),
-            ]
-        )
-
-    graphs["completeness_per_failure_prob"] = px.box(
-        data,
-        x=tab,
-        y="completeness",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Complétude par {'probabilité de panne' if tab == 'failure_probability' else 'taille de groupe'}",
-    )
-
-    df = data.copy()
-    df["failed_fraction"] = (
-        (df["initial_nodes_total"] - df["final_nodes_total"])
-        / df["initial_nodes_total"]
-        * 100
-    )
-    graphs["initial_nodes"] = px.box(
-        data,
-        x="depth",
-        y="initial_nodes_total",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Initial number of nodes",
-    )
-
-    graphs["final_nodes"] = px.box(
-        df,
-        x="depth",
-        y="failed_fraction",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Percent failed nodes",
-    )
-
-    graphs["initial_contributors"] = px.box(
-        data,
-        x="depth",
-        y="initial_nodes_Contributor",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Initial number of contributors",
-    )
-
-    graphs["final_contributors"] = px.box(
-        data,
-        x="depth",
-        y="final_nodes_Contributor",
-        color="strategy",
-        hover_name="run_id",
-        points=box_points,
-        title=f"Final number of contributors",
-    )
 
     default_failure = 50
     default_depth = 4
@@ -585,6 +213,42 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         points=box_points,
         log_x=True,
         title=f"Contributors for model size",
+    )
+
+    graphs[f"failures_failure_paper"] = px.box(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        x="failure_probability",
+        y="failure_rate",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Observed failures for Failure",
+    )
+    graphs[f"failures_depth_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        x="depth",
+        y="failure_rate",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_y=True,
+        title=f"Observed failures for depth",
+    )
+    graphs[f"failures_group_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        x="model_size",
+        y="failure_rate",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_x=True,
+        title=f"Observed failures for model size",
     )
 
     graphs[f"work_failure_paper"] = px.box(
@@ -733,274 +397,99 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Completeness for model size",
     )
 
+    # Stacked bars
+    def create_bars(df, x_axis, x_label, y_axis, y_label):
+        plot_df = df.groupby([x_axis, "strategy"], as_index=False).mean()
+        columns = [f"{y_axis}_Worker", f"{y_axis}_Contributor"]
+        palette = cycle(px.colors.qualitative.Alphabet)
+        # palette = cycle(px.colors.sequential.PuBu)
+        colors = {c: next(palette) for c in columns}
+
+        # subplot setup
+        # fig = make_subplots(rows=1, cols=1)
+        fig = go.Figure()
+        fig.update_layout(
+            template="simple_white",
+            xaxis=dict(title_text=x_label),
+            yaxis=dict(title_text=y_label),
+            barmode="stack",
+            width=800,
+            height=800,
+        )
+
+        # add bars
+        for cols in columns:
+            fig.add_trace(
+                go.Bar(
+                    x=[plot_df["strategy"], plot_df[x_axis]],
+                    y=plot_df[cols],
+                    name=cols,
+                    legendgroup=cols,
+                    marker_color=colors[cols],
+                    showlegend=True,
+                )
+            )
+
+        return fig
+
+    graphs[f"work_failure_bar"] = create_bars(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        "failure_probability",
+        "Failures",
+        "work_per_node",
+        "Work per node type",
+    )
+    graphs[f"work_depth_bar"] = create_bars(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        "depth",
+        "Depth",
+        "work_per_node",
+        "Work per node type",
+    )
+    graphs[f"work_size_bar"] = create_bars(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        "model_size",
+        "Model Size",
+        "work_per_node",
+        "Work per node type",
+    )
+
+    graphs[f"bandwidth_failure_bar"] = create_bars(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        "failure_probability",
+        "Failures",
+        "bandwidth_per_node",
+        "Bandwidth per node type",
+    )
+    graphs[f"bandwidth_depth_bar"] = create_bars(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        "depth",
+        "Depth",
+        "bandwidth_per_node",
+        "Bandwidth per node type",
+    )
+    graphs[f"bandwidth_size_bar"] = create_bars(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        "model_size",
+        "Model Size",
+        "bandwidth_per_node",
+        "Bandwidth per node type",
+    )
+
     return html.Div(
         children=[
-            html.H1("Failure rate and failure probability:"),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id="failure_rate_per_latency",
-                        figure=graphs["failure_rate_per_latency"],
-                    ),
-                    dcc.Graph(
-                        id="failure_rate_per_failure_proba_protocol",
-                        figure=graphs["failure_rate_per_failure_proba_protocol"],
-                    ),
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id="work_failure_rate_strategy_violin",
-                        figure=graphs["work_failure_rate_strategy_violin"],
-                    ),
-                    dcc.Graph(
-                        id="work_failure_rate_strategy",
-                        figure=graphs["work_failure_rate_strategy"],
-                    ),
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id="latency_failure_rate_strategy_violin",
-                        figure=graphs["latency_failure_rate_strategy_violin"],
-                    ),
-                    dcc.Graph(
-                        id="latency_failure_rate_strategy",
-                        figure=graphs["latency_failure_rate_strategy"],
-                    ),
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id="messages_strategy_violin",
-                        figure=graphs["messages_strategy_violin"],
-                    ),
-                    dcc.Graph(
-                        id="messages_strategy",
-                        figure=graphs["messages_strategy"],
-                    ),
-                ],
-            ),
-            #
-            # Scatters
-            #
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_length_scatter_strategy"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_length_scatter_depth"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_length_scatter_group"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_work_scatter_strategy"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_work_scatter_depth"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_work_scatter_group"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(id=id, figure=graphs[id])
-                    for id in [
-                        f"{strategies_map[strat]}_completeness"
-                        for strat in strategies_map.keys()
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id=id,
-                        figure=graphs[id],
-                    )
-                    for id in [
-                        "completeness_failure_prob_strategy",
-                        "work_failure_prob_strategy",
-                        "latency_failure_prob_strategy",
-                    ]
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id="full_failure_proba_work",
-                        figure=graphs["full_failure_proba_work"],
-                    ),
-                    dcc.Graph(
-                        id="full_failure_proba_bandwidth",
-                        figure=graphs["full_failure_proba_bandwidth"],
-                    ),
-                ],
-            ),
-            html.Div(
-                children=[
-                    html.Div(
-                        style={
-                            "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "center",
-                        },
-                        children=[
-                            dcc.Graph(
-                                id=f"{strategies_map[strat]}{id}",
-                                figure=graphs[f"{strategies_map[strat]}{id}"],
-                            )
-                            for id in [
-                                "_work_band",
-                                "_latency_band",
-                                "_completeness_band",
-                            ]
-                        ],
-                    )
-                    for strat in strategies_map
-                ]
-            ),
-            dcc.Graph(
-                id="completeness_per_failure_prob",
-                figure=graphs["completeness_per_failure_prob"],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id=f"initial_contributors",
-                        figure=graphs["initial_contributors"],
-                    ),
-                    dcc.Graph(
-                        id=f"final_contributors",
-                        figure=graphs["final_contributors"],
-                    ),
-                ],
-            ),
-            html.Div(
-                style={
-                    "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
-                },
-                children=[
-                    dcc.Graph(
-                        id=f"initial_nodes",
-                        figure=graphs["initial_nodes"],
-                    ),
-                    dcc.Graph(
-                        id=f"final_nodes",
-                        figure=graphs["final_nodes"],
-                    ),
-                ],
-            ),
             html.Div(
                 style={
                     "display": "flex",
@@ -1019,6 +508,27 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"count_group_paper",
                         figure=graphs["count_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"failures_failure_paper",
+                        figure=graphs["failures_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"failures_depth_paper",
+                        figure=graphs["failures_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"failures_group_paper",
+                        figure=graphs["failures_group_paper"],
                     ),
                 ],
             ),
@@ -1103,6 +613,49 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"completeness_group_paper",
                         figure=graphs["completeness_group_paper"],
+                    ),
+                ],
+            ),
+            html.H1("Bar plots"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"work_failure_bar",
+                        figure=graphs["work_failure_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"work_depth_bar",
+                        figure=graphs["work_depth_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"work_size_bar",
+                        figure=graphs["work_size_bar"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"bandwidth_failure_bar",
+                        figure=graphs["bandwidth_failure_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"bandwidth_depth_bar",
+                        figure=graphs["bandwidth_depth_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"bandwidth_size_bar",
+                        figure=graphs["bandwidth_size_bar"],
                     ),
                 ],
             ),

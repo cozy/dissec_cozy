@@ -194,6 +194,10 @@ export class Node {
       throw new Error('Invalid node or parent')
     }
 
+    if (aggregate.id === '1164095206') {
+      console.log()
+    }
+
     // Non blocking sync send the result ASAP
     const parent = this.node.parents[this.node.members.indexOf(this.id)]
     const transmissionTime = (this.config.modelSize - 1) / this.config.averageBandwidth
