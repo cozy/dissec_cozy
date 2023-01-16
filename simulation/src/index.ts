@@ -63,6 +63,23 @@ if (debug) {
       backupsToAggregatorsRatio: 0.1,
     },
   })
+  configs = createRunConfigs({
+    strategies: [STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
+    depths: [3],
+    failures: [30, 50, 70],
+    modelSizes: Array(4)
+      .fill(0)
+      .map((_, i) => 2 ** (10 + 2 * i)),
+    backupsToAggregatorsRatios: [0.1],
+    retries: 5,
+    fullSpace: false,
+    defaultValues: {
+      depth: 4,
+      failure: 50,
+      modelSize: 2 ** 10,
+      backupsToAggregatorsRatio: 0.1,
+    },
+  })
 }
 
 const runner = new ExperimentRunner(configs, {

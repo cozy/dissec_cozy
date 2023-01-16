@@ -1,4 +1,4 @@
-import { FailureHandlingBlock, SynchronizationBlock } from '../../experimentRunner'
+import { FailureHandlingBlock, StandbyBlock, SynchronizationBlock } from '../../experimentRunner'
 import NodesManager from '../../manager'
 import { Message, MessageType } from '../../message'
 import { NodeRole } from '../../node'
@@ -35,6 +35,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
 
     if (
       this.config.buildingBlocks.synchronization === SynchronizationBlock.NonBlocking &&
+      this.config.buildingBlocks.standby === StandbyBlock.Stay &&
       node.role === NodeRole.Contributor &&
       node.finishedWorking
     ) {
@@ -76,19 +77,23 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
         // Alert parents of the contributor
         const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
         for (const parent of node.node.parents) {
-          messages.push(
-            new Message(
-              MessageType.HandleFailure,
-              this.globalTime + latency,
-              this.globalTime + latency,
-              parent,
-              parent,
-              {
-                targetGroup: node.node,
-                failedNode: receivedMessage.emitterId,
-              }
+          if (this.config.buildingBlocks.standby === StandbyBlock.Stay || !this.nodes[parent].finishedWorking) {
+            // Only react to contributors failures if we continually maintain the tree or if parents have not finished aggregating
+            // Otherwise, it would retrigger a confirmation of contributors and a aggregate version update
+            messages.push(
+              new Message(
+                MessageType.HandleFailure,
+                this.globalTime + latency,
+                this.globalTime + latency,
+                parent,
+                parent,
+                {
+                  targetGroup: node.node,
+                  failedNode: receivedMessage.emitterId,
+                }
+              )
             )
-          )
+          }
         }
       }
     } else {
