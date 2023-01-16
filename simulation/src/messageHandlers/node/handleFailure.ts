@@ -104,31 +104,32 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           {}
         )
 
-      if (this.node.depth === 1) {
+      if (
+        this.config.buildingBlocks.standby === StandbyBlock.NoResync &&
+        this.node.depth <= this.config.buildingBlocks.resyncLevel
+      ) {
+        // The failure happened below the threshold depth
+        this.manager.propagateFailure(this, false)
+      } else if (this.node.depth === 1) {
         // Asking contributors
-        if (this.config.buildingBlocks.standby === StandbyBlock.NoResync) {
-          // Do not reask from contributors, propagate failure
-          this.manager.propagateFailure(this, false)
-        } else {
-          // Reasking leaves
-          for (const child of this.node.children.flatMap(e => e.members)) {
-            messages.push(msg(child))
-          }
+        // Reasking leaves
+        for (const child of this.node.children.flatMap(e => e.members)) {
+          messages.push(msg(child))
         }
       } else {
         // Asking aggregators
         for (const child of this.node.children.map(e => e.members[position])) {
           const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
           if (this.manager.nodes[child].isAlive(this.localTime + timeout)) {
+            // Request data from living child
             messages.push(msg(child))
           } else {
             // The child is dead and may have failed while no one could handle it, handle it now
-            this.manager.propagateFailure(this.manager.nodes[child], false)
+            messages.push(new Message(MessageType.Failing, this.localTime, this.localTime, child, child, {}))
           }
         }
       }
     } else {
-      //if (this.config.buildingBlocks.standby === StandbyBlock.NoResync) {
       // Aggregators handling failures means the below subtree was cut off
       // Drop the failed group
       this.node!.children = this.node!.children.filter(e => !e.members.includes(receivedMessage.content.failedNode!))

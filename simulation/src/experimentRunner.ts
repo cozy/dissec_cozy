@@ -1,4 +1,3 @@
-import { execSync } from 'child_process'
 import fs from 'fs'
 import cloneDeep from 'lodash/cloneDeep'
 
@@ -34,6 +33,7 @@ export interface BuildingBlocks {
   failurePropagation: FailurePropagationBlock
   failureHandling: FailureHandlingBlock
   standby: StandbyBlock
+  resyncLevel: number
   synchronization: SynchronizationBlock
 }
 
@@ -52,7 +52,7 @@ export interface RunConfig {
   deadline: number
   failureRate: number
   adaptedFailures: boolean
-  backupToAggregatorsRatio: number
+  backupsToAggregatorsRatio: number
   depth: number
   fanout: number
   groupSize: number
@@ -66,49 +66,71 @@ export const STRATEGIES = {
     failurePropagation: FailurePropagationBlock.FullFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.None,
   },
   STRAWMANPLUS: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.NonBlocking,
   },
   STRAWMANPLUSPLUS: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stay,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.NonBlocking,
   },
   EAGER: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.NonBlocking,
   },
   ONESHOT: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Drop,
     standby: StandbyBlock.Stop,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.FullSynchronization,
   },
   SAFESLOW: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.FullSynchronization,
   },
   HYBRID_UTIL: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.NoResync,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.NonBlocking,
   },
   HYBRID_BLOCK: {
     failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.NoResync,
+    resyncLevel: 1,
     synchronization: SynchronizationBlock.LeavesSynchronization,
+  },
+  HYBRID_2: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    resyncLevel: 2,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+  HYBRID_3: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    resyncLevel: 3,
+    synchronization: SynchronizationBlock.NonBlocking,
   },
 }
 
@@ -121,14 +143,15 @@ export function defaultConfig(): RunConfig {
     averageBandwidth: 6000,
     averageCryptoTime: 0.01,
     averageComputeTime: 0.00005, // Time spent working for each kbytes
-    modelSize: 1000,
+    modelSize: 1024,
     failCheckPeriod: 100,
     healthCheckPeriod: 3,
     multicastSize: 5,
     deadline: 5 * 10 ** 7,
     failureRate: 20,
     adaptedFailures: true,
-    backupToAggregatorsRatio: 0.1,
+    backupsToAggregatorsRatio: 0.1,
+    resyncLevel: 1,
     depth: 3,
     fanout: 8,
     groupSize: 5,
@@ -212,6 +235,7 @@ export class ExperimentRunner {
       averageCryptoTime: 'crypto',
       averageComputeTime: 'comp',
       backupsToAggregatorsRatio: 'backups',
+      resyncLevel: 'resync',
     }
 
     // Put values for each keys in an array
@@ -245,9 +269,7 @@ export class ExperimentRunner {
       this.outputPath = this.checkpoint.name + '.csv'
     } else {
       this.outputPath =
-        `./outputs/${new Date().toISOString()}_${execSync('git rev-parse HEAD').toString().trim()}_run${runs.length}_${
-          this.fullExport ? 'full_' : ''
-        }` +
+        `./outputs/${new Date().toISOString()}_run${runs.length}_${this.fullExport ? 'full_' : ''}` +
         JSON.stringify(labels)
           .replaceAll('"', '')
           .replaceAll(',', '_')
@@ -286,9 +308,9 @@ export class ExperimentRunner {
             })
             .join(';')
             .replaceAll('.', ',') +
-            `;${Object.values(items.buildingBlocks).join('-')}-m${items.modelSize}-f${items.failureRate}-d${
-              items.depth
-            }-s${items.seed}\n`,
+            `;${Object.values(items.buildingBlocks)
+              .map(f => (f === '0Resync' ? `0Resync${items.buildingBlocks.resyncLevel}` : f))
+              .join('-')}-m${items.modelSize}-f${items.failureRate}-d${items.depth}-s${items.seed}\n`,
           { flag: 'a' }
         )
       }
@@ -320,9 +342,9 @@ export class ExperimentRunner {
                   })
                   .join(';')
                   .replaceAll('.', ',') +
-                `;${Object.values(assign.buildingBlocks).join('-')}-m${assign.modelSize}-d${items.depth}-m${
-                  assign.failureRate
-                }-s${assign.seed}\n`
+                `;${Object.values(assign.buildingBlocks)
+                  .map(f => (f === '0Resync' ? `0Resync${items.buildingBlocks.resyncLevel}` : f))
+                  .join('-')}-m${assign.modelSize}-d${items.depth}-m${assign.failureRate}-s${assign.seed}\n`
               )
             })
             .join(''),
@@ -398,7 +420,7 @@ export class ExperimentRunner {
         : Math.round(
             (run.buildingBlocks.standby === StandbyBlock.NoResync
               ? run.fanout ** (run.depth - 2) * run.groupSize
-              : nodesInTree) * run.backupToAggregatorsRatio
+              : nodesInTree) * run.backupsToAggregatorsRatio
           )
 
     // Create the tree structure
