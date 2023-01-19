@@ -128,7 +128,7 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
           data: prev.data + curr.data,
           id: this.aggregationId(aggregates.map(e => e.id)),
         }))
-        messages.push(this.sendAggregate(aggregate))
+        messages.push(...this.sendAggregate(aggregate))
       }
     }
   }

@@ -56,7 +56,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             arrayEquals(this.contributorsList[this.id] || [], intersectedList || []))
         ) {
           messages.push(
-            this.sendAggregate({
+            ...this.sendAggregate({
               counter: contributors.length,
               data: contributions.reduce((prev, curr) => prev + curr),
               id: this.aggregationId(contributors.map(String)),
@@ -120,7 +120,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         // Asking aggregators
         for (const child of this.node.children.map(e => e.members[position])) {
           const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
-          if (this.manager.nodes[child].isAlive(this.localTime + timeout)) {
+          if (this.manager.nodes[child]?.isAlive(this.localTime + timeout)) {
             // Request data from living child
             messages.push(msg(child))
           } else {
@@ -153,7 +153,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           data: prev.data + curr.data,
           id: this.aggregationId(aggregates.map(e => e.id)),
         }))
-        messages.push(this.sendAggregate(aggregate))
+        messages.push(...this.sendAggregate(aggregate))
       } else if (this.node?.children.length === 0) {
         if (this.id !== this.manager.querier) {
           // Ran out of children, cut the tree from here
@@ -189,7 +189,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         contributions.length > 0
       ) {
         messages.push(
-          this.sendAggregate({
+          ...this.sendAggregate({
             counter: contributors.length,
             data: contributions.reduce((prev, curr) => prev + curr),
             id: this.aggregationId(contributors.map(String)),
@@ -292,7 +292,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             data: prev.data + curr.data,
             id: this.aggregationId(aggregates.map(e => e.id)),
           }))
-          messages.push(this.sendAggregate(aggregate))
+          messages.push(...this.sendAggregate(aggregate))
         }
       } else if (this.node!.children.length === 0) {
         // The children lost its last children

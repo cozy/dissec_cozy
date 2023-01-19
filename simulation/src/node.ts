@@ -38,6 +38,7 @@ export class Node {
   deathTime: number = -1
   killed: number = -1
   role = NodeRole.Backup
+  nextEndTransmissionTime: number = 0
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
   propagatedFailure: boolean = false
@@ -189,13 +190,9 @@ export class Node {
     return messages
   }
 
-  sendAggregate(aggregate: Aggregate) {
+  sendAggregate(aggregate: Aggregate): Message[] {
     if (!this.node || this.node.members.indexOf(this.id) < 0) {
       throw new Error('Invalid node or parent')
-    }
-
-    if (aggregate.id === '1164095206') {
-      console.log()
     }
 
     // Non blocking sync send the result ASAP
@@ -207,17 +204,23 @@ export class Node {
     // Reset full synchro
     this.confirmedChildren = {}
 
-    return new Message(
-      MessageType.FinishSendingAggregate,
-      this.localTime,
-      this.localTime + this.config.averageLatency + transmissionTime,
-      this.id,
-      this.id,
-      {
-        aggregate,
-        targetNode: parent,
-      }
-    )
+    const startTransmissionTime = Math.max(this.localTime, this.nextEndTransmissionTime)
+    if (this.isAlive(startTransmissionTime)) {
+      this.nextEndTransmissionTime = startTransmissionTime + this.config.averageLatency + transmissionTime
+      return [
+        new Message(
+          MessageType.FinishSendingAggregate,
+          startTransmissionTime,
+          this.nextEndTransmissionTime,
+          this.id,
+          this.id,
+          {
+            aggregate,
+            targetNode: parent,
+          }
+        ),
+      ]
+    } else return []
   }
 
   isAlive(atTime: number) {

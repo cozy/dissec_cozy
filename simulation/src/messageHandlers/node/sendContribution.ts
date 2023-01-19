@@ -31,7 +31,7 @@ export function handleSendContribution(this: Node, receivedMessage: Message): Me
     ) {
       // We don't need synchronization
       messages.push(
-        this.sendAggregate({
+        ...this.sendAggregate({
           counter: contributors.length,
           data: contributions.reduce((prev, curr) => prev + curr),
           id: this.aggregationId(contributors.map(String)),

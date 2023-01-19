@@ -115,7 +115,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
     ) {
       // The node has received the same list from each member and has the data, send the aggregate
       messages.push(
-        this.sendAggregate({
+        ...this.sendAggregate({
           counter: this.contributorsList[this.id]!.length,
           data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr, 0),
           id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
@@ -148,7 +148,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       // The aggregate version changed and the node has received all expected shares, resend the new version to the parent
       // It immediatly sends the updated aggregate to its parent
       messages.push(
-        this.sendAggregate({
+        ...this.sendAggregate({
           counter: this.contributorsList[this.id]!.length,
           data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr, 0),
           id: this.aggregationId(this.contributorsList[this.id]!.map(String)),

@@ -151,7 +151,6 @@ export function defaultConfig(): RunConfig {
     failureRate: 20,
     adaptedFailures: true,
     backupsToAggregatorsRatio: 0.1,
-    resyncLevel: 1,
     depth: 3,
     fanout: 8,
     groupSize: 5,

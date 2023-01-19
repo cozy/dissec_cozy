@@ -45,7 +45,7 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
       data: prev.data + curr.data,
       id: this.aggregationId(aggregates.map(e => e.id)),
     }))
-    messages.push(this.sendAggregate(aggregate))
+    messages.push(...this.sendAggregate(aggregate))
   }
 
   return messages

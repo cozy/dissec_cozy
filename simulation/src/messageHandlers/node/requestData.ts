@@ -19,7 +19,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
       new Message(
         MessageType.StartSendingContribution,
         this.localTime,
-        0, // ASAP
+        Math.max(this.localTime, this.nextEndTransmissionTime), // ASAP
         this.id,
         this.id,
         {}
@@ -35,7 +35,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     this.localTime += 3 * this.cryptoLatency()
 
     messages.push(
-      this.sendAggregate({
+      ...this.sendAggregate({
         counter: this.contributorsList[this.id]!.length,
         data: this.contributorsList[this.id]!.map(e => this.contributions[e]).reduce((prev, curr) => prev + curr),
         id: this.aggregationId(this.contributorsList[this.id]!.map(String)),
@@ -55,7 +55,7 @@ export function handleRequestData(this: Node, receivedMessage: Message): Message
     this.localTime += 3 * this.cryptoLatency()
 
     messages.push(
-      this.sendAggregate(
+      ...this.sendAggregate(
         children
           .map(child => this.aggregates[child])
           .reduce((prev, curr) => ({

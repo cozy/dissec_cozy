@@ -15,15 +15,12 @@ export function handleStartSendingContribution(this: Node, receivedMessage: Mess
   const parents = this.node.parents.filter(e => !this.sentContributions[e])
   for (const parent of parents) {
     this.sentContributions[parent] = true
+    this.nextEndTransmissionTime = this.localTime + this.config.averageLatency + parents.length * transmissionTime
+    // Sending to all parents in parallel
     messages.push(
-      new Message(
-        MessageType.FinishContribution,
-        this.localTime,
-        this.localTime + this.config.averageLatency + parents.length * transmissionTime,
-        this.id,
-        this.id,
-        { targetNode: parent }
-      )
+      new Message(MessageType.FinishContribution, this.localTime, this.nextEndTransmissionTime, this.id, this.id, {
+        targetNode: parent,
+      })
     )
   }
   this.localTime += parents.length * transmissionTime
