@@ -410,15 +410,23 @@ export class ExperimentRunner {
   }
 
   singleRun(run: RunConfig): RunResult | undefined {
+    const numberOfNodes = (depth: number) =>
+      depth
+        ? Array(depth)
+            .fill(1)
+            .map((_, i) => run.groupSize * run.fanout ** i)
+            .reduce((a, b) => a + b)
+        : 0
+
     // Exclude contributors (nodes at the last level)
-    const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
+    const nodesInTree = numberOfNodes(run.depth)
     // Take back from the necessary
     const backupListSize =
       run.buildingBlocks.failureHandling === FailureHandlingBlock.Drop
         ? 0
         : Math.round(
             (run.buildingBlocks.standby === StandbyBlock.NoResync
-              ? run.fanout ** (run.depth - 2) * run.groupSize
+              ? numberOfNodes(run.depth - run.buildingBlocks.resyncLevel)
               : nodesInTree) * run.backupsToAggregatorsRatio
           )
 

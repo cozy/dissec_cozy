@@ -51,7 +51,13 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
           })
         )
       }
-    } else if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
+    } else if (
+      this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace &&
+      (this.config.buildingBlocks.standby === StandbyBlock.Stay ||
+        (this.config.buildingBlocks.standby === StandbyBlock.NoResync &&
+          this.config.buildingBlocks.resyncLevel < node.node.depth))
+    ) {
+      // We're in replacing mode and above the dropoff threshold
       // Always replacing failed nodes except contributors
       if (node.role !== NodeRole.Contributor) {
         // Timeout + ask + confirm + open secure channels

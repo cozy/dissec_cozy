@@ -16,13 +16,13 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
-const fullExport = true
+const debug = false
+const fullExport = false
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.HYBRID_3,
+      buildingBlocks: STRATEGIES.ONESHOT,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
@@ -54,8 +54,8 @@ if (debug) {
       STRATEGIES.HYBRID_2,
       STRATEGIES.HYBRID_3,
     ],
-    depths: [3, 4, 5],
-    failures: [30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70],
+    depths: [3, 4],
+    failures: [0, 3, 50, 70, 95],
     modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (10 + 2 * i)),
@@ -64,23 +64,6 @@ if (debug) {
     fullSpace: false,
     defaultValues: {
       depth: 4,
-      failure: 50,
-      modelSize: 2 ** 10,
-      backupsToAggregatorsRatio: 0.1,
-    },
-  })
-  configs = createRunConfigs({
-    strategies: [STRATEGIES.ONESHOT, STRATEGIES.HYBRID_3],
-    depths: [3],
-    failures: [30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 70],
-    modelSizes: Array(4)
-      .fill(0)
-      .map((_, i) => 2 ** (10 + 2 * i)),
-    backupsToAggregatorsRatios: [0.1],
-    retries: 5,
-    fullSpace: false,
-    defaultValues: {
-      depth: 3,
       failure: 50,
       modelSize: 2 ** 10,
       backupsToAggregatorsRatio: 0.1,
