@@ -125,32 +125,10 @@ export class NodesManager {
   }
 
   setFailures() {
-    const contributorsWork = 2 * this.config.averageComputeTime * this.config.modelSize * this.config.groupSize
-    const contributorsTransmission =
-      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
-    const aggregatorsWork = this.config.averageComputeTime * this.config.modelSize
-    const aggregatorsTransmission =
-      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
-    const querierWork = aggregatorsWork * this.config.groupSize
-    const baseProtocolLatency =
-      contributorsWork +
-      contributorsTransmission +
-      this.config.depth * (this.config.fanout * aggregatorsWork + aggregatorsTransmission) +
-      querierWork
+    const baseProtocolLatency = this.baseProtocolLatency()
 
-    if (false) {
-      // @ts-ignore
-      const deaths = {
-        // 6: 2.1,
-        11: 2.1,
-        // 15: 2.1,
-      }
-      for (const [node, time] of Object.entries(deaths)) {
-        this.nodes[Number(node)].deathTime = time
-        this.insertMessage(new Message(MessageType.Failing, time, time, Number(node), Number(node), {}))
-      }
-    } else {
-      if (this.failureRate > 0) {
+    if (this.failureRate > 0) {
+      if (this.config.adaptedFailures) {
         for (const node of Object.values(this.nodes)) {
           if (node.role !== NodeRole.Querier) {
             // Exponential law
@@ -158,6 +136,14 @@ export class NodesManager {
 
             // Uniform distribution over a window
             node.deathTime = baseProtocolLatency * (100 - this.failureRate) * this.generator()
+            this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
+          }
+        }
+      } else {
+        for (const node of Object.values(this.nodes)) {
+          if (node.role !== NodeRole.Querier) {
+            // Uniform distribution over a fixed size window
+            node.deathTime = this.failureRate * this.generator()
             this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
           }
         }
@@ -374,6 +360,23 @@ export class NodesManager {
     } else {
       return this.config.averageLatency
     }
+  }
+
+  baseProtocolLatency(): number {
+    const contributorsWork = 2 * this.config.averageComputeTime * this.config.modelSize * this.config.groupSize
+    const contributorsTransmission =
+      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
+    const aggregatorsWork = this.config.averageComputeTime * this.config.modelSize
+    const aggregatorsTransmission =
+      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
+    const querierWork = aggregatorsWork * this.config.groupSize
+
+    return (
+      contributorsWork +
+      contributorsTransmission +
+      this.config.depth * (this.config.fanout * aggregatorsWork + aggregatorsTransmission) +
+      querierWork
+    )
   }
 
   private AIsBeforeB(a: Message, b: Message): boolean {

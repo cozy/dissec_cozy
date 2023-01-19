@@ -148,10 +148,10 @@ export function defaultConfig(): RunConfig {
     healthCheckPeriod: 3,
     multicastSize: 5,
     deadline: 5 * 10 ** 7,
-    failureRate: 20,
-    adaptedFailures: true,
+    failureRate: 341.90333333333336,
+    adaptedFailures: false,
     backupsToAggregatorsRatio: 0.1,
-    depth: 3,
+    depth: 4,
     fanout: 8,
     groupSize: 5,
     concentration: 0,
@@ -171,6 +171,8 @@ export interface RunResult extends RunConfig {
   finalInboundBandwidth: number
   finalOutboundBandwidth: number
   observedFailureRate: number
+  observedWorkersFailureRate: number
+  observedContributorsFailureRate: number
   messages: AugmentedMessage[]
 }
 
@@ -535,6 +537,13 @@ export class ExperimentRunner {
 
     const nodes = Object.values(manager.nodes).filter(e => e.role !== NodeRole.Backup)
     const failedNodes = nodes.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
+    const contributors = Object.values(manager.nodes).filter(e => e.role === NodeRole.Contributor)
+    const failedContributors = contributors.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
+    const workers = Object.values(manager.nodes).filter(
+      e => e.role !== NodeRole.Backup && e.role !== NodeRole.Contributor
+    )
+    const failedWorkers = workers.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
+
     console.log(
       `${(failedNodes.length / nodes.length) * 100}% of nodes failed (${failedNodes.length} / ${
         nodes.length
@@ -573,6 +582,8 @@ export class ExperimentRunner {
       finalInboundBandwidth: manager.inboundBandwidth,
       finalOutboundBandwidth: manager.outboundBandwidth,
       observedFailureRate: (failedNodes.length / nodes.length) * 100,
+      observedContributorsFailureRate: (failedContributors.length / contributors.length) * 100,
+      observedWorkersFailureRate: (failedWorkers.length / workers.length) * 100,
       ...manager.statisticsPerRole(),
       messages: oldMessages,
     }

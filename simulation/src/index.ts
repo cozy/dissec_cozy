@@ -48,23 +48,23 @@ if (debug) {
 } else {
   configs = createRunConfigs({
     strategies: [
+      STRATEGIES.STRAWMAN,
       STRATEGIES.EAGER,
       STRATEGIES.ONESHOT,
       STRATEGIES.HYBRID_UTIL,
-      STRATEGIES.HYBRID_2,
       STRATEGIES.HYBRID_3,
     ],
     depths: [3, 4],
-    failures: [0, 3, 50, 70, 95],
+    failures: [0, 663.2924666666668, 341.90333333333336, 205.14200000000002, 34.190333333333335],
     modelSizes: Array(4)
       .fill(0)
-      .map((_, i) => 2 ** (6 + 2 * i)),
+      .map((_, i) => 2 ** (8 + 2 * i)),
     backupsToAggregatorsRatios: [0.1],
     retries: 5,
     fullSpace: false,
     defaultValues: {
       depth: 4,
-      failure: 50,
+      failure: 341.90333333333336,
       modelSize: 2 ** 10,
       backupsToAggregatorsRatio: 0.1,
     },
