@@ -58,7 +58,7 @@ if (debug) {
     failures: [0, 3, 50, 70, 95],
     modelSizes: Array(4)
       .fill(0)
-      .map((_, i) => 2 ** (10 + 2 * i)),
+      .map((_, i) => 2 ** (6 + 2 * i)),
     backupsToAggregatorsRatios: [0.1],
     retries: 5,
     fullSpace: false,

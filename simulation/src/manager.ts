@@ -170,7 +170,7 @@ export class NodesManager {
     if (unsentMessage.receptionTime === 0)
       unsentMessage.receptionTime = unsentMessage.emissionTime + this.standardLatency()
 
-    if (this.nodes[unsentMessage.emitterId].isAlive(unsentMessage.emissionTime)) {
+    if (this.nodes[unsentMessage.emitterId]?.isAlive(unsentMessage.emissionTime)) {
       // The node is alive to send the message
       this.insertMessage(cloneDeep(unsentMessage))
       this.messageCounter++
