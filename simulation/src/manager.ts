@@ -45,9 +45,22 @@ export class NodesManager {
   failuresPerRole: { [role: string]: number } = {}
   inboundBandwidthPerRole: { [role: string]: number } = {}
   outboundBandwidthPerRole: { [role: string]: number } = {}
+  failurePropagationsPerRole: { [role: string]: number } = {}
+  circulatingAggregateIdsPerRole: { [role: string]: { [id: string]: boolean } } = {}
+  maxDepth: number = 5
+  messagesPerLevel: number[] = Array(this.maxDepth).fill(0)
+  workPerLevel: number[] = Array(this.maxDepth).fill(0)
+  failuresPerLevel: number[] = Array(this.maxDepth).fill(0)
+  inboundBandwidthPerLevel: number[] = Array(this.maxDepth).fill(0)
+  outboundBandwidthPerLevel: number[] = Array(this.maxDepth).fill(0)
+  failurePropagationsPerLevel: number[] = Array(this.maxDepth).fill(0)
+  circulatingAggregateIdsPerLevel: { [id: string]: boolean }[] = Array(this.maxDepth)
+    .fill(0)
+    .map(() => ({}))
   circulatingAggregateIds: { [id: string]: boolean } = {}
   inboundBandwidth: number = 0
   outboundBandwidth: number = 0
+  abortedReplacements: number = 0
   totalWork = 0
   finalNumberContributors = 0
 
@@ -75,6 +88,8 @@ export class NodesManager {
       this.messagesPerRole[e] = 0
       this.inboundBandwidthPerRole[e] = 0
       this.outboundBandwidthPerRole[e] = 0
+      this.failurePropagationsPerRole[e] = 0
+      this.circulatingAggregateIdsPerRole[e] = {}
     })
   }
 
@@ -113,6 +128,22 @@ export class NodesManager {
       res[`final_nodes_${r}`] = this.finalNodeRoles[r]
       res[`inbound_bandwidth_${r}`] = this.inboundBandwidthPerRole[r]
       res[`outbound_bandwidth_${r}`] = this.outboundBandwidthPerRole[r]
+      res[`propagation_${r}`] = this.failurePropagationsPerRole[r]
+      res[`versions_${r}`] = Object.values(this.circulatingAggregateIdsPerRole[r]).length
+    }
+    return res
+  }
+
+  statisticsPerLevel() {
+    const res: { [key: string]: number } = {}
+    for (const r in Array(this.maxDepth).fill(0)) {
+      res[`work_level_${r}`] = this.workPerLevel[r]
+      res[`failures_level_${r}`] = this.failuresPerLevel[r]
+      res[`messages_level_${r}`] = this.messagesPerLevel[r]
+      res[`inbound_bandwidth_level_${r}`] = this.inboundBandwidthPerLevel[r]
+      res[`outbound_bandwidth_level_${r}`] = this.outboundBandwidthPerLevel[r]
+      res[`propagation_level_${r}`] = this.failurePropagationsPerLevel[r]
+      res[`versions_level_${r}`] = Object.values(this.circulatingAggregateIdsPerLevel[r]).length
     }
     return res
   }
@@ -181,6 +212,7 @@ export class NodesManager {
           inboundBandwidth: this.inboundBandwidth,
           outboundBandwidth: this.outboundBandwidth,
           ...this.statisticsPerRole(),
+          ...this.statisticsPerLevel(),
         })
       }
 
@@ -219,17 +251,25 @@ export class NodesManager {
         // Save stats for exporting
         this.totalWork += message.work
         this.workPerRole[this.nodes[message.receiverId].role] += message.work
+        this.workPerLevel[this.nodes[message.receiverId].node?.depth!] += message.work
         if (message.emitterId !== message.receiverId) {
           this.messagesPerRole[this.nodes[message.receiverId].role] += 1
+          this.messagesPerLevel[this.nodes[message.receiverId].node?.depth!] += 1
         }
         if (message.type === MessageType.FinishSendingAggregate) {
           this.circulatingAggregateIds[message.content.aggregate!.id] = true
+          this.circulatingAggregateIdsPerRole[this.nodes[message.receiverId].role][message.content.aggregate!.id] = true
+          this.circulatingAggregateIdsPerLevel[this.nodes[message.receiverId].node?.depth!][
+            message.content.aggregate!.id
+          ] = true
         }
         if (message.type === MessageType.FinishSendingAggregate || message.type === MessageType.FinishContribution) {
           this.inboundBandwidth += this.config.modelSize
           this.outboundBandwidth += this.config.modelSize
           this.inboundBandwidthPerRole[this.nodes[message.receiverId].role] += this.config.modelSize
-          this.inboundBandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
+          this.outboundBandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
+          this.inboundBandwidthPerLevel[this.nodes[message.receiverId].node?.depth!] += this.config.modelSize
+          this.outboundBandwidthPerLevel[this.nodes[message.emitterId].node?.depth!] += this.config.modelSize
         }
 
         if (this.config.fullExport) {
@@ -319,6 +359,9 @@ export class NodesManager {
   }
 
   propagateFailure(node: Node, addTimeout: boolean) {
+    this.failurePropagationsPerLevel[node.node?.depth!] += 1
+    this.failurePropagationsPerRole[node.role] += 1
+
     if (
       this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation ||
       node.id === this.querier

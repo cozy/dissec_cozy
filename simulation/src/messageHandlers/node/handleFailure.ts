@@ -109,6 +109,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         this.node.depth <= this.config.buildingBlocks.resyncLevel
       ) {
         // The failure happened below the threshold depth
+        this.manager.abortedReplacements += 1
         this.manager.propagateFailure(this, false)
       } else if (this.node.depth === 1) {
         // Asking contributors
@@ -225,6 +226,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           ).length > 0
         ) {
           // At least one of the child finished working
+          this.manager.abortedReplacements += 1
           this.manager.propagateFailure(this, false)
         } else if (
           this.node!.children.flatMap(e => (e.depth === 0 ? e.members : e.members[position])).filter(
@@ -232,6 +234,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           ).length > 0
         ) {
           // One node is dead, add a timeout
+          this.manager.abortedReplacements += 1
           this.manager.propagateFailure(this, true)
         }
       } else {
@@ -251,6 +254,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
           })
         } else {
           // Ran out of nodes to request
+          this.manager.abortedReplacements += 1
           this.manager.propagateFailure(this, false)
         }
       }

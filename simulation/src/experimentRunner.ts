@@ -173,6 +173,7 @@ export interface RunResult extends RunConfig {
   observedFailureRate: number
   observedWorkersFailureRate: number
   observedContributorsFailureRate: number
+  abortedReplacements: number
   messages: AugmentedMessage[]
 }
 
@@ -577,7 +578,9 @@ export class ExperimentRunner {
       observedFailureRate: (failedNodes.length / nodes.length) * 100,
       observedContributorsFailureRate: (failedContributors.length / contributors.length) * 100,
       observedWorkersFailureRate: (failedWorkers.length / workers.length) * 100,
+      abortedReplacements: manager.abortedReplacements,
       ...manager.statisticsPerRole(),
+      ...manager.statisticsPerLevel(),
       messages: oldMessages,
     }
   }
