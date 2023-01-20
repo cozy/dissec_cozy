@@ -423,14 +423,7 @@ export class ExperimentRunner {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = numberOfNodes(run.depth)
     // Take back from the necessary
-    const backupListSize =
-      run.buildingBlocks.failureHandling === FailureHandlingBlock.Drop
-        ? 0
-        : Math.round(
-            (run.buildingBlocks.standby === StandbyBlock.NoResync
-              ? numberOfNodes(run.depth - run.buildingBlocks.resyncLevel)
-              : nodesInTree) * run.backupsToAggregatorsRatio
-          )
+    const backupListSize = Math.floor(nodesInTree * 0.5)
 
     // Create the tree structure
     let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)

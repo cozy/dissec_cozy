@@ -22,27 +22,27 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.ONESHOT,
+      buildingBlocks: STRATEGIES.HYBRID_3,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
       averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 1024,
+      modelSize: 2 ** 12,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 58,
-      adaptedFailures: true,
+      failureRate: 341.90333333333336,
+      adaptedFailures: false,
       backupsToAggregatorsRatio: 0.1,
-      depth: 3,
+      depth: 4,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '0',
+      seed: '8',
     },
   ]
 } else {

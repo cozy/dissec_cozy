@@ -49,6 +49,8 @@ def get_data(path, aggregate_message=True):
             "buildingBlocks": "strategy",
             "failureRate": "failure_probability",
             "observedFailureRate": "failure_rate",
+            "observedContributorsFailureRate": "failure_rate_contributors",
+            "observedWorkersFailureRate": "failure_rate_workers",
             "emissionTime": "emitter_time",
             "receptionTime": "receiver_time",
             "emitterId": "emitter_id",
@@ -168,7 +170,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs = dict()
 
     strategies = pd.unique(data["strategy"])
-    failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
+    failure_probabilities = [
+        i for i in reversed(np.sort(pd.unique(data["failure_probability"])))
+    ]
     group_sizes = np.sort(pd.unique(data["group_size"]))
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
@@ -179,6 +183,125 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     default_depth = 4
     default_group = 5
     default_size = 2**10
+
+    # small_tree = 4
+    # large_tree = 4
+    # small_model = 2**10
+    # large_model = 2**10
+    # y_maps_values = [
+    #     (small_tree, small_model),
+    #     (small_tree, large_model),
+    #     (large_tree, small_model),
+    #     (large_tree, large_model),
+    # ]
+    # map_completeness = np.zeros(
+    #     (len(y_maps_values), len(failure_probabilities), len(strategies))
+    # )
+    # map_work = np.zeros(
+    #     (len(y_maps_values), len(failure_probabilities), len(strategies))
+    # )
+    # map_latency = np.zeros(
+    #     (len(y_maps_values), len(failure_probabilities), len(strategies))
+    # )
+    # for (j, (depth, model_size)) in enumerate(y_maps_values):
+    #     for (i, failure) in enumerate(failure_probabilities):
+    #         for (k, strat) in enumerate(strategies):
+    #             map_completeness[j, i, k] = data[
+    #                 (data["depth"] == depth)
+    #                 & (data["model_size"] == model_size)
+    #                 & (data["failure_probability"] == failure)
+    #                 & (data["strategy"] == strat)
+    #             ]["completeness"].mean()
+    #             map_work[j, i, k] = data[
+    #                 (data["depth"] == depth)
+    #                 & (data["model_size"] == model_size)
+    #                 & (data["failure_probability"] == failure)
+    #                 & (data["strategy"] == strat)
+    #             ]["work_total"].mean()
+    #             map_latency[j, i, k] = data[
+    #                 (data["depth"] == depth)
+    #                 & (data["model_size"] == model_size)
+    #                 & (data["failure_probability"] == failure)
+    #                 & (data["strategy"] == strat)
+    #             ]["simulation_length"].mean()
+
+    # best_strat_completeness_labels_map = [
+    #     ["" for i in range(len(failure_probabilities))]
+    #     for j in range(len(y_maps_values))
+    # ]
+    # best_strat_completeness_map = [
+    #     ["" for i in range(len(failure_probabilities))]
+    #     for j in range(len(y_maps_values))
+    # ]
+    # best_strat_work_labels_map = [
+    #     ["" for i in range(len(failure_probabilities))]
+    #     for j in range(len(y_maps_values))
+    # ]
+    # best_strat_work_map = [
+    #     ["" for i in range(len(failure_probabilities))]
+    #     for j in range(len(y_maps_values))
+    # ]
+    # best_strat_latency_labels_map = [
+    #     ["" for i in range(len(failure_probabilities))]
+    #     for j in range(len(y_maps_values))
+    # ]
+    # best_strat_latency_map = [
+    #     ["" for i in range(len(failure_probabilities))]
+    #     for j in range(len(y_maps_values))
+    # ]
+    # strat_symbol = ["SM", "OS", "OPT", "HY1", "HY3"]
+    # for (j, (depth, model_size)) in enumerate(y_maps_values):
+    #     for (i, failure) in enumerate(failure_probabilities):
+    #         best_strat_completeness_labels_map[j][i] = strat_symbol[
+    #             np.where(
+    #                 map_completeness[j, i, :] == np.max(map_completeness[j, i, :])
+    #             )[0][0]
+    #         ]
+    #         best_strat_completeness_map[j][i] = np.max(map_completeness[j, i, :])
+    #         best_strat_work_map[j][i] = np.max(map_work[j, i, :])
+    #         print(
+    #             "inner",
+    #             map_work[j, i, np.where(map_completeness[j, i, :] > 0)][0],
+    #             np.min(map_work[j, i, np.where(map_completeness[j, i, :] > 0)]),
+    #             np.where(
+    #                 map_work[j, i, :]
+    #                 == np.min(map_work[j, i, np.where(map_completeness[j, i, :] > 0)])
+    #             )[0],
+    #             map_work[j, i, :],
+    #             np.min(map_work[j, i, :]),
+    #             np.where(map_work[j, i, :] == np.min(map_work[j, i, :]))[0],
+    #             np.where(map_completeness[j, i, :] > 0),
+    #         )
+    #         best_strat_work_labels_map[j][i] = ", ".join(
+    #             [
+    #                 strat_symbol[index]
+    #                 for index in np.where(
+    #                     map_work[j, i, :]
+    #                     == np.min(
+    #                         map_work[j, i, np.where(map_completeness[j, i, :] > 0)][0]
+    #                     )
+    #                 )[0]
+    #             ]
+    #         )
+    #         np.where((map_completeness[j, i, :] > 0))
+    #         best_strat_latency_map[j][i] = np.max(map_latency[j, i, :])
+    #         best_strat_latency_labels_map[j][i] = strat_symbol[
+    #             np.where(map_latency[j, i, :] == np.min(map_latency[j, i, :]))[0][0]
+    #         ]
+
+    # graphs["map_best"] = go.Figure(
+    #     data=go.Heatmap(
+    #         z=best_strat_completeness_map,
+    #         text=best_strat_work_labels_map,
+    #         texttemplate="%{text}",
+    #         textfont={"size": 20},
+    #         x=["None", "Few", "Some", "A lot", "Extreme"],
+    #         y=[
+    #             f"depth{depth} model{model_size}"
+    #             for (depth, model_size) in y_maps_values
+    #         ],
+    #     )
+    # )
 
     graphs[f"count_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
@@ -216,40 +339,76 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Contributors for model size",
     )
 
-    graphs[f"failures_failure_paper"] = px.box(
+    graphs[f"failures_contributors_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
-        y="failure_rate",
+        y="failure_rate_contributors",
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        title=f"Observed failures for Failure",
+        title=f"Observed contributors failures for Failure",
     )
-    graphs[f"failures_depth_paper"] = px.box(
+    graphs[f"failures_contributors_depth_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
             & (data["model_size"] == default_size)
         ],
         x="depth",
-        y="failure_rate",
+        y="failure_rate_contributors",
         color="strategy",
         hover_name="run_id",
         points=box_points,
         log_y=True,
-        title=f"Observed failures for depth",
+        title=f"Observed contributors failures for depth",
     )
-    graphs[f"failures_group_paper"] = px.box(
+    graphs[f"failures_contributors_group_paper"] = px.box(
         data[
             (data["failure_probability"] == default_failure)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
-        y="failure_rate",
+        y="failure_rate_contributors",
         color="strategy",
         hover_name="run_id",
         points=box_points,
         log_x=True,
-        title=f"Observed failures for model size",
+        title=f"Observed contributors failures for model size",
+    )
+
+    graphs[f"failures_workers_failure_paper"] = px.box(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        x="failure_probability",
+        y="failure_rate_workers",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Observed workers failures for Failure",
+    )
+    graphs[f"failures_workers_depth_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["model_size"] == default_size)
+        ],
+        x="depth",
+        y="failure_rate_workers",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_y=True,
+        title=f"Observed workers failures for depth",
+    )
+    graphs[f"failures_workers_group_paper"] = px.box(
+        data[
+            (data["failure_probability"] == default_failure)
+            & (data["depth"] == default_depth)
+        ],
+        x="model_size",
+        y="failure_rate_workers",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_x=True,
+        title=f"Observed workers failures for model size",
     )
 
     graphs[f"work_failure_paper"] = px.box(
@@ -491,6 +650,14 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     return html.Div(
         children=[
+            # html.Div(
+            #     children=[
+            #         dcc.Graph(
+            #             id=f"map_best",
+            #             figure=graphs["map_best"],
+            #         )
+            #     ]
+            # ),
             html.Div(
                 style={
                     "display": "flex",
@@ -520,16 +687,37 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 },
                 children=[
                     dcc.Graph(
-                        id=f"failures_failure_paper",
-                        figure=graphs["failures_failure_paper"],
+                        id=f"failures_contributors_failure_paper",
+                        figure=graphs["failures_contributors_failure_paper"],
                     ),
                     dcc.Graph(
-                        id=f"failures_depth_paper",
-                        figure=graphs["failures_depth_paper"],
+                        id=f"failures_contributors_depth_paper",
+                        figure=graphs["failures_contributors_depth_paper"],
                     ),
                     dcc.Graph(
-                        id=f"failures_group_paper",
-                        figure=graphs["failures_group_paper"],
+                        id=f"failures_contributors_group_paper",
+                        figure=graphs["failures_contributors_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"failures_workers_failure_paper",
+                        figure=graphs["failures_workers_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"failures_workers_depth_paper",
+                        figure=graphs["failures_workers_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"failures_workers_group_paper",
+                        figure=graphs["failures_workers_group_paper"],
                     ),
                 ],
             ),
