@@ -84,7 +84,7 @@ export const STRATEGIES = {
     synchronization: SynchronizationBlock.NonBlocking,
   },
   EAGER: {
-    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failurePropagation: FailurePropagationBlock.FullFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     resyncLevel: 1,
@@ -424,7 +424,7 @@ export class ExperimentRunner {
     // Exclude contributors (nodes at the last level)
     const nodesInTree = numberOfNodes(run.depth)
     // Take back from the necessary
-    const backupListSize = Math.floor(nodesInTree * 0.5)
+    const backupListSize = Math.floor(nodesInTree * run.backupsToAggregatorsRatio)
 
     // Create the tree structure
     let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)

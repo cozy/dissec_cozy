@@ -47,7 +47,7 @@ def get_data(path, aggregate_message=True):
             "seed": "seed",
             "name": "run_id",
             "buildingBlocks": "strategy",
-            "failureRate": "failure_probability",
+            "failureRate": "failure_window",
             "observedFailureRate": "failure_rate",
             "observedContributorsFailureRate": "failure_rate_contributors",
             "observedWorkersFailureRate": "failure_rate_workers",
@@ -69,9 +69,24 @@ def get_data(path, aggregate_message=True):
         axis=1,
         inplace=True,
     )
-    df.loc[df["failure_probability"] == 0, "failure_probability"] = 900
+    df.drop(
+        index=df[df["strategy"] == "LFP,Replace,0Resync,3,NonBlocking"].index,
+        inplace=True,
+    )
     df.reset_index(inplace=True)
     df.fillna(0, inplace=True)
+
+    strategies = pd.unique(df["strategy"])
+    translate_strategies = {
+        "FFP,Drop,Stop,1,None": "Strawman",
+        "LFP,Replace,Stay,1,NonBlocking": "Optimist",
+        "LFP,Drop,Stop,1,FullSync": "Pessimist",
+        "LFP,Replace,0Resync,1,NonBlocking": "Hybrid",
+    }
+    for s in strategies:
+        df.loc[df["strategy"] == s, "strategy"] = (
+            translate_strategies[s] if s in translate_strategies else s
+        )
 
     for stat in statistics:
         if (
@@ -99,6 +114,7 @@ def get_data(path, aggregate_message=True):
             else 0
         )
         df[f"delta_nodes_{r}"] = df[f"final_nodes_{r}"] - df[f"initial_nodes_{r}"]
+        df[f"delta_nodes_{r}"] = df[f"delta_nodes_{r}"].abs()
 
     df.fillna(0, inplace=True)
     for s in statistics:
@@ -109,6 +125,11 @@ def get_data(path, aggregate_message=True):
     if aggregate_message:
         df = df.groupby(["run_id", "status", "strategy"]).mean()
         df.reset_index(inplace=True)
+
+    df.loc[df["failure_window"] == 0, "failure_window"] = 1000
+    df["failure_window"] = df["failure_window"].round(2)
+    df["failure_probability"] = df["initial_nodes_total"] / df["failure_window"]
+    df["failure_probability"] = df["failure_probability"].round(2)
 
     return df
 
@@ -179,7 +200,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     box_points = "all"
 
-    default_failure = 341.903333
+    default_failure = 33.37
+    default_window = 341.9
     default_depth = 4
     default_group = 5
     default_size = 2**10
@@ -310,11 +332,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Contributors for Failure",
     )
     graphs[f"count_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -327,7 +350,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"count_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -346,11 +369,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Observed contributors failures for Failure",
     )
     graphs[f"failures_contributors_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -363,7 +387,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"failures_contributors_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -382,11 +406,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Observed workers failures for Failure",
     )
     graphs[f"failures_workers_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -399,7 +424,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"failures_workers_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -418,11 +443,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Work for Failure",
     )
     graphs[f"work_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -435,7 +461,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"work_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -455,11 +481,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Latency for Failure",
     )
     graphs[f"latency_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -472,7 +499,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"latency_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -492,11 +519,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Bandwidth for Failure",
     )
     graphs[f"bandwidth_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -509,7 +537,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"bandwidth_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -529,11 +557,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
+        log_x=True,
         title=f"Completeness for Failure",
     )
     graphs[f"completeness_depth_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         x="depth",
@@ -545,7 +574,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"completeness_group_paper"] = px.box(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         x="model_size",
@@ -558,9 +587,11 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
 
     # Stacked bars
-    def create_bars(df, x_axis, x_label, y_axis, y_label):
+    def create_bars(
+        df, x_axis, x_label, y_axis, y_label, columns=["_Worker", "_Contributor"]
+    ):
         plot_df = df.groupby([x_axis, "strategy"], as_index=False).mean()
-        columns = [f"{y_axis}_Worker", f"{y_axis}_Contributor"]
+        columns = [y_axis + col for col in columns]
         palette = cycle(px.colors.qualitative.Alphabet)
         # palette = cycle(px.colors.sequential.PuBu)
         colors = {c: next(palette) for c in columns}
@@ -574,7 +605,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             yaxis=dict(title_text=y_label),
             barmode="stack",
             width=800,
-            height=800,
+            height=730,
         )
 
         # add bars
@@ -592,6 +623,85 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
         return fig
 
+    # Bars per roles
+    cols = ["_Aggregator", "_LeafAggregator", "_Contributor", "_Backup", "_Querier"]
+    graphs[f"initial_nodes_count_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "initial_nodes",
+        "Initial node counts",
+        cols,
+    )
+    graphs[f"final_nodes_count_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "final_nodes",
+        "Final node counts",
+        cols,
+    )
+    graphs[f"delta_nodes_count_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "delta_nodes",
+        "Delta node counts",
+        cols,
+    )
+
+    # Bars per level
+    cols = ["_level_0", "_level_1", "_level_2", "_level_3", "_level_4"]
+    graphs[f"work_level_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "work",
+        "Work",
+        cols,
+    )
+    graphs[f"messages_level_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "messages",
+        "Messages",
+        cols,
+    )
+    graphs[f"bandwidth_level_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "inbound_bandwidth",
+        "Bandwidth",
+        cols,
+    )
+
+    graphs[f"failures_level_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "failures",
+        "Failures",
+        cols,
+    )
+    graphs[f"versions_level_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "versions",
+        "Versions",
+        cols,
+    )
+    graphs[f"propagation_level_bar"] = create_bars(
+        data,
+        "depth",
+        "Depth",
+        "propagation",
+        "Propagation",
+        cols,
+    )
+
     graphs[f"work_failure_bar"] = create_bars(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         "failure_probability",
@@ -601,7 +711,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"work_depth_bar"] = create_bars(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         "depth",
@@ -611,7 +721,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"work_size_bar"] = create_bars(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         "model_size",
@@ -629,7 +739,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"bandwidth_depth_bar"] = create_bars(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["model_size"] == default_size)
         ],
         "depth",
@@ -639,7 +749,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     )
     graphs[f"bandwidth_size_bar"] = create_bars(
         data[
-            (data["failure_probability"] == default_failure)
+            (data["failure_window"] == default_window)
             & (data["depth"] == default_depth)
         ],
         "model_size",
@@ -845,6 +955,69 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"bandwidth_size_bar",
                         figure=graphs["bandwidth_size_bar"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"initial_nodes_count_bar",
+                        figure=graphs["initial_nodes_count_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"final_nodes_count_bar",
+                        figure=graphs["final_nodes_count_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"delta_nodes_count_bar",
+                        figure=graphs["delta_nodes_count_bar"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"work_level_bar",
+                        figure=graphs["work_level_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"messages_level_bar",
+                        figure=graphs["messages_level_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"bandwidth_level_bar",
+                        figure=graphs["bandwidth_level_bar"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"failures_level_bar",
+                        figure=graphs["failures_level_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"versions_level_bar",
+                        figure=graphs["versions_level_bar"],
+                    ),
+                    dcc.Graph(
+                        id=f"propagation_level_bar",
+                        figure=graphs["propagation_level_bar"],
                     ),
                 ],
             ),

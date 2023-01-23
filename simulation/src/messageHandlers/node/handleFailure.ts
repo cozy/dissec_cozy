@@ -28,9 +28,11 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       const contributions = contributors.map(contributor => this.contributions[contributor]).filter(Boolean)
 
       if (contributors.length === 0) {
+        // No contributors left
         this.manager.propagateFailure(this, false)
         return []
       } else if (contributions.length === contributors.length) {
+        // Received all contributions
         if (
           [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
             this.config.buildingBlocks.synchronization

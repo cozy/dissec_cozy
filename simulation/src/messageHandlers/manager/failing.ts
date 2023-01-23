@@ -28,7 +28,10 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
     return replacement
   }
 
+  this.failuresPerRole[node.role] += 1
   if (node.node) {
+    this.failuresPerLevel[node.node.depth] += 1
+
     // Only act when the node is in the tree
     // Send notification to nodes with a channel open
     const messages: Message[] = []

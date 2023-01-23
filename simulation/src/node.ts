@@ -16,7 +16,6 @@ import {
   handleSendChildren,
   handleSendContribution,
   handleStartSendingContribution,
-  handleSynchronizationTimeout,
 } from './messageHandlers/node'
 import { handleFailure } from './messageHandlers/node/handleFailure'
 import TreeNode from './treeNode'
@@ -67,7 +66,6 @@ export class Node {
   handleSendContribution = handleSendContribution
   handleConfirmContributors = handleConfirmContributors
   handleConfirmChildren = handleConfirmChildren
-  handleSynchronizationTimeout = handleSynchronizationTimeout
   handleFinishSendingAggregate = handleFinishSendingAggregate
   handleSendAggregate = handleSendAggregate
   handleFailure = handleFailure
@@ -153,9 +151,6 @@ export class Node {
         break
       case MessageType.ConfirmChildren:
         messages.push(...this.handleConfirmChildren(receivedMessage))
-        break
-      case MessageType.SynchronizationTimeout:
-        messages.push(...this.handleSynchronizationTimeout(receivedMessage))
         break
       case MessageType.FinishSendingAggregate:
         messages.push(...this.handleFinishSendingAggregate(receivedMessage))

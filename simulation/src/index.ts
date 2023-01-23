@@ -22,27 +22,27 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.HYBRID_3,
+      buildingBlocks: STRATEGIES.EAGER,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
       averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 2 ** 12,
+      modelSize: 16384,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 341.90333333333336,
+      failureRate: 400,
       adaptedFailures: false,
-      backupsToAggregatorsRatio: 0.1,
+      backupsToAggregatorsRatio: 0.5,
       depth: 4,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '8',
+      seed: '0',
     },
   ]
 } else {
@@ -55,16 +55,16 @@ if (debug) {
       STRATEGIES.HYBRID_3,
     ],
     depths: [3, 4],
-    failures: [0, 663.2924666666668, 341.90333333333336, 205.14200000000002, 34.190333333333335],
+    failures: [0, 800, 400, 200, 50],
     modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
     backupsToAggregatorsRatios: [0.1],
-    retries: 5,
+    retries: 20,
     fullSpace: false,
     defaultValues: {
       depth: 4,
-      failure: 341.90333333333336,
+      failure: 400,
       modelSize: 2 ** 10,
       backupsToAggregatorsRatio: 0.1,
     },

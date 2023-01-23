@@ -1,4 +1,4 @@
-import { FailureHandlingBlock, SynchronizationBlock } from '../../experimentRunner'
+import { SynchronizationBlock } from '../../experimentRunner'
 import { arrayEquals, intersectLists } from '../../helpers'
 import { Message, MessageType } from '../../message'
 import { Node, NodeRole } from '../../node'
@@ -30,7 +30,6 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
 
   // Keep a copy in case the node is sending the confirmation to itself
   const oldContributors = this.contributorsList[this.id]
-  // Store the received list
   if (
     !this.contributorsList[receivedMessage.emitterId] &&
     [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
@@ -45,40 +44,26 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
       })
     )
   }
+  // Store the received list
   this.contributorsList[receivedMessage.emitterId] = receivedMessage.content.contributors
 
-  if (this.contactedAsABackup && !arrayEquals(oldContributors || [], intersection)) {
-    // The node is a backup and received a different list than his local one
-    // Query previously unknown contributors for their data
-    const newContributors = intersection.filter(
-      e => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
-    )
-    this.contributorsList[this.id] = intersection
-    for (const contributor of newContributors) {
-      // Memorize that we queried the node to prevent multiple queries
-      this.queriedNode.push(contributor)
-      messages.push(
-        new Message(MessageType.RequestData, this.localTime, 0, this.id, contributor, {
-          parents: this.node.members,
-        })
-      )
-    }
-
-    if (newContributors.length > 0 && this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
-      // In the optimistic versions, add a synchronization trigger if the backup asked for data
-      // This happens only for backups joining
-      messages.push(
-        new Message(
-          MessageType.SynchronizationTimeout,
-          this.localTime,
-          this.localTime + this.config.averageLatency * this.config.maxToAverageRatio + 3 * this.cryptoLatency(),
-          this.id,
-          this.id,
-          {}
-        )
-      )
-    }
-  }
+  // if (this.contactedAsABackup && !arrayEquals(oldContributors || [], intersection)) {
+  //   // The node is a backup and received a different list than his local one
+  //   // Query previously unknown contributors for their data
+  //   const newContributors = intersection.filter(
+  //     e => !(this.contributorsList[this.id] || []).concat(this.queriedNode!).includes(e)
+  //   )
+  //   this.contributorsList[this.id] = intersection
+  //   for (const contributor of newContributors) {
+  //     // Memorize that we queried the node to prevent multiple queries
+  //     this.queriedNode.push(contributor)
+  //     messages.push(
+  //       new Message(MessageType.RequestData, this.localTime, 0, this.id, contributor, {
+  //         parents: this.node.members,
+  //       })
+  //     )
+  //   }
+  // }
 
   if (
     [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
@@ -137,6 +122,7 @@ export function handleConfirmContributors(this: Node, receivedMessage: Message):
             contributors: intersection,
           })
         )
+        this.contributorsList[m] = intersection
       }
     }
 
