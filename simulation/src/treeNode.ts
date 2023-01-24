@@ -1,7 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep'
 
 import { RunConfig } from './experimentRunner'
-import { Generator } from './random'
 
 class TreeNode {
   parents: number[]
@@ -26,7 +25,12 @@ class TreeNode {
     return members && parents
   }
 
-  static createTree(run: RunConfig, depth: number, id: number): { nextId: number; node: TreeNode } {
+  static createTree(
+    run: RunConfig,
+    depth: number,
+    id: number,
+    generator: () => number
+  ): { nextId: number; node: TreeNode } {
     const node = new TreeNode(depth)
     node.members = Array(run.groupSize)
       .fill(id)
@@ -34,14 +38,13 @@ class TreeNode {
     if (depth > 0) {
       let currentId = id + run.groupSize
       for (let i = 0; i < run.fanout; i++) {
-        const { nextId, node: child } = TreeNode.createTree(run, depth - 1, currentId)
+        const { nextId, node: child } = TreeNode.createTree(run, depth - 1, currentId, generator)
         child.parents = node.members
         node.children.push(child)
         currentId = nextId
       }
       return { nextId: currentId, node }
     } else {
-      const generator = Generator.get(run.seed)
       // Rebalance the number of members in this contributor group
       const numberOfContributors = run.random
         ? Math.round(run.fanout ** (generator() + run.concentration))

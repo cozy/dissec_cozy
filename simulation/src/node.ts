@@ -1,5 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep'
 
+import { StandbyBlock } from './experimentRunner'
 import NodesManager, { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType } from './message'
 import {
@@ -197,7 +198,9 @@ export class Node {
     this.finishedWorking = true
 
     // Reset full synchro
-    this.confirmedChildren = {}
+    if (this.config.buildingBlocks.standby !== StandbyBlock.Stop) {
+      this.confirmedChildren = {}
+    }
 
     const startTransmissionTime = Math.max(this.localTime, this.nextEndTransmissionTime)
     if (this.isAlive(startTransmissionTime)) {

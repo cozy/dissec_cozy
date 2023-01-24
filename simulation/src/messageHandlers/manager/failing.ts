@@ -108,11 +108,10 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
     } else {
       const position = node.node.members.indexOf(node.id)!
       const parent = this.nodes[node.node.parents[position]]
+
       // When dropping, we stop replacing nodes as soon as they have done their work or if they're contributors
       if (node.finishedWorking) {
-        if (parent.finishedWorking || parent.contributions[node.id]) {
-          // Ignore failures when the parent is also done working or has received the share
-        } else if (node.role === NodeRole.Contributor) {
+        if (node.role === NodeRole.Contributor && !parent?.finishedWorking) {
           // The node is a contributor failing during the transmission of his shares
           // Parents will notice the transmission's interruption and will discard the contributions
           const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio
@@ -124,6 +123,8 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
               })
             )
           }
+        } else if (parent?.finishedWorking || parent?.contributions[node.id]) {
+          // Ignore failures when the parent is also done working or has received the share
         } else {
           // Propagate the failure of nodes who died before contributing
           this.propagateFailure(node, true)
@@ -132,7 +133,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
         if (node.role === NodeRole.Contributor) {
           // Can't replace contributors, even if they didn't work
           // Notify parents of the failure of a contributor when the parent is not done
-          if (!parent.finishedWorking && !node.finishedWorking) {
+          if (!parent?.finishedWorking) {
             // One of the parent did not finish aggregating.
             // Notify all parents that a contributor will be missing
             const latency = 2 * this.config.averageLatency * this.config.maxToAverageRatio

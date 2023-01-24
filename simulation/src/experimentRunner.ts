@@ -4,6 +4,7 @@ import cloneDeep from 'lodash/cloneDeep'
 import NodesManager, { AugmentedMessage } from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
+import { Generator } from './random'
 import TreeNode from './treeNode'
 
 export enum FailurePropagationBlock {
@@ -148,7 +149,7 @@ export function defaultConfig(): RunConfig {
     healthCheckPeriod: 3,
     multicastSize: 5,
     deadline: 5 * 10 ** 7,
-    failureRate: 341.90333333333336,
+    failureRate: 400,
     adaptedFailures: false,
     backupsToAggregatorsRatio: 0.1,
     depth: 4,
@@ -156,7 +157,7 @@ export function defaultConfig(): RunConfig {
     groupSize: 5,
     concentration: 0,
     random: false,
-    seed: `1`,
+    seed: `0`,
   }
 
   return baseConfig
@@ -427,7 +428,8 @@ export class ExperimentRunner {
     const backupListSize = Math.floor(nodesInTree * run.backupsToAggregatorsRatio)
 
     // Create the tree structure
-    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
+    const generator = Generator.get(run.seed, true)
+    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0, generator)
 
     // Adding the querier group
     const querierGroup = new TreeNode(run.depth + 1)

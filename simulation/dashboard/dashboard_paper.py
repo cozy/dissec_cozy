@@ -79,7 +79,7 @@ def get_data(path, aggregate_message=True):
     strategies = pd.unique(df["strategy"])
     translate_strategies = {
         "FFP,Drop,Stop,1,None": "Strawman",
-        "FFP,Replace,Stay,1,NonBlocking": "Optimist",
+        "LFP,Replace,Stay,1,NonBlocking": "Optimist",
         "LFP,Drop,Stop,1,FullSync": "Pessimist",
         "LFP,Replace,0Resync,1,NonBlocking": "Hybrid",
     }
@@ -126,7 +126,7 @@ def get_data(path, aggregate_message=True):
         df = df.groupby(["run_id", "status", "strategy"]).mean()
         df.reset_index(inplace=True)
 
-    df.loc[df["failure_window"] == 0, "failure_window"] = 1000
+    df.loc[df["failure_window"] == 0, "failure_window"] = 3200
     df["failure_window"] = df["failure_window"].round(2)
     df["failure_probability"] = df["initial_nodes_total"] / df["failure_window"]
     df["failure_probability"] = df["failure_probability"].round(2)

@@ -1,12 +1,14 @@
 import { defaultConfig } from './experimentRunner'
 import NodesManager from './manager'
+import { Generator } from './random'
 import TreeNode from './treeNode'
 
 describe('Manager', () => {
   it('Initializes from a tree', () => {
     const run = defaultConfig()
     run.failureRate = 50000
-    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
+    const generator = Generator.get('0', true)
+    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0, generator)
 
     // Adding the querier group
     const querierGroup = new TreeNode(run.depth + 1)
@@ -35,9 +37,10 @@ describe('Manager', () => {
   })
 
   it('Creates random nodes', () => {
+    const generator = Generator.get('0', true)
     const run = defaultConfig()
     run.failureRate = 50000
-    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
+    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0, generator)
 
     // Adding the querier group
     const querierGroup = new TreeNode(run.depth + 1)

@@ -22,26 +22,26 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.EAGER,
+      buildingBlocks: STRATEGIES.ONESHOT,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
       averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 16384,
+      modelSize: 1024,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
       failureRate: 400,
       adaptedFailures: false,
-      backupsToAggregatorsRatio: 1 / 8,
-      depth: 4,
+      backupsToAggregatorsRatio: 0.125,
+      depth: 3,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
-      random: false,
+      random: true,
       seed: '0',
     },
   ]
@@ -49,12 +49,12 @@ if (debug) {
   configs = createRunConfigs({
     strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
     depths: [3, 4],
-    failures: [0, 800, 400, 200, 50],
+    failures: [0, 1600, 400, 200, 100],
     modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
     backupsToAggregatorsRatios: [1 / 8],
-    retries: 50,
+    retries: 5,
     fullSpace: false,
     defaultValues: {
       depth: 4,
