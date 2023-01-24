@@ -84,7 +84,7 @@ export const STRATEGIES = {
     synchronization: SynchronizationBlock.NonBlocking,
   },
   EAGER: {
-    failurePropagation: FailurePropagationBlock.FullFailurePropagation,
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
     failureHandling: FailureHandlingBlock.Replace,
     standby: StandbyBlock.Stay,
     resyncLevel: 1,

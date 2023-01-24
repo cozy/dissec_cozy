@@ -79,7 +79,7 @@ def get_data(path, aggregate_message=True):
     strategies = pd.unique(df["strategy"])
     translate_strategies = {
         "FFP,Drop,Stop,1,None": "Strawman",
-        "LFP,Replace,Stay,1,NonBlocking": "Optimist",
+        "FFP,Replace,Stay,1,NonBlocking": "Optimist",
         "LFP,Drop,Stop,1,FullSync": "Pessimist",
         "LFP,Replace,0Resync,1,NonBlocking": "Hybrid",
     }
@@ -201,7 +201,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     box_points = "all"
 
     default_failure = 33.37
-    default_window = 341.9
+    default_window = 400
     default_depth = 4
     default_group = 5
     default_size = 2**10

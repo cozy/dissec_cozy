@@ -36,7 +36,7 @@ if (debug) {
       deadline: 50000000,
       failureRate: 400,
       adaptedFailures: false,
-      backupsToAggregatorsRatio: 0.5,
+      backupsToAggregatorsRatio: 1 / 8,
       depth: 4,
       fanout: 8,
       groupSize: 5,
@@ -47,26 +47,20 @@ if (debug) {
   ]
 } else {
   configs = createRunConfigs({
-    strategies: [
-      STRATEGIES.STRAWMAN,
-      STRATEGIES.EAGER,
-      STRATEGIES.ONESHOT,
-      STRATEGIES.HYBRID_UTIL,
-      STRATEGIES.HYBRID_3,
-    ],
+    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
     depths: [3, 4],
     failures: [0, 800, 400, 200, 50],
     modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
-    backupsToAggregatorsRatios: [0.1],
-    retries: 20,
+    backupsToAggregatorsRatios: [1 / 8],
+    retries: 50,
     fullSpace: false,
     defaultValues: {
       depth: 4,
       failure: 400,
       modelSize: 2 ** 10,
-      backupsToAggregatorsRatio: 0.1,
+      backupsToAggregatorsRatio: 1 / 8,
     },
   })
 }
