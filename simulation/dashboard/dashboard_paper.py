@@ -78,10 +78,10 @@ def get_data(path, aggregate_message=True):
 
     strategies = pd.unique(df["strategy"])
     translate_strategies = {
-        "FFP,Drop,Stop,1,None": "Strawman",
-        "LFP,Replace,Stay,1,NonBlocking": "Optimist",
-        "LFP,Drop,Stop,1,FullSync": "Pessimist",
-        "LFP,Replace,0Resync,1,NonBlocking": "Hybrid",
+        "FFP,Drop,Stop,1,None": "Extrem Perf",
+        "LFP,Replace,Stay,1,NonBlocking": "Extreme complete",
+        "LFP,Drop,Stop,1,FullSync": "Hybride perf",
+        "LFP,Replace,0Resync,1,NonBlocking": "Hybrid complete",
     }
     for s in strategies:
         df.loc[df["strategy"] == s, "strategy"] = (

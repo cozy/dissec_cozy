@@ -11,6 +11,10 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
   if (!receivedMessage.content.aggregate) {
     throw new Error('Received an empty aggregate')
   }
+  if (this.config.buildingBlocks.standby === StandbyBlock.Stop && this.finishedWorking) {
+    // Ignoring aggregates because the node is done
+    return messages
+  }
 
   const aggregate = receivedMessage.content.aggregate
 

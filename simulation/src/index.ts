@@ -34,15 +34,15 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 400,
+      failureRate: 200,
       adaptedFailures: false,
       backupsToAggregatorsRatio: 0.125,
-      depth: 3,
+      depth: 4,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
-      random: true,
-      seed: '0',
+      random: false,
+      seed: '14',
     },
   ]
 } else {
@@ -54,7 +54,7 @@ if (debug) {
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
     backupsToAggregatorsRatios: [1 / 8],
-    retries: 5,
+    retries: 10,
     fullSpace: false,
     defaultValues: {
       depth: 4,
