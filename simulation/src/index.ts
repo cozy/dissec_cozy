@@ -29,12 +29,12 @@ if (debug) {
       averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 1024,
+      modelSize: 4096,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 200,
+      failureRate: 400,
       adaptedFailures: false,
       backupsToAggregatorsRatio: 0.125,
       depth: 4,
@@ -42,7 +42,7 @@ if (debug) {
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '14',
+      seed: '5',
     },
   ]
 } else {
