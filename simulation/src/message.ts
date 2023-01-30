@@ -146,7 +146,7 @@ export class Message {
         break
       case MessageType.SendContribution:
         console.log(
-          `${tag} received contribution #${Object.values(receiver.contributions).length + 1} (${
+          `${tag} received contribution n°${Object.values(receiver.contributions).length + 1} (${
             this.content.share
           }) from #${this.emitterId}`
         )
@@ -186,7 +186,7 @@ export class Message {
         break
       case MessageType.FinishSendingAggregate:
         console.log(
-          `${tag} finished sending its aggregate (ID=${this.content.aggregate?.id}) to parent ${this.content.targetNode}`
+          `${tag} finished sending its aggregate (ID=${this.content.aggregate?.id}) to parent #${this.content.targetNode}`
         )
         break
       case MessageType.SendAggregate:

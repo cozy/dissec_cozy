@@ -8,10 +8,11 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
     throw new Error(`${receivedMessage.type} requires the node to be in the tree`)
   }
   if (!receivedMessage.content.children) {
+    throw new Error('Empty contributors')
     // Empty contributors means we'll need to redo synchronization if it already started
-    this.confirmedChildren = {}
-    this.finishedWorking = false
-    return messages
+    // this.confirmedChildren = {}
+    // this.finishedWorking = false
+    // return messages
   }
 
   // Store the received list

@@ -194,16 +194,18 @@ export class Node {
     // Non blocking sync send the result ASAP
     const parent = this.node.parents[this.node.members.indexOf(this.id)]
     const transmissionTime = (this.config.modelSize - 1) / this.config.averageBandwidth
-    this.lastSentAggregateId = aggregate.id
-    this.finishedWorking = true
 
     // Reset full synchro
     if (this.config.buildingBlocks.standby !== StandbyBlock.Stop) {
       this.confirmedChildren = {}
     }
 
-    const startTransmissionTime = Math.max(this.localTime, this.nextEndTransmissionTime)
+    // TODO: Account for bandwidth constraint for in/outbound trafic
+    // const startTransmissionTime = Math.max(this.localTime, this.nextEndTransmissionTime)
+    const startTransmissionTime = this.localTime
     if (this.isAlive(startTransmissionTime)) {
+      this.lastSentAggregateId = aggregate.id
+      this.finishedWorking = true
       this.nextEndTransmissionTime = startTransmissionTime + this.config.averageLatency + transmissionTime
       return [
         new Message(

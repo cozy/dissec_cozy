@@ -90,9 +90,10 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
       if (this.config.buildingBlocks.synchronization === SynchronizationBlock.FullSynchronization) {
         // Members of the parent group are informed that children changed
         for (const parent of this.node.parents) {
-          messages.push(
-            new Message(MessageType.ConfirmChildren, this.localTime, 0, this.node.parents[position], parent, {})
-          )
+          this.manager.nodes[parent].confirmedChildren = {}
+          // messages.push(
+          //   new Message(MessageType.ConfirmChildren, this.localTime, 0, this.node.parents[position], parent, {})
+          // )
         }
       }
 
@@ -191,13 +192,20 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         contributors.length === contributions.length &&
         contributions.length > 0
       ) {
-        messages.push(
-          ...this.sendAggregate({
-            counter: contributors.length,
-            data: contributions.reduce((prev, curr) => prev + curr),
-            id: this.aggregationId(contributors.map(String)),
-          })
-        )
+        // Ready to send the aggregate
+        if (
+          [SynchronizationBlock.FullSynchronization, SynchronizationBlock.LeavesSynchronization].includes(
+            this.config.buildingBlocks.synchronization
+          )
+        ) {
+          messages.push(
+            ...this.sendAggregate({
+              counter: contributors.length,
+              data: contributions.reduce((prev, curr) => prev + curr),
+              id: this.aggregationId(contributors.map(String)),
+            })
+          )
+        }
 
         // Synchronize if needed
         if (this.config.buildingBlocks.synchronization !== SynchronizationBlock.None) {
@@ -219,7 +227,7 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
 
       // Ask child for their data
       const position = this.node?.members.indexOf(this.id)!
-      if (this.config.buildingBlocks.standby === StandbyBlock.Stop) {
+      if ([StandbyBlock.Stop, StandbyBlock.NoResync].includes(this.config.buildingBlocks.standby)) {
         // On Stop mode, propagate failure if any child finished working
         // If not, reask data from the ones alive
         if (

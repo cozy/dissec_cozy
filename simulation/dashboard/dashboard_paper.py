@@ -126,10 +126,9 @@ def get_data(path, aggregate_message=True):
         df = df.groupby(["run_id", "status", "strategy"]).mean()
         df.reset_index(inplace=True)
 
-    df.loc[df["failure_window"] == 0, "failure_window"] = 3200
-    df["failure_window"] = df["failure_window"].round(2)
-    df["failure_probability"] = df["initial_nodes_total"] / df["failure_window"]
-    df["failure_probability"] = df["failure_probability"].round(2)
+    df.loc[df["failure_window"] == 0, "failure_window"] = 25600
+    df["failure_probability"] = 100 / df["failure_window"]
+    # df["failure_probability"] = df["failure_probability"].round(3)
 
     return df
 
@@ -201,7 +200,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     box_points = "all"
 
     default_failure = 33.37
-    default_window = 400
+    default_window = 6400
     default_depth = 4
     default_group = 5
     default_size = 2**10
@@ -557,7 +556,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Completeness for Failure",
     )
     graphs[f"completeness_depth_paper"] = px.box(
@@ -584,6 +583,31 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         points=box_points,
         log_x=True,
         title=f"Completeness for model size",
+    )
+
+    avg_data = (
+        data[
+            (data["depth"] == default_depth)
+            & (data["model_size"] == default_size)
+            & (data["failure_window"] <= 400)
+            & (data["failure_window"] >= 200)
+        ]
+        .groupby(["strategy", "failure_probability"], as_index=False)
+        .mean()
+    )
+    graphs[f"avg_work_contributors_paper"] = px.line(
+        avg_data,
+        x="failure_probability",
+        y="work_per_node_Contributor",
+        color="strategy",
+        title=f"Average work per node",
+    )
+    graphs[f"avg_work_workers_paper"] = px.line(
+        avg_data,
+        x="failure_probability",
+        y="work_per_node_Worker",
+        color="strategy",
+        title=f"Average work per node",
     )
 
     # Stacked bars
@@ -702,6 +726,38 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         cols,
     )
 
+    graphs[f"versions_level_bar_focus"] = create_bars(
+        data[
+            (data["depth"] == default_depth)
+            & (data["model_size"] == default_size)
+            & (data["failure_window"] <= 400)
+            & (data["failure_window"] >= 200)
+        ],
+        "failure_probability",
+        "Failure rate (%/s)",
+        "versions",
+        "Versions",
+        cols,
+    )
+    graphs[f"versions_level_bar_simpler"] = px.bar(
+        data[
+            (data["depth"] == default_depth)
+            & (data["model_size"] == default_size)
+            & (data["failure_window"] <= 400)
+            & (data["failure_window"] >= 200)
+        ]
+        .groupby("strategy", as_index=False)
+        .mean(),
+        x="strategy",
+        y=[
+            "versions_level_0",
+            "versions_level_1",
+            "versions_level_2",
+            "versions_level_3",
+            "versions_level_4",
+        ],
+    )
+
     graphs[f"work_failure_bar"] = create_bars(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         "failure_probability",
@@ -756,6 +812,23 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         "Model Size",
         "bandwidth_per_node",
         "Bandwidth per node type",
+    )
+
+    graphs[f"completeness_avg_line"] = px.line(
+        data[(data["model_size"] == default_size) & (data["depth"] == default_depth)]
+        .groupby(["strategy", "failure_probability"], as_index=False)
+        .mean(),
+        x="failure_probability",
+        y="completeness",
+        color="strategy",
+    )
+    graphs[f"bandwidth_avg_line"] = px.line(
+        data[(data["model_size"] == default_size) & (data["depth"] == default_depth)]
+        .groupby(["strategy", "failure_probability"], as_index=False)
+        .mean(),
+        x="failure_probability",
+        y="inbound_bandwidth_total",
+        color="strategy",
     )
 
     return html.Div(
@@ -1021,6 +1094,57 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     ),
                 ],
             ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"versions_level_bar_simpler",
+                        figure=graphs["versions_level_bar_simpler"],
+                    ),
+                    dcc.Graph(
+                        id=f"versions_level_bar_focus",
+                        figure=graphs["versions_level_bar_focus"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"avg_work_contributors_paper",
+                        figure=graphs["avg_work_contributors_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"avg_work_workers_paper",
+                        figure=graphs["avg_work_workers_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"completeness_avg_line",
+                        figure=graphs["completeness_avg_line"],
+                    ),
+                    dcc.Graph(
+                        id=f"bandwidth_avg_line",
+                        figure=graphs["bandwidth_avg_line"],
+                    ),
+                ],
+            ),
         ]
     )
 
@@ -1034,7 +1158,7 @@ if __name__ == "__main__":
     run_ids = pd.unique(data["run_id"])
     strategies = pd.unique(data["strategy"])
     status = pd.unique(data["status"])
-    data["failure_probability"] = data["failure_probability"].round(6)
+    # data["failure_probability"] = data["failure_probability"].round(6)
     failure_probabilities = np.sort(pd.unique(data["failure_probability"]))
     failure_rates = np.sort(pd.unique(data["failure_rate"]))
 
@@ -1097,9 +1221,9 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        10**9,
-                        10**6,
-                        value=[0, 10**9],
+                        10,
+                        0.01,
+                        value=[0, 10],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
@@ -1121,9 +1245,9 @@ if __name__ == "__main__":
                     html.H3("Model size"),
                     dcc.RangeSlider(
                         1,
-                        1000000,
+                        30000,
                         1000,
-                        value=[1, 1000],
+                        value=[1, 30000],
                         id="model-range",
                     ),
                 ]
@@ -1172,7 +1296,7 @@ if __name__ == "__main__":
 
         strategies = pd.unique(df["strategy"])
         status = pd.unique(df["status"])
-        df["failure_probability"] = df["failure_probability"].round(6)
+        # df["failure_probability"] = df["failure_probability"].round(6)
 
         # Remove strategies not present in the data
         strategies_map = {
@@ -1206,6 +1330,10 @@ if __name__ == "__main__":
         ]
         df = df[
             (df["depth"] >= selected_depths[0]) & (df["depth"] <= selected_depths[1])
+        ]
+        df = df[
+            (df["model_size"] >= selected_model[0])
+            & (df["model_size"] <= selected_model[1])
         ]
 
         graphs = generate_graphs(df, strategies_map, tab)

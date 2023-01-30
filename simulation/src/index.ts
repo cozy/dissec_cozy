@@ -16,40 +16,40 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = false
-const fullExport = false
+const debug = true
+const fullExport = true
 const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.ONESHOT,
+      buildingBlocks: STRATEGIES.HYBRID_UTIL,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
       averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 4096,
+      modelSize: 1024,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 400,
+      failureRate: 350,
       adaptedFailures: false,
-      backupsToAggregatorsRatio: 0.125,
+      backupsToAggregatorsRatio: 0.2,
       depth: 4,
       fanout: 8,
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '5',
+      seed: '8',
     },
   ]
 } else {
   configs = createRunConfigs({
     strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
-    depths: [3, 4],
-    failures: [0, 1600, 400, 200, 100],
+    depths: [3, 4, 5],
+    failures: [0, 6400, 400, 200, 100],
     modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
