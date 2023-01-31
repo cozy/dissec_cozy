@@ -16,8 +16,8 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
-const fullExport = true
+const debug = false
+const fullExport = false
 const useCheckpoint = false
 if (debug) {
   configs = [

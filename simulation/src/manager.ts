@@ -47,7 +47,7 @@ export class NodesManager {
   outboundBandwidthPerRole: { [role: string]: number } = {}
   failurePropagationsPerRole: { [role: string]: number } = {}
   circulatingAggregateIdsPerRole: { [role: string]: { [id: string]: boolean } } = {}
-  maxDepth: number = 5
+  maxDepth: number = 6
   messagesPerLevel: number[] = Array(this.maxDepth).fill(0)
   workPerLevel: number[] = Array(this.maxDepth).fill(0)
   failuresPerLevel: number[] = Array(this.maxDepth).fill(0)
