@@ -41,12 +41,16 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
     // Compute the intersection of confirmations
     const intersection = this.intersectChildrenConfirmations()
     const aggregates = intersection.map(e => this.aggregates[e.members[position]])
-    const aggregate = aggregates.reduce((prev, curr) => ({
-      counter: prev.counter + curr.counter,
-      data: prev.data + curr.data,
-      id: this.aggregationId(aggregates.map(e => e.id)),
-    }))
-    messages.push(...this.sendAggregate(aggregate))
+    if (aggregates.length > 0) {
+      const aggregate = aggregates.reduce((prev, curr) => ({
+        counter: prev.counter + curr.counter,
+        data: prev.data + curr.data,
+        id: this.aggregationId(aggregates.map(e => e.id)),
+      }))
+      messages.push(...this.sendAggregate(aggregate))
+    } else {
+      this.manager.propagateFailure(this, false)
+    }
   }
 
   return messages

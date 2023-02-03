@@ -126,7 +126,7 @@ def get_data(path, aggregate_message=True):
         df = df.groupby(["run_id", "status", "strategy"]).mean()
         df.reset_index(inplace=True)
 
-    df.loc[df["failure_window"] == 0, "failure_window"] = 25600
+    df.loc[df["failure_window"] == 0, "failure_window"] = 10000
     df["failure_probability"] = 100 / df["failure_window"]
     # df["failure_probability"] = df["failure_probability"].round(3)
 
@@ -200,7 +200,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     box_points = "all"
 
     default_failure = 33.37
-    default_window = 6400
+    default_window = 400
     default_depth = 4
     default_group = 5
     default_size = 2**10
@@ -331,7 +331,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Contributors for Failure",
     )
     graphs[f"count_depth_paper"] = px.box(
@@ -368,7 +368,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Observed contributors failures for Failure",
     )
     graphs[f"failures_contributors_depth_paper"] = px.box(
@@ -405,7 +405,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Observed workers failures for Failure",
     )
     graphs[f"failures_workers_depth_paper"] = px.box(
@@ -442,7 +442,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Work for Failure",
     )
     graphs[f"work_depth_paper"] = px.box(
@@ -480,7 +480,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Latency for Failure",
     )
     graphs[f"latency_depth_paper"] = px.box(
@@ -518,7 +518,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         color="strategy",
         hover_name="run_id",
         points=box_points,
-        log_x=True,
+        # log_x=True,
         title=f"Bandwidth for Failure",
     )
     graphs[f"bandwidth_depth_paper"] = px.box(
@@ -583,6 +583,42 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         points=box_points,
         log_x=True,
         title=f"Completeness for model size",
+    )
+
+    graphs[f"versions_failure_paper"] = px.box(
+        data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
+        x="failure_probability",
+        y="circulating_aggregate_ids",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        # log_x=True,
+        title=f"Versions for Failure",
+    )
+    graphs[f"versions_depth_paper"] = px.box(
+        data[
+            (data["failure_window"] == default_window)
+            & (data["model_size"] == default_size)
+        ],
+        x="depth",
+        y="circulating_aggregate_ids",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        title=f"Versions for depth",
+    )
+    graphs[f"versions_group_paper"] = px.box(
+        data[
+            (data["failure_window"] == default_window)
+            & (data["depth"] == default_depth)
+        ],
+        x="model_size",
+        y="circulating_aggregate_ids",
+        color="strategy",
+        hover_name="run_id",
+        points=box_points,
+        log_x=True,
+        title=f"Versions for model size",
     )
 
     avg_data = (
@@ -985,6 +1021,27 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"completeness_group_paper",
                         figure=graphs["completeness_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"versions_failure_paper",
+                        figure=graphs["versions_failure_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"versions_depth_paper",
+                        figure=graphs["versions_depth_paper"],
+                    ),
+                    dcc.Graph(
+                        id=f"versions_group_paper",
+                        figure=graphs["versions_group_paper"],
                     ),
                 ],
             ),
