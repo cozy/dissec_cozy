@@ -386,7 +386,9 @@ export class ExperimentRunner {
       const averageRunTime = (Date.now() - startTime) / (i + 1)
       const runsLeft = this.runs.length - i
       console.log(
-        `Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes (current ime: ${new Date().toISOString()})`
+        `(${i + 1}/${this.runs.length}) Estimated time left: ${
+          (averageRunTime * runsLeft) / 60000
+        } minutes (current ime: ${new Date().toISOString()})`
       )
       console.log()
 

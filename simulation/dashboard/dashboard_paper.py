@@ -205,10 +205,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     default_group = 5
     default_size = 2**10
 
-    # small_tree = 4
+    # small_tree = 3
     # large_tree = 4
-    # small_model = 2**10
-    # large_model = 2**10
+    # small_model = 2**8
+    # large_model = 2**12
     # y_maps_values = [
     #     (small_tree, small_model),
     #     (small_tree, large_model),
@@ -227,6 +227,20 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     # for (j, (depth, model_size)) in enumerate(y_maps_values):
     #     for (i, failure) in enumerate(failure_probabilities):
     #         for (k, strat) in enumerate(strategies):
+    #             print(
+    #                 len(
+    #                     data[
+    #                         (data["depth"] == depth)
+    #                         & (data["model_size"] == model_size)
+    #                         & (data["failure_probability"] == failure)
+    #                         & (data["strategy"] == strat)
+    #                     ]
+    #                 ),
+    #                 depth,
+    #                 model_size,
+    #                 failure,
+    #                 strat,
+    #             )
     #             map_completeness[j, i, k] = data[
     #                 (data["depth"] == depth)
     #                 & (data["model_size"] == model_size)
@@ -273,6 +287,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     # strat_symbol = ["SM", "OS", "OPT", "HY1", "HY3"]
     # for (j, (depth, model_size)) in enumerate(y_maps_values):
     #     for (i, failure) in enumerate(failure_probabilities):
+    #         print(
+    #             np.where(
+    #                 map_completeness[j, i, :] == np.max(map_completeness[j, i, :])
+    #             ),
+    #             map_completeness,
+    #         )
     #         best_strat_completeness_labels_map[j][i] = strat_symbol[
     #             np.where(
     #                 map_completeness[j, i, :] == np.max(map_completeness[j, i, :])
