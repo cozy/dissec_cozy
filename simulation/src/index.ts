@@ -16,8 +16,8 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = false
-const fullExport = false
+const debug = true
+const fullExport = true
 const useCheckpoint = false
 if (debug) {
   configs = [
@@ -34,7 +34,7 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 350,
+      failureRate: 333.333,
       adaptedFailures: false,
       backupsToAggregatorsRatio: 0.2,
       depth: 4,
@@ -42,7 +42,7 @@ if (debug) {
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '8',
+      seed: '12',
     },
   ]
 } else {

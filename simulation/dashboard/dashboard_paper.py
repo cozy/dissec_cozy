@@ -78,10 +78,10 @@ def get_data(path, aggregate_message=True):
 
     strategies = pd.unique(df["strategy"])
     translate_strategies = {
-        "FFP,Drop,Stop,1,None": "Extrem Perf",
-        "LFP,Replace,Stay,1,NonBlocking": "Extreme complete",
-        "LFP,Drop,Stop,1,FullSync": "Hybride perf",
-        "LFP,Replace,0Resync,1,NonBlocking": "Hybrid complete",
+        "FFP,Drop,Stop,1,None": "Min Cost",
+        "LFP,Replace,Stay,1,NonBlocking": "Max Compl",
+        "LFP,Drop,Stop,1,FullSync": "Sync & Prune",
+        "LFP,Replace,0Resync,1,NonBlocking": "Hybrid",
     }
     for s in strategies:
         df.loc[df["strategy"] == s, "strategy"] = (
@@ -126,9 +126,20 @@ def get_data(path, aggregate_message=True):
         df = df.groupby(["run_id", "status", "strategy"]).mean()
         df.reset_index(inplace=True)
 
-    df.loc[df["failure_window"] == 0, "failure_window"] = 10000
+    df.loc[df["failure_window"] == 0, "failure_window"] = np.inf
     df["failure_probability"] = 100 / df["failure_window"]
+    df["failure_probability"] = df["failure_probability"].round(5)
     # df["failure_probability"] = df["failure_probability"].round(3)
+
+    df["has_result"] = df["completeness"] > 0
+
+    # Computing % versions per level
+    cols = ["_level_0", "_level_1", "_level_2", "_level_3", "_level_4"]
+    for c in cols:
+        depth = int(c.split("_")[-1])
+        df["versions_percent" + c] = df["versions" + c] / df["fanout"] ** (
+            df["depth"] - depth
+        )
 
     return df
 
@@ -196,8 +207,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     group_sizes = np.sort(pd.unique(data["group_size"]))
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
+    print("graphing", strategies, failure_probabilities, depths)
 
     box_points = "all"
+    # box_points = False
 
     default_failure = 33.37
     default_window = 400
@@ -666,6 +679,15 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         title=f"Average work per node",
     )
 
+    graphs[f"failures_line"] = px.line(
+        data[(data["model_size"] == default_size) & (data["depth"] == default_depth)]
+        .groupby(["strategy", "failure_probability"], as_index=False)
+        .mean(),
+        x="failure_probability",
+        y="has_result",
+        color="strategy",
+    )
+
     # Stacked bars
     def create_bars(
         df, x_axis, x_label, y_axis, y_label, columns=["_Worker", "_Contributor"]
@@ -683,7 +705,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             template="simple_white",
             xaxis=dict(title_text=x_label),
             yaxis=dict(title_text=y_label),
-            barmode="stack",
+            # barmode="stack",
             width=800,
             height=730,
         )
@@ -788,10 +810,11 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             & (data["model_size"] == default_size)
             & (data["failure_window"] <= 400)
             & (data["failure_window"] >= 200)
+            & (data["strategy"] != "Min Cost")
         ],
         "failure_probability",
         "Failure rate (%/s)",
-        "versions",
+        "versions_percent",
         "Versions",
         cols,
     )
@@ -886,6 +909,40 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         y="inbound_bandwidth_total",
         color="strategy",
     )
+
+    # Update plots
+    to_update_plots = [
+        "failures_contributors_failure_paper",
+        "failures_contributors_depth_paper",
+        "failures_contributors_group_paper",
+        "work_failure_paper",
+        "work_depth_paper",
+        "work_group_paper",
+        "latency_failure_paper",
+        "latency_depth_paper",
+        "latency_group_paper",
+        "bandwidth_failure_paper",
+        "bandwidth_depth_paper",
+        "bandwidth_group_paper",
+        "completeness_failure_paper",
+        "completeness_depth_paper",
+        "completeness_group_paper",
+    ]
+    for plot in to_update_plots:
+        # graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+        # graphs[plot] = graphs[plot].update_traces(quartilemethod="exclusive")
+        continue
+
+    to_update_plots = [
+        "failures_contributors_failure_paper",
+        "work_failure_paper",
+        "latency_failure_paper",
+        "bandwidth_failure_paper",
+        "completeness_failure_paper",
+    ]
+    for plot in to_update_plots:
+        graphs[plot] = graphs[plot].update_traces(width=0.05 / 3)
+        graphs[plot] = graphs[plot].update_layout(boxgap=0.05 / 3, boxgroupgap=0.001)
 
     return html.Div(
         children=[
@@ -1062,6 +1119,19 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"versions_group_paper",
                         figure=graphs["versions_group_paper"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"failures_line",
+                        figure=graphs["failures_line"],
                     ),
                 ],
             ),
@@ -1298,9 +1368,9 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
+                        1000,
                         10,
-                        0.01,
-                        value=[0, 10],
+                        value=[0, 1000],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
@@ -1329,9 +1399,22 @@ if __name__ == "__main__":
                     ),
                 ]
             ),
+            html.Div(
+                children=[
+                    html.Div(id="export-text", children=["Not exported yet"]),
+                    html.Button("Export graphs", id="export-button", n_clicks=0),
+                ]
+            ),
             html.Div(id="graphs", children=[]),
         ]
     )
+
+    @app.callback(
+        dash.Output("export-text", "children"), dash.Input("export-button", "n_clicks")
+    )
+    def update_output(n_clicks):
+        print("clicked")
+        return f"Exported {n_clicks}"
 
     @app.callback(
         [dash.Output("store_file", "data"), dash.Output("file_span", "children")],

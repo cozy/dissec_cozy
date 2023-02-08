@@ -148,7 +148,7 @@ export class Message {
         console.log(
           `${tag} received contribution n°${Object.values(receiver.contributions).length + 1} (${
             this.content.share
-          }) from #${this.emitterId}`
+          }) from #${this.emitterId} `
         )
         break
       case MessageType.ConfirmContributors:
@@ -157,9 +157,9 @@ export class Message {
             arrayEquals(receiver.contributorsList[receiver.id] || [], this.content.contributors || [])
               ? ''
               : ' different'
-          } confirmed list of ${this.content.contributors?.length} contributors from node #${this.emitterId}, ${
+          } confirmed list of ${this.content.contributors?.length} contributors from node #${this.emitterId} , ${
             receiver.contributorsList[receiver.id]?.every(e => receiver.contributions[e]) ? '' : 'not '
-          }sending data to parent #${receiver.node?.parents[receiver.node?.members.indexOf(receiver.id)] || '???'}. ${
+          }sending data to parent #${receiver.node?.parents[receiver.node?.members.indexOf(receiver.id)] || '???'} . ${
             this.content.contributors
               ? `new id=${receiver.aggregationId(this.content.contributors.map(String))}`
               : 'Did not receive contributors'
@@ -173,7 +173,7 @@ export class Message {
           }, already received [${receiver
             .node!.members.filter(e => receiver.confirmedChildren[e])
             .map(e => '#' + e)
-            .join(', ')}]`
+            .join(' , ')} ]`
         )
         break
       case MessageType.SynchronizationTimeout:
@@ -186,14 +186,15 @@ export class Message {
         break
       case MessageType.FinishSendingAggregate:
         console.log(
-          `${tag} finished sending its aggregate (ID=${this.content.aggregate?.id}) to parent #${this.content.targetNode}`
+          `${tag} finished sending its aggregate (ID=${this.content.aggregate?.id}) to parent #${this.content.targetNode} `
         )
         break
       case MessageType.SendAggregate:
         console.log(
           `${tag} received an aggregate from child #${this.emitterId} (ID=${this.content.aggregate!.id}). [${children
             ?.filter(child => Boolean(receiver.aggregates[child]))
-            .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
+            .map(e => '#' + e)
+            .join(' , ')} ] out of [${children.map(e => `#${e} (${receiver.aggregates[e]?.id || '??'})`).join(' , ')} ]`
         )
         break
       case MessageType.HandleFailure:
@@ -207,7 +208,7 @@ export class Message {
         console.log(
           `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing #${
             this.content.failedNode
-          } in group [${this.content.targetGroup?.members.map(e => '#' + e)}]${
+          } in group [${this.content.targetGroup?.members.map(e => '#' + e).join(' , ')}]${
             receiver.contributorsList[receiver.id] || receiver.node?.children.length
               ? '.'
               : ', but does not know child yet.'
@@ -218,30 +219,30 @@ export class Message {
         console.log(
           `${tag} has timed out on the group notification. ${
             receiver.node?.children.length
-              ? `New children are [${receiver.node?.children.map(e => '#' + e.members[position!])}]`
+              ? `New children are [${receiver.node?.children.map(e => '#' + e.members[position!]).join(' , ')} ]`
               : 'No known children'
           }`
         )
         break
       case MessageType.ContributorsPolling:
         console.log(
-          `${tag} has timed out on the group notification. New children are [${receiver.node?.children.map(
-            e => e.members[position!]
-          )}] ${!receiver.node?.children.length ? 'No known children' : 'Ignored'}`
+          `${tag} has timed out on the group notification. New children are [${receiver.node?.children
+            .map(e => e.members[position!])
+            .join(' , ')} ] ${!receiver.node?.children.length ? 'No known children' : 'Ignored'}`
         )
         break
       case MessageType.SendChildren:
         console.log(
-          `${tag} received its children from node #${this.emitterId}: [${this.content.children?.map(
-            e => '#' + e.members
-          )}]`
+          `${tag} received its children from node #${this.emitterId}: [${this.content.children
+            ?.map(e => '#' + e.members)
+            .join(' , ')} ]`
         )
         break
       case MessageType.RequestData:
         console.log(`${tag} has been requested data by backup #${this.emitterId} joining the tree`)
         break
       case MessageType.GiveUpChild:
-        console.log(`${tag} has been told to give up child ${this.content.targetNode} by member ${this.emitterId}`)
+        console.log(`${tag} has been told to give up child #${this.content.targetNode} by member #${this.emitterId}`)
         break
     }
   }

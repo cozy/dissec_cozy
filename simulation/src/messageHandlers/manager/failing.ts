@@ -9,7 +9,12 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
   node.propagatedFailure = true
 
   if (this.config.debug) {
-    console.log(`${node.tag()} failed`)
+    const position = node?.node?.members.indexOf(node?.id)
+    console.log(`${node.tag()} failed, notice by parent #${position ? node?.node?.parents[position] : '??'} `)
+  }
+
+  if (node.id === 5428) {
+    console.log()
   }
 
   const getReplacement = (minDeathTime: number) => {

@@ -48,8 +48,6 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
         id: this.aggregationId(aggregates.map(e => e.id)),
       }))
       messages.push(...this.sendAggregate(aggregate))
-    } else {
-      this.manager.propagateFailure(this, false)
     }
   }
 

@@ -13,6 +13,10 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
+  if (this.id === 7597) {
+    console.log()
+  }
+
   if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {
@@ -91,9 +95,6 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         // Members of the parent group are informed that children changed
         for (const parent of this.node.parents) {
           this.manager.nodes[parent].confirmedChildren = {}
-          // messages.push(
-          //   new Message(MessageType.ConfirmChildren, this.localTime, 0, this.node.parents[position], parent, {})
-          // )
         }
       }
 
@@ -129,7 +130,11 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             messages.push(msg(child))
           } else {
             // The child is dead and may have failed while no one could handle it, handle it now
-            messages.push(new Message(MessageType.Failing, this.localTime, this.localTime, child, child, {}))
+            if (this.node.depth - 1 <= this.config.buildingBlocks.resyncLevel) {
+              this.manager.propagateFailure(this.manager.nodes[child], true)
+            } else {
+              messages.push(new Message(MessageType.Failing, this.localTime, this.localTime, child, child, {}))
+            }
           }
         }
       }
