@@ -16,8 +16,8 @@ try {
 }
 
 let configs: RunConfig[] = []
-const debug = true
-const fullExport = true
+const debug = false
+const fullExport = false
 const useCheckpoint = false
 if (debug) {
   configs = [
@@ -47,15 +47,21 @@ if (debug) {
   ]
 } else {
   configs = createRunConfigs({
-    strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_UTIL],
-    depths: [4],
-    failures: [0, 6400, 400, 333.333, 285.714, 250.0, 222.222, 200.0, 125.0, 111.111, 100, 90.9, 83.333],
+    strategies: [
+      STRATEGIES.STRAWMAN,
+      STRATEGIES.EAGER,
+      STRATEGIES.ONESHOT,
+      STRATEGIES.HYBRID_UTIL,
+      STRATEGIES.HYBRID_BLOCK,
+    ],
+    depths: [5, 4, 3],
+    failures: [0, 6400, 400, 333.333, 285.714, 250.0, 222.222, 200.0, 166.666, 125.0, 100.0, 83.333],
     modelSizes: Array(4)
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
     backupsToAggregatorsRatios: [0.2],
-    retries: 50,
-    fullSpace: false,
+    retries: 10,
+    fullSpace: true,
     defaultValues: {
       depth: 4,
       failure: 400,

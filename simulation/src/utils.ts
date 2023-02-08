@@ -28,12 +28,12 @@ export function createRunConfigs({
   const baseConfig = defaultConfig()
 
   if (fullSpace) {
-    for (let retry = 0; retry < retries; retry++) {
-      for (const buildingBlocks of strategies) {
-        for (const depth of depths) {
-          for (const failure of failures) {
-            for (const modelSize of modelSizes) {
-              for (const backupsToAggregatorsRatio of backupsToAggregatorsRatios) {
+    for (const buildingBlocks of strategies) {
+      for (const depth of depths) {
+        for (const failure of failures) {
+          for (const modelSize of modelSizes) {
+            for (const backupsToAggregatorsRatio of backupsToAggregatorsRatios) {
+              for (let retry = 0; retry < retries; retry++) {
                 configs.push(
                   Object.assign({}, baseConfig, {
                     buildingBlocks,
