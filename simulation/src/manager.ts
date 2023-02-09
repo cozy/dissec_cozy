@@ -291,9 +291,14 @@ export class NodesManager {
   }
 
   fullFailurePropagation(node: Node, addTimeout: boolean = false) {
+    if (!node.node) {
+      // Backup node don't propagate failures
+      return
+    }
+
     // TODO: Count incurred comms
     const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
-    const propagationLatency = (2 * this.config.depth - node.node!.depth) * this.config.averageLatency
+    const propagationLatency = (2 * this.config.depth - node.node.depth) * this.config.averageLatency
 
     this.insertMessage(
       new Message(
@@ -310,7 +315,7 @@ export class NodesManager {
     )
     // Set all nodes as dead
     Object.values(this.nodes).forEach(node => {
-      if (!node.propagatedFailure) {
+      if (node.propagatedFailure) {
         node.propagatedFailure = true
         node.killed = this.globalTime + propagationLatency
       }
@@ -323,31 +328,36 @@ export class NodesManager {
    * @param node The node below which the tree is cut
    */
   localeFailurePropagation(node: Node, addTimeout: boolean = false) {
+    if (!node.node) {
+      // Backup node don't propagate failures
+      return
+    }
+
     // TODO: Count incurred comms
     const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
-    const propagationLatency = (1 + node.node!.depth) * this.config.averageLatency
+    const propagationLatency = (1 + node.node.depth) * this.config.averageLatency
 
     // Set nodes as dead
     const killSubtree = (node: TreeNode) => {
       node.members.forEach(n => {
-        if (!this.nodes[n].propagatedFailure) {
+        if (this.nodes[n].propagatedFailure) {
           this.nodes[n].propagatedFailure = true
           this.nodes[n].killed = this.globalTime + propagationLatency + (addTimeout ? timeout : 0)
         }
       })
       node.children.forEach(n => killSubtree(n))
     }
-    killSubtree(node.node!)
+    killSubtree(node.node)
 
     // Notify parent
-    const position = node.node!.members.indexOf(node.id)
-    for (const parent of node.node!.parents) {
+    const position = node.node.members.indexOf(node.id)
+    for (const parent of node.node.parents) {
       this.insertMessage(
         new Message(
           MessageType.HandleFailure,
           node.localTime,
           node.localTime + this.standardLatency() + (addTimeout ? timeout : 0),
-          node.node!.parents[position], // The parent of the target node contacts its members
+          node.node.parents[position], // The parent of the target node contacts its members
           parent,
           {
             failedNode: node.id,
@@ -359,7 +369,9 @@ export class NodesManager {
   }
 
   propagateFailure(node: Node, addTimeout: boolean) {
-    this.failurePropagationsPerLevel[node.node?.depth!] += 1
+    if (typeof node.node?.depth === 'number') {
+      this.failurePropagationsPerLevel[node.node.depth] += 1
+    }
     this.failurePropagationsPerRole[node.role] += 1
 
     if (

@@ -74,7 +74,7 @@ if (debug) {
 const runner = new ExperimentRunner(configs, {
   debug,
   fullExport,
-  intermediateExport: 0,
+  intermediateExport: 100,
   checkpoint: useCheckpoint ? checkpoint : undefined,
 })
 runner.run()
