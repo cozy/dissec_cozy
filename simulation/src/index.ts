@@ -60,8 +60,8 @@ if (debug) {
       .fill(0)
       .map((_, i) => 2 ** (8 + 2 * i)),
     backupsToAggregatorsRatios: [0.2],
-    retries: 10,
-    fullSpace: true,
+    retries: 5,
+    fullSpace: false,
     defaultValues: {
       depth: 4,
       failure: 400,

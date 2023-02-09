@@ -140,6 +140,7 @@ def get_data(path, aggregate_message=True):
         df["versions_percent" + c] = df["versions" + c] / df["fanout"] ** (
             df["depth"] - depth
         )
+        df["work_avg" + c] = df["work" + c] / df["fanout"] ** (df["depth"] - depth)
 
     return df
 
@@ -818,6 +819,20 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         "Versions",
         cols,
     )
+    graphs[f"work_level_bar_focus"] = create_bars(
+        data[
+            (data["depth"] == default_depth)
+            & (data["model_size"] == default_size)
+            & (data["failure_window"] <= 400)
+            & (data["failure_window"] >= 200)
+            & (data["strategy"] != "Min Cost")
+        ],
+        "failure_probability",
+        "Failure rate (%/s)",
+        "work_avg",
+        "Average work per node",
+        cols,
+    )
     graphs[f"versions_level_bar_simpler"] = px.bar(
         data[
             (data["depth"] == default_depth)
@@ -1255,6 +1270,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     dcc.Graph(
                         id=f"versions_level_bar_focus",
                         figure=graphs["versions_level_bar_focus"],
+                    ),
+                    dcc.Graph(
+                        id=f"work_level_bar_focus",
+                        figure=graphs["work_level_bar_focus"],
                     ),
                 ],
             ),

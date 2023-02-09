@@ -8,6 +8,7 @@ export function createRunConfigs({
   backupsToAggregatorsRatios,
   retries,
   fullSpace,
+  seedPrefix = '',
   defaultValues,
 }: {
   strategies: BuildingBlocks[]
@@ -17,6 +18,7 @@ export function createRunConfigs({
   backupsToAggregatorsRatios: number[]
   retries: number
   fullSpace: boolean
+  seedPrefix?: string
   defaultValues?: {
     depth: number
     failure: number
@@ -28,12 +30,12 @@ export function createRunConfigs({
   const baseConfig = defaultConfig()
 
   if (fullSpace) {
-    for (const buildingBlocks of strategies) {
-      for (const depth of depths) {
-        for (const failure of failures) {
-          for (const modelSize of modelSizes) {
-            for (const backupsToAggregatorsRatio of backupsToAggregatorsRatios) {
-              for (let retry = 0; retry < retries; retry++) {
+    for (const depth of depths) {
+      for (const failure of failures) {
+        for (const modelSize of modelSizes) {
+          for (const backupsToAggregatorsRatio of backupsToAggregatorsRatios) {
+            for (let retry = 0; retry < retries; retry++) {
+              for (const buildingBlocks of strategies) {
                 configs.push(
                   Object.assign({}, baseConfig, {
                     buildingBlocks,
@@ -41,7 +43,7 @@ export function createRunConfigs({
                     modelSize,
                     depth,
                     backupsToAggregatorsRatio,
-                    seed: `${retry}`,
+                    seed: `${seedPrefix}${retry}`,
                   })
                 )
               }
@@ -65,7 +67,7 @@ export function createRunConfigs({
               modelSize: defaultValues.modelSize,
               backupsToAggregatorsRatio: defaultValues.backupsToAggregatorsRatio,
               depth: depth,
-              seed: `${retry}`,
+              seed: `${seedPrefix}${retry}`,
             })
           )
         }
@@ -78,7 +80,7 @@ export function createRunConfigs({
               modelSize: defaultValues.modelSize,
               backupsToAggregatorsRatio: defaultValues.backupsToAggregatorsRatio,
               depth: defaultValues.depth,
-              seed: `${retry}`,
+              seed: `${seedPrefix}${retry}`,
             })
           )
         }
@@ -91,7 +93,7 @@ export function createRunConfigs({
               modelSize: modelSize,
               backupsToAggregatorsRatio: defaultValues.backupsToAggregatorsRatio,
               depth: defaultValues.depth,
-              seed: `${retry}`,
+              seed: `${seedPrefix}${retry}`,
             })
           )
         }
@@ -104,7 +106,7 @@ export function createRunConfigs({
               modelSize: defaultValues.modelSize,
               backupsToAggregatorsRatio,
               depth: defaultValues.depth,
-              seed: `${retry}`,
+              seed: `${seedPrefix}${retry}`,
             })
           )
         }

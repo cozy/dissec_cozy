@@ -130,7 +130,11 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
             messages.push(msg(child))
           } else {
             // The child is dead and may have failed while no one could handle it, handle it now
-            if (this.node.depth - 1 <= this.config.buildingBlocks.resyncLevel) {
+            if (
+              this.config.buildingBlocks.standby === StandbyBlock.NoResync &&
+              this.node.depth - 1 <= this.config.buildingBlocks.resyncLevel &&
+              this.manager.nodes[child]
+            ) {
               this.manager.propagateFailure(this.manager.nodes[child], true)
             } else {
               messages.push(new Message(MessageType.Failing, this.localTime, this.localTime, child, child, {}))
