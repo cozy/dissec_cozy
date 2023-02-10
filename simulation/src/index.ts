@@ -22,19 +22,19 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.HYBRID_UTIL,
+      buildingBlocks: STRATEGIES.ONESHOT,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
       averageBandwidth: 6000,
       averageCryptoTime: 0.01,
       averageComputeTime: 0.00005,
-      modelSize: 1024,
+      modelSize: 16384,
       failCheckPeriod: 100,
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 333.333,
+      failureRate: 400,
       adaptedFailures: false,
       backupsToAggregatorsRatio: 0.2,
       depth: 4,
@@ -42,33 +42,46 @@ if (debug) {
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '12',
+      seed: '2',
     },
   ]
 } else {
-  configs = createRunConfigs({
-    strategies: [
-      STRATEGIES.STRAWMAN,
-      STRATEGIES.EAGER,
-      STRATEGIES.ONESHOT,
-      STRATEGIES.HYBRID_UTIL,
-      STRATEGIES.HYBRID_BLOCK,
-    ],
-    depths: [5, 4, 3],
-    failures: [0, 6400, 400, 333.333, 285.714, 250.0, 222.222, 200.0, 166.666, 125.0, 100.0, 83.333],
-    modelSizes: Array(4)
-      .fill(0)
-      .map((_, i) => 2 ** (8 + 2 * i)),
-    backupsToAggregatorsRatios: [0.2],
-    retries: 5,
-    fullSpace: false,
-    defaultValues: {
-      depth: 4,
-      failure: 400,
-      modelSize: 2 ** 10,
-      backupsToAggregatorsRatio: 0.2,
-    },
-  })
+  const seedPrefix = '1-'
+  const retries = 10
+
+  configs = [
+    ...createRunConfigs({
+      strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_BLOCK],
+      depths: [3, 4, 5],
+      failures: [
+        0, 10000, 5000, 3333.333, 2500, 2000, 400, 333.333, 285.714, 250.0, 222.222, 200.0, 166.666, 125.0, 100.0,
+        83.333,
+      ],
+      modelSizes: [2 ** 8, 2 ** 10, 2 ** 12, 2 ** 14],
+      retries,
+      fullSpace: false,
+      seedPrefix,
+      defaultValues: {
+        depth: 4,
+        failure: 400,
+        modelSize: 2 ** 10,
+      },
+    }),
+    ...createRunConfigs({
+      strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_BLOCK],
+      depths: [4, 3],
+      failures: [0, 10000, 400, 200.0, 100.0],
+      modelSizes: [2 ** 10, 2 ** 12],
+      retries,
+      fullSpace: true,
+      seedPrefix,
+      defaultValues: {
+        depth: 4,
+        failure: 400,
+        modelSize: 2 ** 10,
+      },
+    }),
+  ]
 }
 
 const runner = new ExperimentRunner(configs, {

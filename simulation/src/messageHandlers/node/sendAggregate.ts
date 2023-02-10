@@ -55,12 +55,14 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
       const errorMargin = 0.0001 // 0.1%, due to numerical precision
       if (finalResult < 50 * (1 - errorMargin) || finalResult > 50 * (1 + errorMargin)) {
         messages.push(
-          new Message(MessageType.StopSimulator, 0, this.localTime, this.id, this.id, { status: StopStatus.BadResult })
+          new Message(MessageType.StopSimulator, this.localTime, this.manager.globalTime, this.id, this.id, {
+            status: StopStatus.BadResult,
+          })
         )
       } else {
         // TODO: Send the number of contributors differently
         messages.push(
-          new Message(MessageType.StopSimulator, this.localTime, this.localTime, this.id, this.id, {
+          new Message(MessageType.StopSimulator, this.localTime, this.manager.globalTime, this.id, this.id, {
             status: StopStatus.Success,
             contributors: Array(result.counter / this.config.groupSize), // Trick to send the number of contributors
           })
@@ -72,7 +74,9 @@ export function handleSendAggregate(this: Node, receivedMessage: Message): Messa
     ) {
       // Received the right number of aggregates but they don't have matching IDs and we do not resend
       messages.push(
-        new Message(MessageType.StopSimulator, 0, this.localTime, this.id, this.id, { status: StopStatus.BadResult })
+        new Message(MessageType.StopSimulator, this.localTime, this.manager.globalTime, this.id, this.id, {
+          status: StopStatus.BadResult,
+        })
       )
     }
   } else {

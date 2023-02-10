@@ -151,7 +151,7 @@ export function defaultConfig(): RunConfig {
     deadline: 5 * 10 ** 7,
     failureRate: 400,
     adaptedFailures: false,
-    backupsToAggregatorsRatio: 0.1,
+    backupsToAggregatorsRatio: 0.2,
     depth: 4,
     fanout: 8,
     groupSize: 5,

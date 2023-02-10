@@ -1,3 +1,4 @@
+import { StandbyBlock } from '../../experimentRunner'
 import { Message, MessageType } from '../../message'
 import { Node } from '../../node'
 
@@ -47,7 +48,20 @@ export function handleConfirmChildren(this: Node, receivedMessage: Message): Mes
         data: prev.data + curr.data,
         id: this.aggregationId(aggregates.map(e => e.id)),
       }))
-      messages.push(...this.sendAggregate(aggregate))
+
+      if (
+        this.config.buildingBlocks.standby === StandbyBlock.Stop &&
+        this.node!.members.map(
+          member =>
+            this.manager.nodes[member].lastSentAggregateId !== aggregate.id &&
+            this.manager.nodes[member].finishedWorking
+        ).includes(true)
+      ) {
+        // On Stop mode, if a member already sent a different version, abort the group
+        this.manager.propagateFailure(this, false)
+      } else {
+        messages.push(...this.sendAggregate(aggregate))
+      }
     }
   }
 

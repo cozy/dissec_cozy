@@ -443,6 +443,8 @@ export class NodesManager {
             return 1000
           case MessageType.Failing:
             return 900
+          case MessageType.HandleFailure:
+            return 900
           case MessageType.NotifyGroup:
             return 800
           case MessageType.GiveUpChild:

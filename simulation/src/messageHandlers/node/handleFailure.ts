@@ -13,10 +13,6 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
   // Send notification to nodes with a channel open
   const messages: Message[] = []
 
-  if (this.id === 7597) {
-    console.log()
-  }
-
   if (this.config.buildingBlocks.failureHandling === FailureHandlingBlock.Replace) {
     // Always replacing failed nodes except contributors
     if (this.role === NodeRole.LeafAggregator) {
@@ -289,10 +285,15 @@ export function handleFailure(this: Node, receivedMessage: Message): Message[] {
         child => (this.manager.nodes[child].node!.parents = this.node!.members)
       )
 
-      // Resetting confirmations
+      // Resetting confirmations of the group
       const position = this.node!.members.indexOf(this.id)
       const aggregates = this.node!.children.map(e => this.aggregates[e.members[position]]).filter(Boolean)
-      this.confirmedChildren[this.id] = this.node!.children.filter(e => this.aggregates[e.members[position]])
+      for (const [i, member] of Object.entries(this.node!.members)) {
+        this.confirmedChildren[member] = this.manager.nodes[member].node!.children.filter(
+          e => this.aggregates[e.members[Number(i)]]
+        )
+      }
+
       // Send the aggregate if possible
       if (
         aggregates.length === this.node!.children.length &&

@@ -5,7 +5,6 @@ export function createRunConfigs({
   depths,
   failures,
   modelSizes,
-  backupsToAggregatorsRatios,
   retries,
   fullSpace,
   seedPrefix = '',
@@ -15,7 +14,6 @@ export function createRunConfigs({
   depths: number[]
   failures: number[]
   modelSizes: number[]
-  backupsToAggregatorsRatios: number[]
   retries: number
   fullSpace: boolean
   seedPrefix?: string
@@ -23,7 +21,6 @@ export function createRunConfigs({
     depth: number
     failure: number
     modelSize: number
-    backupsToAggregatorsRatio: number
   }
 }) {
   let configs = []
@@ -33,20 +30,17 @@ export function createRunConfigs({
     for (const depth of depths) {
       for (const failure of failures) {
         for (const modelSize of modelSizes) {
-          for (const backupsToAggregatorsRatio of backupsToAggregatorsRatios) {
-            for (let retry = 0; retry < retries; retry++) {
-              for (const buildingBlocks of strategies) {
-                configs.push(
-                  Object.assign({}, baseConfig, {
-                    buildingBlocks,
-                    failureRate: failure,
-                    modelSize,
-                    depth,
-                    backupsToAggregatorsRatio,
-                    seed: `${seedPrefix}${retry}`,
-                  })
-                )
-              }
+          for (let retry = 0; retry < retries; retry++) {
+            for (const buildingBlocks of strategies) {
+              configs.push(
+                Object.assign({}, baseConfig, {
+                  buildingBlocks,
+                  failureRate: failure,
+                  modelSize,
+                  depth,
+                  seed: `${seedPrefix}${retry}`,
+                })
+              )
             }
           }
         }
@@ -65,7 +59,6 @@ export function createRunConfigs({
               buildingBlocks,
               failureRate: defaultValues.failure,
               modelSize: defaultValues.modelSize,
-              backupsToAggregatorsRatio: defaultValues.backupsToAggregatorsRatio,
               depth: depth,
               seed: `${seedPrefix}${retry}`,
             })
@@ -78,7 +71,6 @@ export function createRunConfigs({
               buildingBlocks,
               failureRate: failure,
               modelSize: defaultValues.modelSize,
-              backupsToAggregatorsRatio: defaultValues.backupsToAggregatorsRatio,
               depth: defaultValues.depth,
               seed: `${seedPrefix}${retry}`,
             })
@@ -91,20 +83,6 @@ export function createRunConfigs({
               buildingBlocks,
               failureRate: defaultValues.failure,
               modelSize: modelSize,
-              backupsToAggregatorsRatio: defaultValues.backupsToAggregatorsRatio,
-              depth: defaultValues.depth,
-              seed: `${seedPrefix}${retry}`,
-            })
-          )
-        }
-
-        for (const backupsToAggregatorsRatio of backupsToAggregatorsRatios) {
-          configs.push(
-            Object.assign({}, baseConfig, {
-              buildingBlocks,
-              failureRate: defaultValues.failure,
-              modelSize: defaultValues.modelSize,
-              backupsToAggregatorsRatio,
               depth: defaultValues.depth,
               seed: `${seedPrefix}${retry}`,
             })

@@ -78,10 +78,11 @@ def get_data(path, aggregate_message=True):
 
     strategies = pd.unique(df["strategy"])
     translate_strategies = {
-        "FFP,Drop,Stop,1,None": "Min Cost",
-        "LFP,Replace,Stay,1,NonBlocking": "Max Compl",
-        "LFP,Drop,Stop,1,FullSync": "Sync & Prune",
+        "FFP,Drop,Stop,1,None": "LowCost",
+        "LFP,Replace,Stay,1,NonBlocking": "HighCmpl",
+        "LFP,Drop,Stop,1,FullSync": "S&P",
         "LFP,Replace,0Resync,1,NonBlocking": "Hybrid",
+        "LFP,Replace,0Resync,1,Leaves": "HyBlock",
     }
     for s in strategies:
         df.loc[df["strategy"] == s, "strategy"] = (
@@ -202,9 +203,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs = dict()
 
     strategies = pd.unique(data["strategy"])
-    failure_probabilities = [
-        i for i in reversed(np.sort(pd.unique(data["failure_probability"])))
-    ]
+    failure_probabilities = [i for i in np.sort(pd.unique(data["failure_probability"]))]
     group_sizes = np.sort(pd.unique(data["group_size"]))
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
@@ -219,144 +218,180 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     default_group = 5
     default_size = 2**10
 
-    # small_tree = 3
-    # large_tree = 4
-    # small_model = 2**8
-    # large_model = 2**12
-    # y_maps_values = [
-    #     (small_tree, small_model),
-    #     (small_tree, large_model),
-    #     (large_tree, small_model),
-    #     (large_tree, large_model),
-    # ]
-    # map_completeness = np.zeros(
-    #     (len(y_maps_values), len(failure_probabilities), len(strategies))
-    # )
-    # map_work = np.zeros(
-    #     (len(y_maps_values), len(failure_probabilities), len(strategies))
-    # )
-    # map_latency = np.zeros(
-    #     (len(y_maps_values), len(failure_probabilities), len(strategies))
-    # )
-    # for (j, (depth, model_size)) in enumerate(y_maps_values):
-    #     for (i, failure) in enumerate(failure_probabilities):
-    #         for (k, strat) in enumerate(strategies):
-    #             print(
-    #                 len(
-    #                     data[
-    #                         (data["depth"] == depth)
-    #                         & (data["model_size"] == model_size)
-    #                         & (data["failure_probability"] == failure)
-    #                         & (data["strategy"] == strat)
-    #                     ]
-    #                 ),
-    #                 depth,
-    #                 model_size,
-    #                 failure,
-    #                 strat,
-    #             )
-    #             map_completeness[j, i, k] = data[
-    #                 (data["depth"] == depth)
-    #                 & (data["model_size"] == model_size)
-    #                 & (data["failure_probability"] == failure)
-    #                 & (data["strategy"] == strat)
-    #             ]["completeness"].mean()
-    #             map_work[j, i, k] = data[
-    #                 (data["depth"] == depth)
-    #                 & (data["model_size"] == model_size)
-    #                 & (data["failure_probability"] == failure)
-    #                 & (data["strategy"] == strat)
-    #             ]["work_total"].mean()
-    #             map_latency[j, i, k] = data[
-    #                 (data["depth"] == depth)
-    #                 & (data["model_size"] == model_size)
-    #                 & (data["failure_probability"] == failure)
-    #                 & (data["strategy"] == strat)
-    #             ]["simulation_length"].mean()
+    small_tree = 3
+    large_tree = 4
+    small_model = 2**10
+    large_model = 2**12
+    y_maps_values = [
+        (small_tree, small_model),
+        (large_tree, small_model),
+        (small_tree, large_model),
+        (large_tree, large_model),
+    ]
+    map_completeness = np.zeros(
+        (len(y_maps_values), len(failure_probabilities), len(strategies))
+    )
+    map_work = np.zeros(
+        (len(y_maps_values), len(failure_probabilities), len(strategies))
+    )
+    map_latency = np.zeros(
+        (len(y_maps_values), len(failure_probabilities), len(strategies))
+    )
+    for (j, (depth, model_size)) in enumerate(y_maps_values):
+        for (i, failure) in enumerate(failure_probabilities):
+            for (k, strat) in enumerate(strategies):
+                map_completeness[j, i, k] = data[
+                    (data["depth"] == depth)
+                    & (data["model_size"] == model_size)
+                    & (data["failure_probability"] == failure)
+                    & (data["strategy"] == strat)
+                ]["completeness"].mean()
+                map_work[j, i, k] = data[
+                    (data["depth"] == depth)
+                    & (data["model_size"] == model_size)
+                    & (data["failure_probability"] == failure)
+                    & (data["strategy"] == strat)
+                ]["work_per_node_total"].mean()
+                map_latency[j, i, k] = data[
+                    (data["depth"] == depth)
+                    & (data["model_size"] == model_size)
+                    & (data["failure_probability"] == failure)
+                    & (data["strategy"] == strat)
+                ]["simulation_length"].mean()
 
-    # best_strat_completeness_labels_map = [
-    #     ["" for i in range(len(failure_probabilities))]
-    #     for j in range(len(y_maps_values))
-    # ]
-    # best_strat_completeness_map = [
-    #     ["" for i in range(len(failure_probabilities))]
-    #     for j in range(len(y_maps_values))
-    # ]
-    # best_strat_work_labels_map = [
-    #     ["" for i in range(len(failure_probabilities))]
-    #     for j in range(len(y_maps_values))
-    # ]
-    # best_strat_work_map = [
-    #     ["" for i in range(len(failure_probabilities))]
-    #     for j in range(len(y_maps_values))
-    # ]
-    # best_strat_latency_labels_map = [
-    #     ["" for i in range(len(failure_probabilities))]
-    #     for j in range(len(y_maps_values))
-    # ]
-    # best_strat_latency_map = [
-    #     ["" for i in range(len(failure_probabilities))]
-    #     for j in range(len(y_maps_values))
-    # ]
-    # strat_symbol = ["SM", "OS", "OPT", "HY1", "HY3"]
-    # for (j, (depth, model_size)) in enumerate(y_maps_values):
-    #     for (i, failure) in enumerate(failure_probabilities):
-    #         print(
-    #             np.where(
-    #                 map_completeness[j, i, :] == np.max(map_completeness[j, i, :])
-    #             ),
-    #             map_completeness,
-    #         )
-    #         best_strat_completeness_labels_map[j][i] = strat_symbol[
-    #             np.where(
-    #                 map_completeness[j, i, :] == np.max(map_completeness[j, i, :])
-    #             )[0][0]
-    #         ]
-    #         best_strat_completeness_map[j][i] = np.max(map_completeness[j, i, :])
-    #         best_strat_work_map[j][i] = np.max(map_work[j, i, :])
-    #         print(
-    #             "inner",
-    #             map_work[j, i, np.where(map_completeness[j, i, :] > 0)][0],
-    #             np.min(map_work[j, i, np.where(map_completeness[j, i, :] > 0)]),
-    #             np.where(
-    #                 map_work[j, i, :]
-    #                 == np.min(map_work[j, i, np.where(map_completeness[j, i, :] > 0)])
-    #             )[0],
-    #             map_work[j, i, :],
-    #             np.min(map_work[j, i, :]),
-    #             np.where(map_work[j, i, :] == np.min(map_work[j, i, :]))[0],
-    #             np.where(map_completeness[j, i, :] > 0),
-    #         )
-    #         best_strat_work_labels_map[j][i] = ", ".join(
-    #             [
-    #                 strat_symbol[index]
-    #                 for index in np.where(
-    #                     map_work[j, i, :]
-    #                     == np.min(
-    #                         map_work[j, i, np.where(map_completeness[j, i, :] > 0)][0]
-    #                     )
-    #                 )[0]
-    #             ]
-    #         )
-    #         np.where((map_completeness[j, i, :] > 0))
-    #         best_strat_latency_map[j][i] = np.max(map_latency[j, i, :])
-    #         best_strat_latency_labels_map[j][i] = strat_symbol[
-    #             np.where(map_latency[j, i, :] == np.min(map_latency[j, i, :]))[0][0]
-    #         ]
+    np.nan_to_num(map_completeness, False)
+    np.nan_to_num(map_work, False)
+    np.nan_to_num(map_latency, False)
+    best_strat_completeness_labels_map = [
+        ["" for i in range(len(failure_probabilities))]
+        for j in range(len(y_maps_values))
+    ]
+    best_strat_completeness_map = [
+        ["" for i in range(len(failure_probabilities))]
+        for j in range(len(y_maps_values))
+    ]
+    best_strat_work_labels_map = [
+        ["" for i in range(len(failure_probabilities))]
+        for j in range(len(y_maps_values))
+    ]
+    best_strat_work_map = [
+        ["" for i in range(len(failure_probabilities))]
+        for j in range(len(y_maps_values))
+    ]
+    best_strat_latency_labels_map = [
+        ["" for i in range(len(failure_probabilities))]
+        for j in range(len(y_maps_values))
+    ]
+    best_strat_latency_map = [
+        ["" for i in range(len(failure_probabilities))]
+        for j in range(len(y_maps_values))
+    ]
 
-    # graphs["map_best"] = go.Figure(
-    #     data=go.Heatmap(
-    #         z=best_strat_completeness_map,
-    #         text=best_strat_work_labels_map,
-    #         texttemplate="%{text}",
-    #         textfont={"size": 20},
-    #         x=["None", "Few", "Some", "A lot", "Extreme"],
-    #         y=[
-    #             f"depth{depth} model{model_size}"
-    #             for (depth, model_size) in y_maps_values
-    #         ],
-    #     )
-    # )
+    strat_symbol = ["LC", "HC", "SP", "Hy", "HyB"]
+    for (j, (depth, model_size)) in enumerate(y_maps_values):
+        for (i, failure) in enumerate(failure_probabilities):
+            complete_strategies = np.where(
+                (map_completeness[j, i, :] >= 0.8 * np.max(map_completeness[j, i, :]))
+            )[0]
+
+            best_strat_completeness_map[j][i] = np.round(
+                np.max(map_completeness[j, i, :]), 2
+            )
+            best_strat_completeness_labels_map[j][i] = strat_symbol[
+                np.where(
+                    map_completeness[j, i, :] == np.max(map_completeness[j, i, :])
+                )[0][0]
+            ]
+
+            best_strat_work_map[j][i] = np.round(np.max(map_work[j, i, :]), 2)
+
+            efficient_strategies = [
+                complete_strategies[
+                    np.where(
+                        map_work[j, i, complete_strategies]
+                        == np.min(map_work[j, i, complete_strategies])
+                    )[0][0]
+                ]
+            ]
+            intersect = np.intersect1d(
+                complete_strategies,
+                efficient_strategies,
+            )
+            most_efficient_strategy = (
+                complete_strategies if len(intersect) == 0 else intersect
+            )
+            print(
+                f"fail{failure} d{depth} s{model_size}",
+                0.8 * np.max(map_completeness[j, i, :]),
+                strat_symbol,
+                map_completeness[j, i, :],
+                map_work[j, i, :],
+                complete_strategies,
+                efficient_strategies,
+                most_efficient_strategy,
+            )
+
+            best_strat_work_labels_map[j][i] = ", ".join(
+                [strat_symbol[index] for index in most_efficient_strategy]
+            )
+
+            best_strat_latency_map[j][i] = np.round(np.max(map_latency[j, i, :]), 2)
+            best_strat_latency_labels_map[j][i] = strat_symbol[
+                np.where(map_latency[j, i, :] == np.min(map_latency[j, i, :]))[0][0]
+            ]
+
+    graphs["map_completeness"] = go.Figure(
+        data=go.Heatmap(
+            z=best_strat_completeness_map,
+            text=best_strat_completeness_map,
+            texttemplate="%{text}",
+            textfont={"size": 20},
+            x=["None", "Few", "Some", "A lot", "Extreme"],
+            y=[
+                f"depth{depth} model{model_size}"
+                for (depth, model_size) in y_maps_values
+            ],
+        ),
+    ).update_layout(title_text="Completeness")
+    graphs["map_work"] = go.Figure(
+        data=go.Heatmap(
+            z=best_strat_work_map,
+            text=best_strat_work_map,
+            texttemplate="%{text}",
+            textfont={"size": 20},
+            x=["None", "Few", "Some", "A lot", "Extreme"],
+            y=[
+                f"depth{depth} model{model_size}"
+                for (depth, model_size) in y_maps_values
+            ],
+        ),
+    ).update_layout(title_text="Work per node (s)")
+    graphs["map_latency"] = go.Figure(
+        data=go.Heatmap(
+            z=best_strat_latency_map,
+            text=best_strat_latency_map,
+            texttemplate="%{text}",
+            textfont={"size": 20},
+            x=["None", "Few", "Some", "A lot", "Extreme"],
+            y=[
+                f"depth{depth} model{model_size}"
+                for (depth, model_size) in y_maps_values
+            ],
+        ),
+    ).update_layout(title_text="Execution Latency (s)")
+    graphs["map_best"] = go.Figure(
+        data=go.Heatmap(
+            z=best_strat_completeness_map,
+            text=best_strat_work_labels_map,
+            texttemplate="%{text}",
+            textfont={"size": 20},
+            x=["None", "Few", "Some", "A lot", "Extreme"],
+            y=[
+                f"depth{depth} model{model_size}"
+                for (depth, model_size) in y_maps_values
+            ],
+        ),
+    ).update_layout(width=1500, height=600)
 
     graphs[f"count_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
@@ -472,7 +507,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs[f"work_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
         x="failure_probability",
-        y="work_total",
+        y="work_per_node_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
@@ -485,7 +520,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             & (data["model_size"] == default_size)
         ],
         x="depth",
-        y="work_total",
+        y="work_per_node_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
@@ -498,7 +533,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             & (data["depth"] == default_depth)
         ],
         x="model_size",
-        y="work_total",
+        y="work_per_node_total",
         color="strategy",
         hover_name="run_id",
         points=box_points,
@@ -957,18 +992,44 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     ]
     for plot in to_update_plots:
         graphs[plot] = graphs[plot].update_traces(width=0.05 / 3)
-        graphs[plot] = graphs[plot].update_layout(boxgap=0.05 / 3, boxgroupgap=0.001)
+        graphs[plot] = graphs[plot].update_layout(boxgap=0.005, boxgroupgap=0.01)
 
     return html.Div(
         children=[
-            # html.Div(
-            #     children=[
-            #         dcc.Graph(
-            #             id=f"map_best",
-            #             figure=graphs["map_best"],
-            #         )
-            #     ]
-            # ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"map_completeness",
+                        figure=graphs["map_completeness"],
+                    ),
+                    dcc.Graph(
+                        id=f"map_work",
+                        figure=graphs["map_work"],
+                    ),
+                    dcc.Graph(
+                        id=f"map_latency",
+                        figure=graphs["map_latency"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"map_best",
+                        figure=graphs["map_best"],
+                    )
+                ],
+            ),
             html.Div(
                 style={
                     "display": "flex",

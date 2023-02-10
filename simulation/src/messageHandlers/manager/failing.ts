@@ -13,7 +13,7 @@ export function handleFailing(this: NodesManager, receivedMessage: Message) {
     console.log(`${node.tag()} failed, notice by parent #${position ? node?.node?.parents[position] : '??'} `)
   }
 
-  if (node.id === 5428) {
+  if (node.id === 4938) {
     console.log()
   }
 
