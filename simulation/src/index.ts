@@ -46,42 +46,24 @@ if (debug) {
     },
   ]
 } else {
-  const seedPrefix = '3-'
-  const retries = 15
+  const seedPrefix = '4-'
+  const retries = 20
 
   configs = [
     ...createRunConfigs({
       strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_BLOCK],
-      depths: [3, 4, 5],
-      failures: [
-        0, 10000, 400, 333.333, 285.714, 250.0, 222.222, 200.0, 166.666, 142.857, 125.0, 111.111, 100.0, 90.909, 83.333,
-      ],
+      depths: [3, 4],
+      failures: [0, 10000, 400, 200.0, 100.0],
       groupSizes: [4, 5, 6],
-      modelSizes: [1, 2 ** 8, 2 ** 10, 2 ** 12, 2 ** 14],
+      modelSizes: [1],
       retries,
-      fullSpace: false,
+      fullSpace: true,
       seedPrefix,
       defaultValues: {
         depth: 4,
         failure: 400,
         groupSize: 5,
-        modelSize: 2 ** 10,
-      },
-    }),
-    ...createRunConfigs({
-      strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_BLOCK],
-      depths: [3, 4],
-      failures: [0, 10000, 400, 200, 100],
-      groupSizes: [4, 5, 6],
-      modelSizes: [2 ** 10, 2 ** 12],
-      retries,
-      fullSpace: true,
-      seedPrefix: 'grid' + seedPrefix,
-      defaultValues: {
-        depth: 4,
-        failure: 400,
-        groupSize: 5,
-        modelSize: 2 ** 10,
+        modelSize: 2 ** 11,
       },
     }),
   ]

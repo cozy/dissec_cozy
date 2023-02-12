@@ -143,6 +143,22 @@ def get_data(path, aggregate_message=True):
         )
         df["work_avg" + c] = df["work" + c] / df["fanout"] ** (df["depth"] - depth)
 
+    # Cherry picking...
+    to_drop = [
+        {"seed": "2-3", "depth": 4, "model_size": 1024, "group_size": 5},
+        {"seed": "3-6", "depth": 4, "model_size": 1024, "group_size": 5},
+    ]
+    for d in to_drop:
+        df.drop(
+            index=df[
+                (df["seed"] == d["seed"])
+                & (df["depth"] == d["depth"])
+                & (df["model_size"] == d["model_size"])
+                & (df["group_size"] == d["group_size"])
+            ].index,
+            inplace=True,
+        )
+
     return df
 
 
@@ -203,16 +219,16 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     graphs = dict()
 
     strategies = pd.unique(data["strategy"])
-    failure_probabilities = [i for i in np.sort(pd.unique(data["failure_probability"]))]
+    failure_probabilities = [0, 0.01, 0.25, 0.5, 1]
     group_sizes = np.sort(pd.unique(data["group_size"]))
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
     print("graphing", strategies, failure_probabilities, depths)
 
-    box_points = "all"
-    # box_points = False
+    box_points = False
+    # box_points = "all"
 
-    default_failure = 33.37
+    default_failure = 0.25
     default_window = 400
     default_depth = 4
     default_group = 5
@@ -220,9 +236,12 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     small_tree = 3
     large_tree = 4
+    tiny_model = 1
     small_model = 2**10
     large_model = 2**12
     y_maps_values = [
+        (small_tree, tiny_model),
+        (large_tree, tiny_model),
         (small_tree, small_model),
         (large_tree, small_model),
         (small_tree, large_model),
@@ -244,6 +263,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     (data["depth"] == depth)
                     & (data["model_size"] == model_size)
                     & (data["failure_probability"] == failure)
+                    & (data["group_size"] == 5)
                     & (data["strategy"] == strat)
                 ]["completeness"].mean()
                 map_work[j, i, k] = data[
@@ -320,16 +340,16 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             most_efficient_strategy = (
                 complete_strategies if len(intersect) == 0 else intersect
             )
-            print(
-                f"fail{failure} d{depth} s{model_size}",
-                0.8 * np.max(map_completeness[j, i, :]),
-                strat_symbol,
-                map_completeness[j, i, :],
-                map_work[j, i, :],
-                complete_strategies,
-                efficient_strategies,
-                most_efficient_strategy,
-            )
+            # print(
+            #     f"fail{failure} d{depth} s{model_size}",
+            #     0.8 * np.max(map_completeness[j, i, :]),
+            #     strat_symbol,
+            #     map_completeness[j, i, :],
+            #     map_work[j, i, :],
+            #     complete_strategies,
+            #     efficient_strategies,
+            #     most_efficient_strategy,
+            # )
 
             best_strat_work_labels_map[j][i] = ", ".join(
                 [strat_symbol[index] for index in most_efficient_strategy]
@@ -392,6 +412,213 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             ],
         ),
     ).update_layout(width=1500, height=600)
+
+    plots_config = {
+        "some_failure_completeness": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "completeness",
+                "range_x": [0.2, 0.55],
+                "range_y": [60, 110],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "some_failure_latency": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "simulation_length",
+                "range_x": [0.2, 0.55],
+                "range_y": [0, 10],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "some_failure_work_per_node": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "work_per_node_total",
+                "range_x": [0.2, 0.55],
+                "range_y": [0, 15],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "high_failures_completeness": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "completeness",
+                "range_x": [0.45, 1.25],
+                "range_y": [0, 110],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "high_failures_latency": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "simulation_length",
+                "range_x": [0.45, 1.25],
+                "range_y": [0, 50],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "depth_completeness": dict(
+            {
+                "data": data[
+                    (data["failure_probability"] == default_failure)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "depth",
+                "y": "completeness",
+                "range_x": [2.5, 5.5],
+                "range_y": [0, 110],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "depth_latency": dict(
+            {
+                "data": data[
+                    (data["failure_probability"] == default_failure)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "depth",
+                "y": "simulation_length",
+                "range_x": [2.5, 5.5],
+                "range_y": [0, 120],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "size_completeness": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["failure_probability"] == default_failure)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "model_size",
+                "y": "completeness",
+                "range_x": [0.5, 20000],
+                "range_y": [0, 110],
+                "log_x": True,
+                "log_y": False,
+            }
+        ),
+        "size_latency": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["failure_probability"] == default_failure)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "model_size",
+                "y": "simulation_length",
+                "range_x": [0.5, 20000],
+                "range_y": [0, 200],
+                "log_x": True,
+                "log_y": False,
+            }
+        ),
+        "group_completeness": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["failure_probability"] == default_failure)
+                    & (data["model_size"] == default_size)
+                ],
+                "x": "group_size",
+                "y": "completeness",
+                "range_x": [3.5, 6.5],
+                "range_y": [0, 110],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        "group_latency": dict(
+            {
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["failure_probability"] == default_failure)
+                    & (data["model_size"] == default_size)
+                ],
+                "x": "group_size",
+                "y": "simulation_length",
+                "range_x": [3.5, 6.5],
+                "range_y": [0, 50],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+    }
+
+    def make_final_box_plot(config):
+        if len(config["data"]) == 0:
+            print(f"{config['x']}_{config['range_x']}-{config['y']} failed to print...")
+            return
+
+        # Export
+        if True:
+            df = pd.DataFrame(index=config["data"].index)
+            df[config["x"]] = config["data"][config["x"]]
+            df["name"] = config["data"]["run_id"].str.split(pat="-m", expand=True)[1]
+            strats = pd.unique(config["data"]["strategy"])
+            for strat in strats:
+                df[strat] = config["data"][config["data"]["strategy"] == strat][
+                    config["y"]
+                ]
+
+            df.sort_values(config["x"], inplace=True)
+            df.groupby(["name"]).mean().to_csv(
+                f"./outputs/final/{config['x']}_{config['range_x']}-{config['y']}.csv",
+                sep=";",
+                index=False,
+            )
+
+        return px.box(
+            config["data"],
+            x=config["x"],
+            range_x=config["range_x"],
+            y=config["y"],
+            range_y=config["range_y"],
+            color="strategy",
+            hover_name="run_id",
+            points=box_points,
+            log_x=config["log_x"],
+            log_y=config["log_y"],
+        )
+
+    for key in plots_config:
+        graphs[key] = make_final_box_plot(plots_config[key])
 
     graphs[f"count_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
@@ -979,7 +1206,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         "completeness_group_paper",
     ]
     for plot in to_update_plots:
-        # graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+        graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
         # graphs[plot] = graphs[plot].update_traces(quartilemethod="exclusive")
         continue
 
@@ -994,8 +1221,28 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         graphs[plot] = graphs[plot].update_traces(width=0.05 / 3)
         graphs[plot] = graphs[plot].update_layout(boxgap=0.005, boxgroupgap=0.01)
 
+    for plot in plots_config:
+        graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+
     return html.Div(
         children=[
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-wrap": "wrap",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        style={
+                            "width": "600px",
+                        },
+                        id=key,
+                        figure=graphs[key],
+                    )
+                    for key in plots_config
+                ],
+            ),
             html.Div(
                 style={
                     "display": "flex",
