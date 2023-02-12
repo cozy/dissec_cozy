@@ -42,6 +42,7 @@ def get_data(path, aggregate_message=True):
         if "float64" not in df.dtypes.unique():
             df = pd.read_csv(path, sep=";")
 
+    df["name"] = df["name"] + "-g" + df["groupSize"].map(str)
     df.rename(
         mapper={
             "seed": "seed",
@@ -223,10 +224,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     group_sizes = np.sort(pd.unique(data["group_size"]))
     fanouts = np.sort(pd.unique(data["fanout"]))
     depths = np.sort(pd.unique(data["depth"]))
-    print("graphing", strategies, failure_probabilities, depths)
+    print("graphing", strategies, failure_probabilities, depths, group_sizes)
 
     box_points = False
-    # box_points = "all"
+    box_points = "all"
 
     default_failure = 0.25
     default_window = 400
@@ -234,6 +235,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     default_group = 5
     default_size = 2**10
 
+    completeness_margin = 0.95
     small_tree = 3
     large_tree = 4
     tiny_model = 1
@@ -311,7 +313,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
     for (j, (depth, model_size)) in enumerate(y_maps_values):
         for (i, failure) in enumerate(failure_probabilities):
             complete_strategies = np.where(
-                (map_completeness[j, i, :] >= 0.8 * np.max(map_completeness[j, i, :]))
+                (
+                    map_completeness[j, i, :]
+                    >= completeness_margin * np.max(map_completeness[j, i, :])
+                )
             )[0]
 
             best_strat_completeness_map[j][i] = np.round(
@@ -342,7 +347,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             )
             # print(
             #     f"fail{failure} d{depth} s{model_size}",
-            #     0.8 * np.max(map_completeness[j, i, :]),
+            #     completeness_margin * np.max(map_completeness[j, i, :]),
             #     strat_symbol,
             #     map_completeness[j, i, :],
             #     map_work[j, i, :],
@@ -588,6 +593,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
         # Export
         if True:
+            print(
+                f"{config['x']}_{config['range_x']}-{config['y']}.csv",
+                pd.unique(config["data"]["group_size"]),
+            )
             df = pd.DataFrame(index=config["data"].index)
             df[config["x"]] = config["data"][config["x"]]
             df["name"] = config["data"]["run_id"].str.split(pat="-m", expand=True)[1]
@@ -597,8 +606,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     config["y"]
                 ]
 
+            df = df.groupby(["name"]).mean()
             df.sort_values(config["x"], inplace=True)
-            df.groupby(["name"]).mean().to_csv(
+            df.to_csv(
                 f"./outputs/final/{config['x']}_{config['range_x']}-{config['y']}.csv",
                 sep=";",
                 index=False,
@@ -1206,7 +1216,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         "completeness_group_paper",
     ]
     for plot in to_update_plots:
-        graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+        # graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
         # graphs[plot] = graphs[plot].update_traces(quartilemethod="exclusive")
         continue
 
@@ -1222,7 +1232,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         graphs[plot] = graphs[plot].update_layout(boxgap=0.005, boxgroupgap=0.01)
 
     for plot in plots_config:
-        graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+        # graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+        pass
 
     return html.Div(
         children=[
