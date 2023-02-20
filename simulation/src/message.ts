@@ -6,33 +6,38 @@ import TreeNode from './treeNode'
 export enum MessageType {
   // System
   StopSimulator = 'STOP',
+  Failing = 'Failing',
   // Contribution
   RequestContribution = 'ReqContrib',
-  ContributorPing = 'ContribPing',
-  PingTimeout = 'PingTO',
-  PrepareContribution = 'PrepareContrib',
+  FinishContribution = 'FinishContrib',
+  StartSendingContribution = 'StartSendContrib',
   SendContribution = 'SendContrib',
-  ContributionTimeout = 'ContribTO',
   // Synchronization
   ConfirmContributors = 'ConfContrib',
+  ConfirmChildren = 'ConfChildren',
   SynchronizationTimeout = 'SynchroTO',
+  FinishSendingAggregate = 'FinishAgg',
   SendAggregate = 'SendAgg',
   // Failure detection
-  RequestHealthChecks = 'ReqHC',
-  CheckHealth = 'HC',
-  ConfirmHealth = 'ConfH',
-  HealthCheckTimeout = 'HCTO',
+  HandleFailure = 'Failure',
   // Failure handling
-  ContinueMulticast = 'ContMCast',
-  ContactBackup = 'ContactBU',
-  BackupResponse = 'BUResponse',
-  ConfirmBackup = 'ConfBU',
   NotifyGroup = 'NotifGroup',
   NotifyGroupTimeout = 'NotifGroupTO',
   ContributorsPolling = 'ContributorsPolling',
   SendChildren = 'SendChildren',
   RequestData = 'ReqData',
   GiveUpChild = 'GiveUp',
+}
+
+export const isSystemMessage = (messageType: MessageType) => {
+  switch (messageType) {
+    case MessageType.StopSimulator:
+      return true
+    case MessageType.Failing:
+      return true
+    default:
+      return false
+  }
 }
 
 export enum StopStatus {
@@ -44,6 +49,7 @@ export enum StopStatus {
   BadResult = 'BadResult',
   AllContributorsDead = 'ContribDead',
   OutOfBackup = '0Backup',
+  FullFailurePropagation = 'FFP',
 }
 
 export interface Aggregate {
@@ -102,18 +108,20 @@ export class Message {
   log(receiver: Node, filter: MessageType[] = []) {
     if (filter.includes(this.type)) return
 
-    const tag = `[@${receiver.localTime}] (${receiver.role}) Node #${receiver.id}`
+    const tag = receiver.tag()
     const position = receiver.node?.members.indexOf(receiver.id)
     let children: number[] =
       receiver.role === NodeRole.Querier
-        ? receiver.node?.children[0].members
+        ? receiver.node?.children.length === 0
+          ? []
+          : receiver.node?.children[0].members
         : (receiver.node?.children
             .map(e => (position ? e.members[position] : undefined))
             .filter(e => e !== undefined) as any)
 
     switch (receiver.role) {
       case NodeRole.Querier:
-        children = receiver.node!.children[0].members
+        children = receiver.node!.children.length === 0 ? [] : receiver.node!.children[0].members
         break
       case NodeRole.LeafAggregator:
         children = receiver.node!.children.flatMap(e => e.members)
@@ -130,35 +138,17 @@ export class Message {
       case MessageType.RequestContribution:
         console.log(`${tag} received a request for contribution`)
         break
-      case MessageType.PrepareContribution:
-        console.log(`${tag} is processing share to send to node #${this.content.targetNode}`)
+      case MessageType.FinishContribution:
+        console.log(`${tag} is sending the last packet to its parents`)
+        break
+      case MessageType.StartSendingContribution:
+        console.log(`${tag} starts sending its contribution`)
         break
       case MessageType.SendContribution:
         console.log(
-          `${tag} received contribution #${Object.values(receiver.contributions).length + 1} (${
+          `${tag} received contribution n°${Object.values(receiver.contributions).length + 1} (${
             this.content.share
-          }) from #${this.emitterId}`
-        )
-        break
-      case MessageType.ContributionTimeout:
-        console.log(
-          `${tag} timed out waiting for contributions, received ${
-            Object.values(receiver.contributions).length
-          } contributions from [${receiver.contributorsList[receiver.id]
-            ?.filter(e => receiver.contributions[e])
-            .slice()
-            .sort()}], sending to others [${receiver.node?.members.filter(e => e !== receiver.id).map(e => '#' + e)}]`
-        )
-        break
-      case MessageType.ContributorPing:
-        console.log(`${tag} received a contribution ping from node #${this.emitterId}`)
-        break
-      case MessageType.PingTimeout:
-        console.log(
-          `${tag} timed out waiting for contribution pings, found ${receiver.pingList.length}: [${receiver.pingList
-            .slice()
-            .sort()
-            .map(e => '#' + e)}]`
+          }) from #${this.emitterId} `
         )
         break
       case MessageType.ConfirmContributors:
@@ -167,13 +157,23 @@ export class Message {
             arrayEquals(receiver.contributorsList[receiver.id] || [], this.content.contributors || [])
               ? ''
               : ' different'
-          } confirmed list of ${this.content.contributors?.length} contributors from node #${
-            this.emitterId
-          }, sending data to parent #${receiver.node!.parents[receiver.node!.members.indexOf(receiver.id)]}. ${
+          } confirmed list of ${this.content.contributors?.length} contributors from node #${this.emitterId} , ${
+            receiver.contributorsList[receiver.id]?.every(e => receiver.contributions[e]) ? '' : 'not '
+          }sending data to parent #${receiver.node?.parents[receiver.node?.members.indexOf(receiver.id)] || '???'} . ${
             this.content.contributors
               ? `new id=${receiver.aggregationId(this.content.contributors.map(String))}`
               : 'Did not receive contributors'
           }`
+        )
+        break
+      case MessageType.ConfirmChildren:
+        console.log(
+          `${tag} received a list of ${this.content.children?.length} children from node #${
+            this.emitterId
+          }, already received [${receiver
+            .node!.members.filter(e => receiver.confirmedChildren[e])
+            .map(e => '#' + e)
+            .join(' , ')} ]`
         )
         break
       case MessageType.SynchronizationTimeout:
@@ -184,81 +184,31 @@ export class Message {
           } contributors`
         )
         break
+      case MessageType.FinishSendingAggregate:
+        console.log(
+          `${tag} finished sending its aggregate (ID=${this.content.aggregate?.id}) to parent #${this.content.targetNode} `
+        )
+        break
       case MessageType.SendAggregate:
         console.log(
           `${tag} received an aggregate from child #${this.emitterId} (ID=${this.content.aggregate!.id}). [${children
             ?.filter(child => Boolean(receiver.aggregates[child]))
-            .map(e => '#' + e)}] out of [${children.map(e => `#${e}(${receiver.aggregates[e]?.id || '??'})`)}]`
+            .map(e => '#' + e)
+            .join(' , ')} ] out of [${children.map(e => `#${e} (${receiver.aggregates[e]?.id || '??'})`).join(' , ')} ]`
         )
         break
-      case MessageType.RequestHealthChecks:
+      case MessageType.HandleFailure:
         console.log(
-          `${tag} is requesting health checks from his children [${children.map(e => '#' + e)}]. ${
-            receiver.finishedWorking ? 'Not rescheduling' : 'Rescheduling'
-          }`
-        )
-        break
-      case MessageType.CheckHealth:
-        console.log(`${tag} received a health check request from parent node #${this.emitterId}.`)
-        break
-      case MessageType.ConfirmHealth:
-        console.log(
-          `${tag} received a health confirmation from child node #${this.emitterId} ([${Object.keys(
-            receiver.ongoingHealthChecks
-          )}]). ${
-            receiver.role !== NodeRole.Querier &&
-            this.content.members &&
-            !arrayEquals(
-              receiver.node!.children.find(e => e.members.includes(this.emitterId))!.members,
-              this.content.members!
-            )
-              ? ` Child updated its members: [${
-                  receiver.node!.children.find(e => e.members.includes(this.emitterId))!.members
-                }] -> [${this.content.members}]`
-              : ''
-          }`
-        )
-        break
-      case MessageType.HealthCheckTimeout:
-        console.log(
-          `${tag} timed out health checks. ${
-            Object.keys(receiver.ongoingHealthChecks).length
-          } ongoing health checks are unanswered:`
-        )
-        for (const unansweredHealthCheck of Object.keys(receiver.ongoingHealthChecks)) {
-          console.log(
-            `\t- Node #${unansweredHealthCheck} did not answer the health check, triggering recovery procedure...`
-          )
-        }
-        break
-      case MessageType.ContinueMulticast:
-        if (receiver.continueMulticast) console.log(`${tag} tries to continue multicasting to backups`)
-        else console.log(`${tag} does not need top continue multicasting`)
-        break
-      case MessageType.ContactBackup:
-        console.log(`${tag} received a request from node #${this.emitterId} to replace #${this.content.failedNode}`)
-        break
-      case MessageType.BackupResponse:
-        console.log(
-          `${tag} received a ${this.content.backupIsAvailable ? 'positive' : 'negative'} response from backup #${
-            this.emitterId
-          } to replace #${this.content.failedNode}`
-        )
-        break
-      case MessageType.ConfirmBackup:
-        console.log(
-          `${tag} received a ${this.content.useAsBackup ? 'positive' : 'negative'} response from the parent #${
-            this.emitterId
-          } to join group [${this.content.targetGroup?.members.map(e => '#' + e)}] to replace #${
-            this.content.failedNode
-          }`
+          `${tag} is handling the failure of node #${this.content.failedNode} (${
+            receiver.manager.nodes[this.content.failedNode!].role
+          })`
         )
         break
       case MessageType.NotifyGroup:
         console.log(
           `${tag} has been contacted by the new member #${this.emitterId} to know its children, replacing #${
             this.content.failedNode
-          } in group [${this.content.targetGroup?.members.map(e => '#' + e)}]${
+          } in group [${this.content.targetGroup?.members.map(e => '#' + e).join(' , ')}]${
             receiver.contributorsList[receiver.id] || receiver.node?.children.length
               ? '.'
               : ', but does not know child yet.'
@@ -269,30 +219,30 @@ export class Message {
         console.log(
           `${tag} has timed out on the group notification. ${
             receiver.node?.children.length
-              ? `New children are [${receiver.node?.children.map(e => '#' + e.members[position!])}]`
+              ? `New children are [${receiver.node?.children.map(e => '#' + e.members[position!]).join(' , ')} ]`
               : 'No known children'
           }`
         )
         break
       case MessageType.ContributorsPolling:
         console.log(
-          `${tag} has timed out on the group notification. New children are [${receiver.node?.children.map(
-            e => e.members[position!]
-          )}] ${!receiver.node?.children.length ? 'No known children' : 'Ignored'}`
+          `${tag} has timed out on the group notification. New children are [${receiver.node?.children
+            .map(e => e.members[position!])
+            .join(' , ')} ] ${!receiver.node?.children.length ? 'No known children' : 'Ignored'}`
         )
         break
       case MessageType.SendChildren:
         console.log(
-          `${tag} received its children from node #${this.emitterId}: [${this.content.children?.map(
-            e => '#' + e.members
-          )}]`
+          `${tag} received its children from node #${this.emitterId}: [${this.content.children
+            ?.map(e => '#' + e.members)
+            .join(' , ')} ]`
         )
         break
       case MessageType.RequestData:
         console.log(`${tag} has been requested data by backup #${this.emitterId} joining the tree`)
         break
       case MessageType.GiveUpChild:
-        console.log(`${tag} has been told to give up child ${this.content.targetNode} by member ${this.emitterId}`)
+        console.log(`${tag} has been told to give up child #${this.content.targetNode} by member #${this.emitterId}`)
         break
     }
   }

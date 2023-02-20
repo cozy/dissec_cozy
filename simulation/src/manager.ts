@@ -1,8 +1,9 @@
-import cloneDeep from 'lodash/cloneDeep'
 import rayleigh from '@stdlib/random-base-rayleigh'
+import cloneDeep from 'lodash/cloneDeep'
 
-import { RunConfig } from './experimentRunner'
-import { Message, MessageType, StopStatus } from './message'
+import { FailurePropagationBlock, RunConfig } from './experimentRunner'
+import { isSystemMessage, Message, MessageType, StopStatus } from './message'
+import { handleFailing, handleStopSimulator } from './messageHandlers/manager'
 import Node, { NodeRole } from './node'
 import { Generator, xmur3 } from './random'
 import TreeNode from './treeNode'
@@ -14,12 +15,15 @@ export interface ManagerArguments extends RunConfig {
 
 export interface AugmentedMessage extends Omit<Message, 'log'> {
   currentlyCirculatingVersions: number
-  bandwidth: number
+  inboundBandwidth: number
+  outboundBandwidth: number
 }
 
 export class NodesManager {
   debug?: boolean
+  root: TreeNode
   nodes: { [id: number]: Node } = {}
+  replacementNodes: Node[] = []
   querier: number = 0
   messages: Message[] = []
   oldMessages: AugmentedMessage[] = []
@@ -29,6 +33,7 @@ export class NodesManager {
   multicastSize: number
   failureRate: number
   lastFailureUpdate: number = 0
+  nextStepFailures: number = 0
   status: StopStatus
   generator: () => number
   rayleigh = rayleigh.factory(1, { seed: 1 })
@@ -38,11 +43,29 @@ export class NodesManager {
   messagesPerRole: { [role: string]: number } = {}
   workPerRole: { [role: string]: number } = {}
   failuresPerRole: { [role: string]: number } = {}
-  bandwidthPerRole: { [role: string]: number } = {}
+  inboundBandwidthPerRole: { [role: string]: number } = {}
+  outboundBandwidthPerRole: { [role: string]: number } = {}
+  failurePropagationsPerRole: { [role: string]: number } = {}
+  circulatingAggregateIdsPerRole: { [role: string]: { [id: string]: boolean } } = {}
+  maxDepth: number = 6
+  messagesPerLevel: number[] = Array(this.maxDepth).fill(0)
+  workPerLevel: number[] = Array(this.maxDepth).fill(0)
+  failuresPerLevel: number[] = Array(this.maxDepth).fill(0)
+  inboundBandwidthPerLevel: number[] = Array(this.maxDepth).fill(0)
+  outboundBandwidthPerLevel: number[] = Array(this.maxDepth).fill(0)
+  failurePropagationsPerLevel: number[] = Array(this.maxDepth).fill(0)
+  circulatingAggregateIdsPerLevel: { [id: string]: boolean }[] = Array(this.maxDepth)
+    .fill(0)
+    .map(() => ({}))
   circulatingAggregateIds: { [id: string]: boolean } = {}
-  usedBandwidth: number = 0
+  inboundBandwidth: number = 0
+  outboundBandwidth: number = 0
+  abortedReplacements: number = 0
   totalWork = 0
   finalNumberContributors = 0
+
+  handleStopSimulator = handleStopSimulator
+  handleFailing = handleFailing
 
   constructor(options: ManagerArguments) {
     this.debug = options.debug
@@ -50,7 +73,7 @@ export class NodesManager {
     this.multicastSize = options.multicastSize
     this.failureRate = options.failureRate
     this.status = StopStatus.Unfinished
-    this.generator = Generator.get(options.seed)
+    this.generator = Generator.get(options.seed, true)
 
     // Sigma such that the median is the desired latency
     const sigma = options.averageLatency / Math.sqrt(Math.PI / 2)
@@ -63,19 +86,24 @@ export class NodesManager {
       this.workPerRole[e] = 0
       this.failuresPerRole[e] = 0
       this.messagesPerRole[e] = 0
-      this.bandwidthPerRole[e] = 0
+      this.inboundBandwidthPerRole[e] = 0
+      this.outboundBandwidthPerRole[e] = 0
+      this.failurePropagationsPerRole[e] = 0
+      this.circulatingAggregateIdsPerRole[e] = {}
     })
   }
 
   static createFromTree(root: TreeNode, options: ManagerArguments): NodesManager {
     const manager = new NodesManager(options)
+    manager.root = root
 
-    let i = root.id
-    let node = root.findNode(i)
+    let i = root.members[0]
+    let node = root.findGroup(i)
     while (node) {
-      manager.addNode(node)
+      const n = manager.addNode(node)
+      n.role = NodeRole.Aggregator
       i += 1
-      node = root.findNode(i)
+      node = root.findGroup(i)
     }
 
     return manager
@@ -98,100 +126,114 @@ export class NodesManager {
       res[`messages_${r}`] = this.messagesPerRole[r]
       res[`initial_nodes_${r}`] = this.initialNodeRoles[r]
       res[`final_nodes_${r}`] = this.finalNodeRoles[r]
-      res[`bandwidth_${r}`] = this.bandwidthPerRole[r]
+      res[`inbound_bandwidth_${r}`] = this.inboundBandwidthPerRole[r]
+      res[`outbound_bandwidth_${r}`] = this.outboundBandwidthPerRole[r]
+      res[`propagation_${r}`] = this.failurePropagationsPerRole[r]
+      res[`versions_${r}`] = Object.values(this.circulatingAggregateIdsPerRole[r]).length
+    }
+    return res
+  }
+
+  statisticsPerLevel() {
+    const res: { [key: string]: number } = {}
+    for (const r in Array(this.maxDepth).fill(0)) {
+      res[`work_level_${r}`] = this.workPerLevel[r]
+      res[`failures_level_${r}`] = this.failuresPerLevel[r]
+      res[`messages_level_${r}`] = this.messagesPerLevel[r]
+      res[`inbound_bandwidth_level_${r}`] = this.inboundBandwidthPerLevel[r]
+      res[`outbound_bandwidth_level_${r}`] = this.outboundBandwidthPerLevel[r]
+      res[`propagation_level_${r}`] = this.failurePropagationsPerLevel[r]
+      res[`versions_level_${r}`] = Object.values(this.circulatingAggregateIdsPerLevel[r]).length
     }
     return res
   }
 
   addNode(node: TreeNode, querier?: number): Node {
     if (querier) this.querier = querier
-    this.nodes[node.id] = new Node({ node, config: this.config })
-    return this.nodes[node.id]
+    const id = Object.keys(this.nodes).length
+    this.nodes[id] = new Node({ manager: this, node, id, config: this.config })
+    return this.nodes[id]
   }
 
-  updateFailures() {
-    for (const node of Object.values(this.nodes)) {
-      if (node.alive) {
-        // Querier can't die
-        if (this.generator() < this.failureRate && node.role !== NodeRole.Querier) {
-          const newFailure = node.alive
-          // The node failed
-          node.alive = false
-          if (newFailure) {
-            node.deathTime = this.globalTime
-            this.failuresPerRole[node.role] += 1
-            if (
-              node.node &&
-              node.node.children.length !== 0 &&
-              node.node.members.map(id => !this.nodes[id].alive && !this.nodes[id].finishedWorking).every(Boolean)
-            ) {
-              // All members of the group are dead, stop the run because it's dead
-              this.messages.push(
-                new Message(MessageType.StopSimulator, 0, this.globalTime, this.querier, this.querier, {
-                  status: StopStatus.GroupDead,
-                  targetGroup: node.node,
-                })
-              )
-            }
+  setFailures() {
+    const baseProtocolLatency = this.baseProtocolLatency()
+
+    if (this.failureRate > 0) {
+      if (this.config.adaptedFailures) {
+        for (const node of Object.values(this.nodes)) {
+          if (node.role !== NodeRole.Querier) {
+            // Exponential law
+            // node.deathTime = -this.failureRate * Math.log(1 - this.generator())
+
+            // Uniform distribution over a window
+            node.deathTime = baseProtocolLatency * (100 - this.failureRate) * this.generator()
+            this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
           }
         }
-      }
-      if (!node.alive && node.deathTime === 0) {
-        node.deathTime = this.globalTime
+      } else {
+        for (const node of Object.values(this.nodes)) {
+          if (node.role !== NodeRole.Querier) {
+            // Uniform distribution over a fixed size window
+            node.deathTime = this.failureRate * this.generator()
+            this.insertMessage(new Message(MessageType.Failing, node.deathTime, node.deathTime, node.id, node.id, {}))
+          }
+        }
       }
     }
   }
 
   transmitMessage(unsentMessage: Message) {
-    // Messages wtihout arrival date are added a standard latency
+    // Messages without arrival date are added a standard latency
     if (unsentMessage.receptionTime === 0)
       unsentMessage.receptionTime = unsentMessage.emissionTime + this.standardLatency()
 
-    if (this.nodes[unsentMessage.emitterId].alive) {
+    if (this.nodes[unsentMessage.emitterId]?.isAlive(unsentMessage.emissionTime)) {
+      // The node is alive to send the message
       this.insertMessage(cloneDeep(unsentMessage))
       this.messageCounter++
     }
   }
 
   handleNextMessage() {
-    const message = this.messages.pop()!
+    const message = this.messages.pop()
+    if (!message) return
+    const alive = this.nodes[message.receiverId].isAlive(message.receptionTime)
 
-    // Update simulation time and failures
-    while (this.lastFailureUpdate + this.config.failCheckPeriod <= message.receptionTime) {
-      this.updateFailures()
-      this.lastFailureUpdate += this.config.failCheckPeriod
-      this.globalTime = this.lastFailureUpdate
-    }
+    // Advance simulation time
+    this.globalTime = message.receptionTime
 
-    if (message.type === MessageType.StopSimulator) {
-      // Flushing the message queue
-      this.messages = []
-      this.status = message.content.status!
-
-      switch (this.status) {
-        case StopStatus.SimultaneousFailures:
-          console.log(
-            `#${
-              message.content.targetGroup?.id
-            } did not receive its children from its members. Members = [${message.content.targetGroup!.members.map(
-              e => `#${e} (${this.nodes[e].alive}@${this.nodes[e].deathTime})`
-            )}]; children = [${message.content.targetGroup!.children}]`
-          )
-          break
-        case StopStatus.GroupDead:
-          console.log(
-            `Group of node [${
-              message.content.targetGroup!.members
-            }]) died at [${message.content.targetGroup!.members.map(m => this.nodes[m].deathTime)}]`
-          )
-        case StopStatus.Success:
-          this.finalNumberContributors = message.content.contributors?.length || 0
-          break
+    if (isSystemMessage(message.type)) {
+      // Treat system messages first
+      if (this.config.fullExport) {
+        // Save messages for exporting
+        this.oldMessages.push({
+          ...message,
+          currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
+          inboundBandwidth: this.inboundBandwidth,
+          outboundBandwidth: this.outboundBandwidth,
+          ...this.statisticsPerRole(),
+          ...this.statisticsPerLevel(),
+        })
       }
-    } else if (this.nodes[message.receiverId].localTime > this.config.deadline) {
-      this.messages = [new Message(MessageType.StopSimulator, 0, -1, 0, 0, { status: StopStatus.ExceededDeadline })]
-    } else if (this.nodes[message.receiverId].alive) {
-      this.globalTime = message.receptionTime
+
+      switch (message.type) {
+        case MessageType.StopSimulator:
+          this.handleStopSimulator(message)
+          break
+        case MessageType.Failing:
+          this.handleFailing(message)
+          break
+        default:
+          throw new Error('Unimplemented system message')
+      }
+    } else if (message.receptionTime > this.config.deadline) {
+      this.messages = [
+        new Message(MessageType.StopSimulator, this.globalTime, this.globalTime, 0, 0, {
+          status: StopStatus.ExceededDeadline,
+        }),
+      ]
+    } else if (alive) {
+      this.oldMessages.findIndex
       // Receiving a message creates new ones
       const resultingMessages = this.nodes[message.receiverId]
         .receiveMessage(message)
@@ -209,15 +251,25 @@ export class NodesManager {
         // Save stats for exporting
         this.totalWork += message.work
         this.workPerRole[this.nodes[message.receiverId].role] += message.work
+        this.workPerLevel[this.nodes[message.receiverId].node?.depth!] += message.work
         if (message.emitterId !== message.receiverId) {
           this.messagesPerRole[this.nodes[message.receiverId].role] += 1
+          this.messagesPerLevel[this.nodes[message.receiverId].node?.depth!] += 1
         }
-        if (message.type === MessageType.SendAggregate) {
+        if (message.type === MessageType.FinishSendingAggregate) {
           this.circulatingAggregateIds[message.content.aggregate!.id] = true
+          this.circulatingAggregateIdsPerRole[this.nodes[message.receiverId].role][message.content.aggregate!.id] = true
+          this.circulatingAggregateIdsPerLevel[this.nodes[message.receiverId].node?.depth!][
+            message.content.aggregate!.id
+          ] = true
         }
-        if (message.content.share || message.content.aggregate?.data) {
-          this.usedBandwidth += 1
-          this.bandwidthPerRole[this.nodes[message.emitterId].role] += 1
+        if (message.type === MessageType.FinishSendingAggregate || message.type === MessageType.FinishContribution) {
+          this.inboundBandwidth += this.config.modelSize
+          this.outboundBandwidth += this.config.modelSize
+          this.inboundBandwidthPerRole[this.nodes[message.receiverId].role] += this.config.modelSize
+          this.outboundBandwidthPerRole[this.nodes[message.emitterId].role] += this.config.modelSize
+          this.inboundBandwidthPerLevel[this.nodes[message.receiverId].node?.depth!] += this.config.modelSize
+          this.outboundBandwidthPerLevel[this.nodes[message.emitterId].node?.depth!] += this.config.modelSize
         }
 
         if (this.config.fullExport) {
@@ -225,7 +277,9 @@ export class NodesManager {
           this.oldMessages.push({
             ...message,
             currentlyCirculatingVersions: Object.keys(this.circulatingAggregateIds).length,
-            bandwidth: this.usedBandwidth,
+            inboundBandwidth: this.inboundBandwidth,
+            outboundBandwidth: this.outboundBandwidth,
+            ...this.statisticsPerRole(),
           })
         }
 
@@ -233,6 +287,102 @@ export class NodesManager {
           this.transmitMessage(msg)
         }
       }
+    }
+  }
+
+  fullFailurePropagation(node: Node, addTimeout: boolean = false) {
+    if (!node.node) {
+      // Backup node don't propagate failures
+      return
+    }
+
+    // TODO: Count incurred comms
+    const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+    const propagationLatency = (2 * this.config.depth - node.node.depth) * this.config.averageLatency
+
+    this.insertMessage(
+      new Message(
+        MessageType.StopSimulator,
+        this.globalTime,
+        this.globalTime + propagationLatency + (addTimeout ? timeout : 0),
+        node.id,
+        node.id,
+        {
+          status: StopStatus.FullFailurePropagation,
+          failedNode: node.id,
+        }
+      )
+    )
+    // Set all nodes as dead
+    Object.values(this.nodes).forEach(node => {
+      if (node.propagatedFailure) {
+        node.propagatedFailure = true
+        node.killed = this.globalTime + propagationLatency
+      }
+    })
+  }
+
+  /**
+   * Stops all nodes below the target node, including the target.
+   *
+   * @param node The node below which the tree is cut
+   */
+  localeFailurePropagation(node: Node, addTimeout: boolean = false) {
+    if (!node.node) {
+      // Backup node don't propagate failures
+      return
+    }
+
+    // TODO: Count incurred comms
+    const timeout = 2 * this.config.averageLatency * this.config.maxToAverageRatio
+    const propagationLatency = (1 + node.node.depth) * this.config.averageLatency
+
+    // Set nodes as dead
+    const killSubtree = (node: TreeNode) => {
+      node.members.forEach(n => {
+        if (this.nodes[n].propagatedFailure) {
+          this.nodes[n].propagatedFailure = true
+          this.nodes[n].killed = this.globalTime + propagationLatency + (addTimeout ? timeout : 0)
+        }
+      })
+      node.children.forEach(n => killSubtree(n))
+    }
+    killSubtree(node.node)
+
+    // Notify parent
+    const position = node.node.members.indexOf(node.id)
+    for (const parent of node.node.parents) {
+      this.insertMessage(
+        new Message(
+          MessageType.HandleFailure,
+          node.localTime,
+          node.localTime + this.standardLatency() + (addTimeout ? timeout : 0),
+          node.node.parents[position], // The parent of the target node contacts its members
+          parent,
+          {
+            failedNode: node.id,
+            targetGroup: node.node,
+          }
+        )
+      )
+    }
+  }
+
+  propagateFailure(node: Node, addTimeout: boolean) {
+    if (typeof node.node?.depth === 'number') {
+      this.failurePropagationsPerLevel[node.node.depth] += 1
+    }
+    this.failurePropagationsPerRole[node.role] += 1
+
+    if (
+      this.config.buildingBlocks.failurePropagation === FailurePropagationBlock.FullFailurePropagation ||
+      node.id === this.querier
+    ) {
+      // Propagate a full failure if the querier is failing.
+      // This can happen when the querier lost its last child
+      this.fullFailurePropagation(node, addTimeout)
+    } else {
+      this.localeFailurePropagation(node, addTimeout)
     }
   }
 
@@ -249,7 +399,7 @@ export class NodesManager {
       }
       for (const child of node.node!.children) {
         console.group()
-        log(this.nodes[child.id])
+        log(this.nodes[child.members[0]])
       }
       console.groupEnd()
     }
@@ -257,13 +407,31 @@ export class NodesManager {
     log(querier)
   }
 
-  private standardLatency(): number {
+  standardLatency(): number {
     if (this.config.random) {
       // TODO: Model latency
-      return Math.max(0, Math.min(this.config.averageLatency * this.config.maxToAverageRatio, this.rayleigh()))
+      return Math.max(0, Math.min((this.config.averageLatency * this.config.maxToAverageRatio) / 3, this.rayleigh()))
+      // return this.config.averageLatency
     } else {
       return this.config.averageLatency
     }
+  }
+
+  baseProtocolLatency(): number {
+    const contributorsWork = 2 * this.config.averageComputeTime * this.config.modelSize * this.config.groupSize
+    const contributorsTransmission =
+      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
+    const aggregatorsWork = this.config.averageComputeTime * this.config.modelSize
+    const aggregatorsTransmission =
+      this.config.averageLatency + (this.config.groupSize * this.config.modelSize) / this.config.averageBandwidth
+    const querierWork = aggregatorsWork * this.config.groupSize
+
+    return (
+      contributorsWork +
+      contributorsTransmission +
+      this.config.depth * (this.config.fanout * aggregatorsWork + aggregatorsTransmission) +
+      querierWork
+    )
   }
 
   private AIsBeforeB(a: Message, b: Message): boolean {
@@ -271,23 +439,15 @@ export class NodesManager {
     if (b.receptionTime === a.receptionTime) {
       const priorityBonus = (type: MessageType) => {
         switch (type) {
-          case MessageType.PingTimeout:
-            return 1000
-          case MessageType.ContributionTimeout:
-            return 1000
           case MessageType.NotifyGroupTimeout:
             return 1000
-          case MessageType.CheckHealth:
+          case MessageType.Failing:
+            return 900
+          case MessageType.HandleFailure:
             return 900
           case MessageType.NotifyGroup:
             return 800
-          case MessageType.ContactBackup:
-            return 800
-          case MessageType.ConfirmBackup:
-            return 800
-          case MessageType.BackupResponse:
-            return 800
-          case MessageType.ContributorPing:
+          case MessageType.GiveUpChild:
             return 800
           case MessageType.ConfirmContributors:
             return 800
@@ -308,7 +468,7 @@ export class NodesManager {
     }
   }
 
-  private insertMessage(message: Message) {
+  insertMessage(message: Message) {
     if (this.messages.length === 0) {
       this.messages = [message]
     } else {

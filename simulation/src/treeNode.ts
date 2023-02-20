@@ -1,53 +1,54 @@
 import cloneDeep from 'lodash/cloneDeep'
+
 import { RunConfig } from './experimentRunner'
-import { Generator } from './random'
 
 class TreeNode {
-  id: number
   parents: number[]
   members: number[]
   children: TreeNode[]
   depth: number
 
-  constructor(id: number, depth: number) {
-    this.id = id
+  constructor(depth: number) {
     this.depth = depth
     this.parents = []
     this.members = []
     this.children = []
   }
 
-  static fromCopy(source: TreeNode, id: number): TreeNode {
-    const copy = JSON.parse(JSON.stringify(source))
-    const node = new TreeNode(id, source.depth)
-    node.parents = copy.parents
-    node.members = copy.members
-    node.children = source.children.map(e => this.fromCopy(e, e.id))
-    return node
-  }
-
   copy(): TreeNode {
     return cloneDeep(this)
   }
 
-  static createTree(run: RunConfig, depth: number, id: number): { nextId: number; node: TreeNode } {
-    const node = new TreeNode(id, run.depth)
+  equals(other: TreeNode) {
+    const members = other.members.map(member => !this.members.includes(member)).filter(Boolean).length === 0
+    const parents = other.parents.map(parent => !this.parents.includes(parent)).filter(Boolean).length === 0
+    return members && parents
+  }
+
+  static createTree(
+    run: RunConfig,
+    depth: number,
+    id: number,
+    generator: () => number
+  ): { nextId: number; node: TreeNode } {
+    const node = new TreeNode(depth)
     node.members = Array(run.groupSize)
       .fill(id)
       .map((e, i) => e + i)
     if (depth > 0) {
       let currentId = id + run.groupSize
       for (let i = 0; i < run.fanout; i++) {
-        const { nextId, node: child } = TreeNode.createTree(run, depth - 1, currentId)
+        const { nextId, node: child } = TreeNode.createTree(run, depth - 1, currentId, generator)
         child.parents = node.members
         node.children.push(child)
         currentId = nextId
       }
       return { nextId: currentId, node }
     } else {
-      const generator = Generator.get(run.seed)
       // Rebalance the number of members in this contributor group
-      const numberOfContributors = run.random ? Math.round(Math.sqrt(run.fanout ** (generator() * 2))) : 1
+      const numberOfContributors = run.random
+        ? Math.round(run.fanout ** (generator() + run.concentration))
+        : run.fanout ** run.concentration
 
       if (node.members.length > numberOfContributors) {
         // Removing contributors from the group
@@ -68,22 +69,20 @@ class TreeNode {
   }
 
   /**
-   * Finds the node with the given ID below the current node.
+   * Finds the group where a member has the given ID below the current node.
    *
    * @param id The id of the searched node
    * @returns The searched node and its position in its group
    */
-  findNode(id: number): TreeNode | undefined {
+  findGroup(id: number): TreeNode | undefined {
     let index: number
-    if (id === this.id) {
+    if ((index = this.members.indexOf(id)) >= 0) {
       return this
-    } else if ((index = this.members.indexOf(id)) >= 0) {
-      return TreeNode.fromCopy(this, this.members[index])
-    } else if ((index = this.children.map(e => e.id).indexOf(id)) >= 0) {
+    } else if ((index = this.children.map(e => e.members.includes(id)).indexOf(true)) >= 0) {
       return this.children[index]
     } else {
       for (const child of this.children) {
-        const node = child.findNode(id)
+        const node = child.findGroup(id)
         if (node) {
           return node
         }
@@ -101,7 +100,7 @@ class TreeNode {
   }
 
   log(depth: number = 1) {
-    console.log(`Node #${this.id} (members=${this.members}) has ${this.children.length} children:`)
+    console.log(`Group [${this.members.map(e => '#' + e)}] has ${this.children.length} children:`)
     for (let i = 0; i < this.children.length; i++) {
       console.group()
       this.children[i].log(depth + 1)

@@ -11,6 +11,7 @@ tabs = [
     dict(label="Taille de groupe", value="group_size"),
     dict(label="Fanout", value="fanout"),
     dict(label="Taux de panne", value="failure_rate"),
+    dict(label="Concentration", value="concentration"),
 ]
 roles = ["Aggregator", "LeafAggregator", "Contributor", "Backup", "Querier"]
 statistics = [
@@ -39,7 +40,8 @@ def get_data(path):
 
     df.rename(
         mapper={
-            "seed": "run_id",
+            "name": "run_id",
+            "buildingBlocks": "strategy",
             "failureRate": "failure_probability",
             "observedFailureRate": "failure_rate",
             "emissionTime": "emitter_time",
@@ -132,6 +134,7 @@ def generate_summary(data, status, strategies):
 
 def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
     copy_df = df.copy()
+    copy_df.sort_values(by=[x_axis, y_axis], inplace=True)
 
     work_min = copy_df["total_work"].max()
     work_max = copy_df["total_work"].min()
@@ -482,14 +485,56 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             title=f"{strategies_map[strat]} Completeness per group size",
         )
 
+    mean_copy_df = copy_df.groupby(
+        ["depth", "failure_probability", "strategy"], as_index=False
+    ).mean()
+    diffs_opti = mean_copy_df.loc[(mean_copy_df["strategy"] == "OPTI")]
+    for d in pd.unique(mean_copy_df["depth"]):
+        diffs_eager = mean_copy_df.loc[
+            (mean_copy_df["strategy"] == "EAGER") & (mean_copy_df["depth"] == d)
+        ]
+        diffs_opti.loc[(mean_copy_df["depth"] == d), "completeness"] -= diffs_eager[
+            "completeness"
+        ].values
+
+    curves[f"curve_completeness_diff_depth"] = px.line(
+        diffs_opti,
+        x="failure_probability",
+        y="completeness",
+        color="depth",
+        range_y=[-100, 100],
+        title=f"Completeness diff per depth",
+    )
+
+    mean_copy_df = copy_df.groupby(
+        ["group_size", "failure_probability", "strategy"], as_index=False
+    ).mean()
+    diffs_opti = mean_copy_df.loc[(mean_copy_df["strategy"] == "OPTI")]
+    for d in pd.unique(mean_copy_df["group_size"]):
+        diffs_eager = mean_copy_df.loc[
+            (mean_copy_df["strategy"] == "EAGER") & (mean_copy_df["group_size"] == d)
+        ]
+        diffs_opti.loc[
+            (mean_copy_df["group_size"] == d), "completeness"
+        ] -= diffs_eager["completeness"].values
+
+    curves[f"curve_completeness_diff_size"] = px.line(
+        diffs_opti,
+        x="failure_probability",
+        y="completeness",
+        color="group_size",
+        range_y=[-100, 100],
+        title=f"Completeness diff per size",
+    )
+
     return html.Div(
         children=[
             html.H1("Number of runs"),
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -503,8 +548,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -518,8 +563,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -533,8 +578,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -548,8 +593,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -563,8 +608,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -578,8 +623,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -593,8 +638,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -608,8 +653,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -624,8 +669,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -639,8 +684,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -654,8 +699,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -670,8 +715,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -685,8 +730,8 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
                 },
                 children=[
                     dcc.Graph(
@@ -694,6 +739,24 @@ def generate_maps(df, x_axis, y_axis, strategies_map, display_failures=False):
                         figure=curves[f"{strat}_curve_completeness_size"],
                     )
                     for strat in strategies_map
+                ],
+            ),
+            html.H1("Completeness differences (Eager vs Opti)"),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flexDirection": "row",
+                    "justifyContent": "center",
+                },
+                children=[
+                    dcc.Graph(
+                        id=f"curve_completeness_diff_depth",
+                        figure=curves[f"curve_completeness_diff_depth"],
+                    ),
+                    dcc.Graph(
+                        id=f"curve_completeness_diff_size",
+                        figure=curves[f"curve_completeness_diff_size"],
+                    ),
                 ],
             ),
         ]
@@ -716,7 +779,9 @@ if __name__ == "__main__":
     outputs = glob("./outputs/*")
 
     # Remove strategies not present in the data
-    strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+    strategies_map = dict(
+        EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
+    )
     for k in set(strategies_map.keys()).difference(strategies):
         del strategies_map[k]
 
@@ -754,25 +819,25 @@ if __name__ == "__main__":
                     html.H3("Failure Probabilities"),
                     dcc.RangeSlider(
                         0,
-                        0.002,
-                        0.00005,
-                        value=[0, 0.002],
+                        1000000,
+                        100000,
+                        value=[0, 1000000],
                         id="failure-probabilities-range",
                     ),
                     html.H3("Group Sizes"),
                     dcc.RangeSlider(
-                        3,
-                        7,
                         2,
-                        value=[3, 7],
+                        7,
+                        1,
+                        value=[2, 7],
                         id="group-sizes-range",
                     ),
                     html.H3("Depths"),
                     dcc.RangeSlider(
-                        3,
-                        5,
+                        2,
+                        7,
                         1,
-                        value=[3, 5],
+                        value=[2, 7],
                         id="depths-range",
                     ),
                 ]
@@ -782,8 +847,8 @@ if __name__ == "__main__":
                     html.Div(
                         style={
                             "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "start",
+                            "flexDirection": "row",
+                            "justifyContent": "start",
                         },
                         children=[
                             html.H3("X Axis:"),
@@ -798,8 +863,8 @@ if __name__ == "__main__":
                     html.Div(
                         style={
                             "display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "start",
+                            "flexDirection": "row",
+                            "justifyContent": "start",
                         },
                         children=[
                             html.H3("Y Axis:"),
@@ -816,15 +881,15 @@ if __name__ == "__main__":
             html.Div(
                 style={
                     "display": "flex",
-                    "flex-direction": "row",
-                    "justify-content": "start",
+                    "flexDirection": "row",
+                    "justifyContent": "start",
                 },
                 children=[
                     html.H3("Only display successful runs"),
                     dcc.Checklist(
                         style={
                             "display": "flex",
-                            "align-items": "center",
+                            "alignItems": "center",
                         },
                         id="display_failures",
                         options=["YES"],
@@ -879,7 +944,9 @@ if __name__ == "__main__":
         df["failure_probability"] = df["failure_probability"].round(6)
 
         # Remove strategies not present in the data
-        strategies_map = dict(EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic")
+        strategies_map = dict(
+            EAGER="Eager", OPTI="Optimistic", PESS="Pessimistic", STRAW="Strawman"
+        )
         for k in set(strategies_map.keys()).difference(strategies):
             del strategies_map[k]
 

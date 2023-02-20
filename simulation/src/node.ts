@@ -1,30 +1,24 @@
 import cloneDeep from 'lodash/cloneDeep'
 
-import { ManagerArguments } from './manager'
+import { StandbyBlock } from './experimentRunner'
+import NodesManager, { ManagerArguments } from './manager'
 import { Aggregate, Message, MessageType } from './message'
 import {
-  handleBackupResponse,
-  handleConfirmBackup,
+  handleConfirmChildren,
   handleConfirmContributors,
-  handleContactBackup,
-  handleContinueMulticast,
-  handleContributionTimeout,
-  handleContributorPing,
-  handleContributorsPolling,
+  handleFinishContribution,
+  handleFinishSendingAggregate,
   handleGiveUpChild,
-  handleHealthCheckTimeout,
   handleNotifyGroup,
   handleNotifyGroupTimeout,
-  handlePingTimeout,
-  handlePrepareContribution,
   handleRequestContribution,
   handleRequestData,
-  handleRequestHealthChecks,
   handleSendAggregate,
   handleSendChildren,
   handleSendContribution,
-  handleSynchronizationTimeout,
-} from './messageHandlers'
+  handleStartSendingContribution,
+} from './messageHandlers/node'
+import { handleFailure } from './messageHandlers/node/handleFailure'
 import TreeNode from './treeNode'
 
 export enum NodeRole {
@@ -37,15 +31,17 @@ export enum NodeRole {
 
 export class Node {
   id: number
+  manager: NodesManager
   node?: TreeNode
   config: ManagerArguments
   localTime: number = 0
-  alive: boolean = true
-  deathTime: number = 0
-  role: NodeRole
+  deathTime: number = -1
+  killed: number = -1
+  role = NodeRole.Backup
+  nextEndTransmissionTime: number = 0
   ongoingHealthChecks: { [nodeId: number]: boolean }
   finishedWorking: boolean
-  backupList: number[]
+  propagatedFailure: boolean = false
   lookingForBackup: { [nodeId: number]: boolean }
   continueMulticast: boolean
   contactedAsABackup: boolean
@@ -53,48 +49,53 @@ export class Node {
   secretValue: number
   shares: number[]
   pingList: number[] = []
+  sentContributions: { [id: number]: boolean } = {}
   contributorsList: { [id: number]: number[] | undefined } = {}
   contributions: { [contributor: string]: number }
+  confirmedChildren: { [member: number]: TreeNode[] } = {}
   queriedNode?: number[]
   confirmContributors: boolean = true
+
   aggregates: { [nodeId: number]: Aggregate }
   lastSentAggregateId: string
   parentLastReceivedAggregateId?: string
   finalAggregates: { [aggregateId: string]: { [nodeId: number]: Aggregate } } = {}
 
   handleRequestContribution = handleRequestContribution
-  handleContributorPing = handleContributorPing
-  handlePingTimeout = handlePingTimeout
-  handlePrepareContribution = handlePrepareContribution
+  handleFinishContribution = handleFinishContribution
+  handleStartSendingContribution = handleStartSendingContribution
   handleSendContribution = handleSendContribution
-  handleContributionTimeout = handleContributionTimeout
   handleConfirmContributors = handleConfirmContributors
-  handleSynchronizationTimeout = handleSynchronizationTimeout
+  handleConfirmChildren = handleConfirmChildren
+  handleFinishSendingAggregate = handleFinishSendingAggregate
   handleSendAggregate = handleSendAggregate
-  handleRequestHealthChecks = handleRequestHealthChecks
-  handleHealthCheckTimeout = handleHealthCheckTimeout
-  handleContactBackup = handleContactBackup
-  handleContinueMulticast = handleContinueMulticast
-  handleBackupResponse = handleBackupResponse
-  handleConfirmBackup = handleConfirmBackup
+  handleFailure = handleFailure
   handleNotifyGroup = handleNotifyGroup
   handleNotifyGroupTimeout = handleNotifyGroupTimeout
-  handleContributorsPolling = handleContributorsPolling
   handleSendChildren = handleSendChildren
   handleRequestData = handleRequestData
   handleGiveUpChild = handleGiveUpChild
 
-  constructor({ node, id, config }: { node?: TreeNode; id?: number; config: ManagerArguments }) {
+  constructor({
+    manager,
+    node,
+    id,
+    config,
+  }: {
+    manager: NodesManager
+    node?: TreeNode
+    id: number
+    config: ManagerArguments
+  }) {
     if (!node && !id) return //throw new Error("Initializing a node without id")
 
-    this.id = (node ? node.id : id)!
-    this.node = cloneDeep(node)
+    this.manager = manager
+    this.id = id
+    this.node = node
     this.config = config
-    this.role = NodeRole.Aggregator
     this.secretValue = 50 // TODO: Better value, not always 50
     this.ongoingHealthChecks = {}
     this.finishedWorking = false
-    this.backupList = []
     this.lookingForBackup = {}
     this.continueMulticast = false
     this.contactedAsABackup = false
@@ -106,7 +107,7 @@ export class Node {
     const messages: Message[] = []
 
     // When the node is busy, messages are put back into the queue at the earliest available time, except for health checks
-    if (receivedMessage.receptionTime < this.localTime && receivedMessage.type !== MessageType.CheckHealth) {
+    if (receivedMessage.receptionTime < this.localTime) {
       receivedMessage.receptionTime = this.localTime
       return null
     }
@@ -119,9 +120,9 @@ export class Node {
 
     if (this.config.debug) {
       const nodesOfInterest: number[] = [
-        255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 21, 22, 27, 37, 38, 51, 53, 52, 66, 67, 68, 71, 99, 100, 101, 114, 115, 129,
-        132, 134, 147, 148, 149, 162, 164, 192, 194, 195, 196, 197, 226, 269, 278, 284, 287, 290, 305, 306, 311, 312,
-        317, 326, 339, 354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446, 4597, 6173,
+        // 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 21, 22, 27, 37, 38, 51, 53, 52, 66, 67, 68, 71, 99, 100, 101, 114, 115, 129,
+        // 132, 134, 147, 148, 149, 153, 162, 164, 183, 192, 194, 195, 196, 197, 226, 269, 278, 284, 287, 290, 305, 306,
+        // 311, 312, 317, 326, 339, 354, 359, 360, 362, 364, 372, 393, 395, 415, 400, 401, 426, 429, 446, 3164, 4597, 6173,
       ]
       const filters: MessageType[] = []
       if (
@@ -137,84 +138,35 @@ export class Node {
       case MessageType.RequestContribution:
         messages.push(...this.handleRequestContribution(receivedMessage))
         break
-      case MessageType.ContributorPing:
-        messages.push(...this.handleContributorPing(receivedMessage))
+      case MessageType.FinishContribution:
+        messages.push(...this.handleFinishContribution(receivedMessage))
         break
-      case MessageType.PingTimeout:
-        messages.push(...this.handlePingTimeout())
-        break
-      case MessageType.PrepareContribution:
-        messages.push(...this.handlePrepareContribution(receivedMessage))
+      case MessageType.StartSendingContribution:
+        messages.push(...this.handleStartSendingContribution(receivedMessage))
         break
       case MessageType.SendContribution:
         messages.push(...this.handleSendContribution(receivedMessage))
         break
-      case MessageType.ContributionTimeout:
-        messages.push(...this.handleContributionTimeout(receivedMessage))
-        break
       case MessageType.ConfirmContributors:
         messages.push(...this.handleConfirmContributors(receivedMessage))
         break
-      case MessageType.SynchronizationTimeout:
-        messages.push(...this.handleSynchronizationTimeout(receivedMessage))
+      case MessageType.ConfirmChildren:
+        messages.push(...this.handleConfirmChildren(receivedMessage))
+        break
+      case MessageType.FinishSendingAggregate:
+        messages.push(...this.handleFinishSendingAggregate(receivedMessage))
         break
       case MessageType.SendAggregate:
         messages.push(...this.handleSendAggregate(receivedMessage))
         break
-      case MessageType.RequestHealthChecks:
-        messages.push(...this.handleRequestHealthChecks(receivedMessage))
-        break
-      case MessageType.CheckHealth:
-        if (this.node && receivedMessage.content.parents) this.node.parents = receivedMessage.content.parents
-
-        messages.push(
-          new Message(
-            MessageType.ConfirmHealth,
-            receivedMessage.receptionTime, // Reply to health check instantly
-            0, // Don't specify time to let the manager add the latency
-            this.id,
-            receivedMessage.emitterId,
-            { members: this.node?.members }
-          )
-        )
-        break
-      case MessageType.ConfirmHealth:
-        delete this.ongoingHealthChecks[receivedMessage.emitterId]
-
-        // Update the group of the child
-        if (this.role !== NodeRole.Querier && receivedMessage.content.members) {
-          // Prevent Querier from updating its group
-          const child = this.node!.children.find(e => e.members.includes(receivedMessage.emitterId))
-
-          if (child) {
-            // The child is still monitored, update its group
-            child.members = receivedMessage.content.members!
-          }
-        }
-        break
-      case MessageType.HealthCheckTimeout:
-        messages.push(...this.handleHealthCheckTimeout(receivedMessage))
-        break
-      case MessageType.ContinueMulticast:
-        messages.push(...this.handleContinueMulticast(receivedMessage))
-        break
-      case MessageType.ContactBackup:
-        messages.push(...this.handleContactBackup(receivedMessage))
-        break
-      case MessageType.BackupResponse:
-        messages.push(...this.handleBackupResponse(receivedMessage))
-        break
-      case MessageType.ConfirmBackup:
-        messages.push(...this.handleConfirmBackup(receivedMessage))
+      case MessageType.HandleFailure:
+        messages.push(...this.handleFailure(receivedMessage))
         break
       case MessageType.NotifyGroup:
         messages.push(...this.handleNotifyGroup(receivedMessage))
         break
       case MessageType.NotifyGroupTimeout:
         messages.push(...this.handleNotifyGroupTimeout(receivedMessage))
-        break
-      case MessageType.ContributorsPolling:
-        messages.push(...this.handleContributorsPolling(receivedMessage))
         break
       case MessageType.SendChildren:
         messages.push(...this.handleSendChildren(receivedMessage))
@@ -229,14 +181,57 @@ export class Node {
         throw new Error('Receiving unknown message type')
     }
 
-    // Invariant: the node is a member of its group
-    if (this.node && !this.node.members.includes(this.id)) {
-      throw new Error(`#${this.id} is not in its members ([${this.node.members}])`)
-    }
-
     receivedMessage.work = this.localTime - startTime
 
     return messages
+  }
+
+  sendAggregate(aggregate: Aggregate): Message[] {
+    if (!this.node || this.node.members.indexOf(this.id) < 0) {
+      throw new Error('Invalid node or parent')
+    }
+
+    // Non blocking sync send the result ASAP
+    const parent = this.node.parents[this.node.members.indexOf(this.id)]
+    const transmissionTime = (this.config.modelSize - 1) / this.config.averageBandwidth
+
+    // Reset full synchro
+    if (this.config.buildingBlocks.standby !== StandbyBlock.Stop) {
+      this.confirmedChildren = {}
+    }
+
+    // TODO: Account for bandwidth constraint for in/outbound trafic
+    // const startTransmissionTime = Math.max(this.localTime, this.nextEndTransmissionTime)
+    const startTransmissionTime = this.localTime
+    if (this.isAlive(startTransmissionTime)) {
+      this.lastSentAggregateId = aggregate.id
+      this.finishedWorking = true
+      this.nextEndTransmissionTime = startTransmissionTime + this.config.averageLatency + transmissionTime
+      return [
+        new Message(
+          MessageType.FinishSendingAggregate,
+          startTransmissionTime,
+          this.nextEndTransmissionTime,
+          this.id,
+          this.id,
+          {
+            aggregate,
+            targetNode: parent,
+          }
+        ),
+      ]
+    } else return []
+  }
+
+  isAlive(atTime: number) {
+    return (
+      ((this.deathTime > atTime && this.deathTime >= 0) || this.deathTime < 0) &&
+      !(this.killed < atTime && this.killed >= 0)
+    )
+  }
+
+  tag() {
+    return `[@${this.localTime}] (${this.role}) Node #${this.id}`
   }
 
   /**
@@ -257,6 +252,43 @@ export class Node {
 
   cryptoLatency(): number {
     return this.config.averageCryptoTime
+  }
+
+  intersectChildrenConfirmations() {
+    const lists = this.node!.members.map(e => this.confirmedChildren[e] || [])
+    const position = this.node!.members.indexOf(this.id)
+    let result: TreeNode[] = []
+
+    // TODO: Make it better
+    const shortestList = lists.find(list => list.length === Math.min(...lists.map(e => e.length)))!
+    for (const element of shortestList) {
+      // Checking if each element of the shortest list is included in EVERY other list
+      let occurrences = 0
+      for (const list of lists) {
+        if (list === shortestList) {
+          // Do not intersect the list with itself
+          continue
+        }
+
+        let missing = true
+        for (const other of list) {
+          if (other.members.includes(element.members[position])) {
+            // The element is in the other list
+            missing = false
+            break
+          }
+        }
+
+        if (!missing) {
+          occurrences += 1
+        }
+      }
+      if (occurrences === lists.length - 1) {
+        // The element is in every list
+        result.push(element)
+      }
+    }
+    return result
   }
 }
 

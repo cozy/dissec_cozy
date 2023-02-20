@@ -1,42 +1,166 @@
 import fs from 'fs'
+import cloneDeep from 'lodash/cloneDeep'
 
 import NodesManager, { AugmentedMessage } from './manager'
 import { Message, MessageType, StopStatus } from './message'
 import Node, { NodeRole } from './node'
+import { Generator } from './random'
 import TreeNode from './treeNode'
 
-export enum ProtocolStrategy {
-  Pessimistic = 'PESS',
-  Optimistic = 'OPTI',
-  Eager = 'EAGER',
+export enum FailurePropagationBlock {
+  FullFailurePropagation = 'FFP',
+  LocalFailurePropagation = 'LFP',
 }
 
-// function theoreticalLatency(run: RunConfig) {
-//   switch (run.strategy) {
-//     case ProtocolStrategy.Pessimistic:
-//       return 0
-//     default:
-//       return 0
-//   }
-// }
+export enum FailureHandlingBlock {
+  Replace = 'Replace',
+  Drop = 'Drop',
+}
+
+export enum StandbyBlock {
+  Stop = 'Stop',
+  Stay = 'Stay',
+  NoResync = '0Resync',
+}
+
+export enum SynchronizationBlock {
+  FullSynchronization = 'FullSync',
+  LeavesSynchronization = 'Leaves',
+  NonBlocking = 'NonBlocking',
+  None = 'None',
+}
+
+export interface BuildingBlocks {
+  failurePropagation: FailurePropagationBlock
+  failureHandling: FailureHandlingBlock
+  standby: StandbyBlock
+  resyncLevel: number
+  synchronization: SynchronizationBlock
+}
 
 export interface RunConfig {
-  strategy: ProtocolStrategy
+  buildingBlocks: BuildingBlocks
   selectivity: number
   maxToAverageRatio: number
   averageLatency: number
+  averageBandwidth: number
   averageCryptoTime: number
   averageComputeTime: number
+  modelSize: number
   failCheckPeriod: number
   healthCheckPeriod: number
   multicastSize: number
   deadline: number
   failureRate: number
+  adaptedFailures: boolean
+  backupsToAggregatorsRatio: number
   depth: number
   fanout: number
   groupSize: number
+  concentration: number
   random: boolean
   seed: string
+}
+
+export const STRATEGIES = {
+  STRAWMAN: {
+    failurePropagation: FailurePropagationBlock.FullFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stop,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.None,
+  },
+  STRAWMANPLUS: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stop,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+  STRAWMANPLUSPLUS: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stay,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+  EAGER: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.Stay,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+  ONESHOT: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Drop,
+    standby: StandbyBlock.Stop,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.FullSynchronization,
+  },
+  SAFESLOW: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.Stay,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.FullSynchronization,
+  },
+  HYBRID_UTIL: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+  HYBRID_BLOCK: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    resyncLevel: 1,
+    synchronization: SynchronizationBlock.LeavesSynchronization,
+  },
+  HYBRID_2: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    resyncLevel: 2,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+  HYBRID_3: {
+    failurePropagation: FailurePropagationBlock.LocalFailurePropagation,
+    failureHandling: FailureHandlingBlock.Replace,
+    standby: StandbyBlock.NoResync,
+    resyncLevel: 3,
+    synchronization: SynchronizationBlock.NonBlocking,
+  },
+}
+
+export function defaultConfig(): RunConfig {
+  const baseConfig = {
+    buildingBlocks: STRATEGIES.EAGER,
+    selectivity: 0.1,
+    maxToAverageRatio: 10,
+    averageLatency: 0.033,
+    averageBandwidth: 6000,
+    averageCryptoTime: 0.01,
+    averageComputeTime: 0.00005, // Time spent working for each kbytes
+    modelSize: 1024,
+    failCheckPeriod: 100,
+    healthCheckPeriod: 3,
+    multicastSize: 5,
+    deadline: 5 * 10 ** 7,
+    failureRate: 400,
+    adaptedFailures: false,
+    backupsToAggregatorsRatio: 0.2,
+    depth: 4,
+    fanout: 8,
+    groupSize: 5,
+    concentration: 0,
+    random: false,
+    seed: `0`,
+  }
+
+  return baseConfig
 }
 
 export interface RunResult extends RunConfig {
@@ -45,23 +169,36 @@ export interface RunResult extends RunConfig {
   latency: number
   completeness: number
   circulatingAggregateIds: number
-  finalUsedBandwidth: number
+  finalInboundBandwidth: number
+  finalOutboundBandwidth: number
   observedFailureRate: number
+  observedWorkersFailureRate: number
+  observedContributorsFailureRate: number
+  abortedReplacements: number
   messages: AugmentedMessage[]
 }
 
 export class ExperimentRunner {
   runs: RunConfig[]
   outputPath: string
+  checkpoint?: { checkpoint: number; name: string; path: string }
   debug?: boolean = false
   fullExport?: boolean = false
   intermediateExport?: number = 0
 
   constructor(
     runs: RunConfig[],
-    options: { debug?: boolean; fullExport?: boolean; intermediateExport?: number } = { intermediateExport: 0 }
+    options: {
+      debug?: boolean
+      fullExport?: boolean
+      intermediateExport?: number
+      checkpoint?: { checkpoint: number; name: string; path: string }
+    } = {
+      intermediateExport: 0,
+    }
   ) {
     this.runs = runs
+    this.checkpoint = options.checkpoint
     this.debug = options.debug
     this.fullExport = options.fullExport
     this.intermediateExport = options.intermediateExport
@@ -72,15 +209,36 @@ export class ExperimentRunner {
     const labels: { [k: string]: string } = {}
 
     // These keys will not be in the name
-    const skippedKeys = ['multicastSize', 'selectivity', 'deadline', 'seed', 'failCheckPeriod', 'healthCheckPeriod']
+    const skippedKeys = [
+      'strategy',
+      'multicastSize',
+      'selectivity',
+      'deadline',
+      'seed',
+      'failCheckPeriod',
+      'healthCheckPeriod',
+      'averageLatency',
+      'averageBandwidth',
+      'averageCryptoTime',
+      'averageComputeTime',
+      'maxR',
+      'random',
+      'concentration',
+      'adaptedFailures',
+      'maxR',
+    ]
 
     // Shorter names for keys
     const translation: { [k: string]: string } = {
       strategy: 'strat',
+      buildingBlocks: 'blocks',
       maxToAverageRatio: 'maxR',
       averageLatency: 'lat',
+      averageBandwidth: 'bw',
       averageCryptoTime: 'crypto',
-      averageComputeTime: 'compute',
+      averageComputeTime: 'comp',
+      backupsToAggregatorsRatio: 'backups',
+      resyncLevel: 'resync',
     }
 
     // Put values for each keys in an array
@@ -90,8 +248,8 @@ export class ExperimentRunner {
         const translatedKey = translation[k] ? translation[k] : k
 
         if (!uniqueValues[translatedKey]) uniqueValues[translatedKey] = []
-        if (values[translatedKey]) values[translatedKey].push(v)
-        else values[translatedKey] = [v]
+        if (values[translatedKey]) values[translatedKey].push(typeof v !== 'object' ? v : Object.values(v).join('.'))
+        else values[translatedKey] = [typeof v !== 'object' ? v : Object.values(v).join('.')]
       })
     )
 
@@ -110,34 +268,52 @@ export class ExperimentRunner {
     }
 
     new Date().toISOString().split('T')[0]
-    this.outputPath =
-      `./outputs/${new Date().toISOString()}_run${runs.length}_${this.fullExport ? 'full_' : ''}` +
-      JSON.stringify(labels)
-        .replaceAll('"', '')
-        .replaceAll(',', '_')
-        .replaceAll(':', '')
-        .replaceAll('{', '')
-        .replaceAll('}', '') +
-      '.csv'
+    if (this.checkpoint) {
+      this.outputPath = this.checkpoint.name + '.csv'
+    } else {
+      this.outputPath =
+        `./outputs/${new Date().toISOString()}_run${runs.length}_${this.fullExport ? 'full_' : ''}` +
+        JSON.stringify(labels)
+          .replaceAll('"', '')
+          .replaceAll(',', '_')
+          .replaceAll(':', '')
+          .replaceAll('{', '')
+          .replaceAll('}', '') +
+        '.csv'
+    }
+    this.outputPath = this.outputPath
+      .replaceAll('"', '')
+      .replaceAll(',', '_')
+      .replaceAll(':', '')
+      .replaceAll('{', '')
+      .replaceAll('}', '')
   }
 
   writeResults(outputPath: string, results: RunResult[]) {
+    console.log('Writing results at', this.outputPath)
     if (!this.fullExport) {
       // Write each run as a row
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
-        if (i === 0) {
+        if (i === 0 && ((this.checkpoint && this.checkpoint?.checkpoint === 0) || !this.checkpoint)) {
           // Add columns titles
-          fs.writeFileSync(outputPath, Object.keys(items).join(';') + '\n')
+          fs.writeFileSync(outputPath, Object.keys(items).join(';') + ';name\n')
         }
 
         fs.writeFileSync(
           outputPath,
           Object.entries(items)
-            .map(([k, e]) => (typeof e === 'number' && k !== 'failureRate' ? e.toFixed(2) : e))
+            .map(([k, e]) => {
+              if (typeof e === 'number' && k !== 'failureRate') return e.toFixed(2)
+              else if (typeof e === 'object') return Object.values(e).join('.')
+              else return e
+            })
             .join(';')
-            .replaceAll('.', ',') + '\n',
+            .replaceAll('.', ',') +
+            `;${Object.values(items.buildingBlocks)
+              .map(f => (f === '0Resync' ? `0Resync${items.buildingBlocks.resyncLevel}` : f))
+              .join('-')}-m${items.modelSize}-f${items.failureRate}-d${items.depth}-s${items.seed}\n`,
           { flag: 'a' }
         )
       }
@@ -150,22 +326,33 @@ export class ExperimentRunner {
       for (let i = 0; i < results.length; i++) {
         const { messages, ...items } = results[i]
 
-        if (i === 0) {
+        if (i === 0 && ((this.checkpoint && this.checkpoint?.checkpoint === 0) || !this.checkpoint)) {
           // Add columns titles
-          fs.writeFileSync(outputPath, columns.join(';') + '\n')
+          fs.writeFileSync(outputPath, columns.join(';') + ';name\n')
         }
 
-        for (const message of messages) {
-          const assign: { [k: string]: any } = Object.assign(items, message)
-          fs.writeFileSync(
-            outputPath,
-            columns
-              .map(e => (typeof assign[e] === 'number' && e !== 'failureRate' ? assign[e].toFixed(2) : assign[e]))
-              .join(';')
-              .replaceAll('.', ',') + '\n',
-            { flag: 'a' }
-          )
-        }
+        fs.writeFileSync(
+          outputPath,
+          messages
+            .map(message => {
+              const assign: { [k: string]: any } = Object.assign(items, message)
+              return (
+                columns
+                  .map(e => {
+                    if (typeof assign[e] === 'number' && e !== 'failureRate') return assign[e].toFixed(2)
+                    else if (typeof assign[e] === 'object') return Object.values(assign[e]).join('-')
+                    else return assign[e]
+                  })
+                  .join(';')
+                  .replaceAll('.', ',') +
+                `;${Object.values(assign.buildingBlocks)
+                  .map(f => (f === '0Resync' ? `0Resync${items.buildingBlocks.resyncLevel}` : f))
+                  .join('-')}-m${assign.modelSize}-d${items.depth}-m${assign.failureRate}-s${assign.seed}\n`
+              )
+            })
+            .join(''),
+          { flag: 'a' }
+        )
       }
     }
   }
@@ -184,17 +371,37 @@ export class ExperimentRunner {
     let exportCounter = 0
     for (let i = 0; i < this.runs.length; i++) {
       console.log(JSON.stringify(this.runs[i]))
-      results.push(this.singleRun(this.runs[i]))
+      let result = this.singleRun(this.runs[i])
+      let j = 0
+      // HACK: Retry to find working simulations
+      while (!result) {
+        const newConfiguration = cloneDeep(this.runs[i])
+        newConfiguration.seed += `-retry${++j}`
+        console.log('Retry', newConfiguration.seed)
+        result = this.singleRun(newConfiguration)
+      }
+
+      results.push(result)
 
       const averageRunTime = (Date.now() - startTime) / (i + 1)
       const runsLeft = this.runs.length - i
-      console.log(`Estimated time left: ${(averageRunTime * runsLeft) / 60000} minutes`)
+      console.log(
+        `(${i + 1}/${this.runs.length}) Estimated time left: ${
+          (averageRunTime * runsLeft) / 60000
+        } minutes (current ime: ${new Date().toISOString()})`
+      )
       console.log()
 
       if (this.intermediateExport && ++exportCounter >= this.intermediateExport) {
         exportCounter = 0
         // Writing intermediary results
         this.writeResults(this.outputPath, results)
+
+        if (this.checkpoint) {
+          this.checkpoint.checkpoint += 1
+          fs.writeFileSync(this.checkpoint.path, JSON.stringify(this.checkpoint))
+          console.log(`Checkpoint ${i}/${this.runs.length}!`)
+        }
       }
     }
 
@@ -208,16 +415,26 @@ export class ExperimentRunner {
     console.log(`Total simulation time: ${(Date.now() - startTime) / 60000} minutes`)
   }
 
-  singleRun(run: RunConfig): RunResult {
+  singleRun(run: RunConfig): RunResult | undefined {
+    const numberOfNodes = (depth: number) =>
+      depth
+        ? Array(depth)
+            .fill(1)
+            .map((_, i) => run.groupSize * run.fanout ** i)
+            .reduce((a, b) => a + b)
+        : 0
+
     // Exclude contributors (nodes at the last level)
-    const nodesInTree = run.fanout ** (run.depth - 1) * run.groupSize
-    const backupListSize = nodesInTree * 1
+    const nodesInTree = numberOfNodes(run.depth)
+    // Take back from the necessary
+    const backupListSize = Math.floor(nodesInTree * run.backupsToAggregatorsRatio)
 
     // Create the tree structure
-    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0)
+    const generator = Generator.get(run.seed, true)
+    let { nextId, node: root } = TreeNode.createTree(run, run.depth, 0, generator)
 
     // Adding the querier group
-    const querierGroup = new TreeNode(nextId, run.depth + 1)
+    const querierGroup = new TreeNode(run.depth + 1)
     querierGroup.children.push(root)
     querierGroup.members = Array(run.groupSize).fill(nextId)
     root.parents = querierGroup.members
@@ -228,29 +445,24 @@ export class ExperimentRunner {
       debug: this.debug,
       fullExport: this.fullExport,
     })
-    const n = manager.addNode(querierGroup, querierGroup.id)
+    const n = manager.addNode(querierGroup, querierGroup.members[0])
     n.role = NodeRole.Querier
-    // Only the node with the lowest ID sends the message
-    manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, querierGroup.id, querierGroup.id, {}))
 
-    // Eager does not use a backup list
-    if (run.strategy !== ProtocolStrategy.Eager) {
-      // Create a backup list and give it to all the nodes
-      const backupListStart = Object.keys(manager.nodes).length
-      const backups = []
-      // Create as many backup as nodes in the tree
-      for (let i = 0; i < backupListSize; i++) {
-        const backup = new Node({ id: backupListStart + i, config: manager.config })
-        backup.role = NodeRole.Backup
-        manager.nodes[backupListStart + i] = backup
-        backups.push(backup)
-      }
-      for (let i = 0; i < backupListStart; i++) {
-        if (manager.nodes[i]) {
-          manager.nodes[i].backupList = backups.map(e => e.id)
-        }
-      }
+    // Backup list is included in all protocols to preserve fairness: backups can fail
+    // Create a backup list and give it to all the nodes
+    const backupListStart = Object.keys(manager.nodes).length
+    const backups = []
+    // Create as many backup as nodes in the tree
+    for (let i = 0; i < backupListSize; i++) {
+      const backup = new Node({ manager, id: backupListStart + i, config: manager.config })
+      backup.role = NodeRole.Backup
+      manager.nodes[backupListStart + i] = backup
+      backups.push(backup)
     }
+
+    manager.replacementNodes = backups
+
+    manager.setFailures()
 
     // All leaves aggregator request data from contributors
 
@@ -272,53 +484,15 @@ export class ExperimentRunner {
       for (const child of aggregator.children.flatMap(e => e.members)) {
         // Only the node with the lowest ID sends the message
         manager.transmitMessage(
-          new Message(MessageType.RequestContribution, 0, 0, aggregator.id, child, {
-            parents: aggregator.members,
-          })
-        )
-      }
-
-      if (run.strategy === ProtocolStrategy.Pessimistic) {
-        // Setting contribution collection timeouts on the leaves aggregators
-        for (const member of aggregator.members) {
-          // Contributors respond with a ping and then the contribution, await both
-          manager.transmitMessage(
-            new Message(
-              MessageType.PingTimeout,
-              0,
-              (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
-              member,
-              member,
-              {}
-            )
-          )
-        }
-      } else if (run.strategy === ProtocolStrategy.Optimistic || run.strategy === ProtocolStrategy.Eager) {
-        // Contributors respond with a ping to the first member
-        manager.transmitMessage(
           new Message(
-            MessageType.PingTimeout,
+            MessageType.RequestContribution,
             0,
-            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio,
+            (averageHopsPerBroadcast + 1) * manager.standardLatency(),
             aggregator.members[0],
-            aggregator.members[0],
-            {}
-          )
-        )
-      }
-
-      // Timeout is set at the max between the encryption latency for the contributor
-      // and the decryption time for the aggregator.
-      for (const member of aggregator.members) {
-        manager.transmitMessage(
-          new Message(
-            MessageType.ContributionTimeout,
-            0,
-            (averageHopsPerBroadcast + 1) * run.averageLatency * run.maxToAverageRatio +
-              manager.nodes[member].cryptoLatency() * (2 + run.groupSize), // Signature + certificate + open channel with each parent
-            member,
-            member,
-            {}
+            child,
+            {
+              parents: aggregator.members,
+            }
           )
         )
       }
@@ -332,20 +506,20 @@ export class ExperimentRunner {
       }
     }
 
-    // Upper layers periodically send health checks to their children
-    for (let i = 0; i < run.depth - 1; i++) {
-      const nodes = root.selectNodesByDepth(i)
-      for (const node of nodes) {
-        for (const member of node.members) {
-          manager.transmitMessage(new Message(MessageType.RequestHealthChecks, 0, 0, member, member, {}))
-        }
-      }
-    }
-
     manager.initialNodeRoles = manager.countNodesPerRole()
 
     // Running the simulator the end
     while (manager.messages.length > 0) {
+      manager.handleNextMessage()
+    }
+
+    if (manager.status === StopStatus.Unfinished) {
+      // No messages and not checking health, add a fake message to update
+      manager.messages = [
+        new Message(MessageType.StopSimulator, manager.globalTime, manager.globalTime, 0, 0, {
+          status: StopStatus.ExceededDeadline,
+        }),
+      ]
       manager.handleNextMessage()
     }
 
@@ -355,13 +529,30 @@ export class ExperimentRunner {
     const receivedNumberContributors = manager.finalNumberContributors
     const completeness = (100 * receivedNumberContributors) / initialNumberContributors
 
-    console.log(`Simulation finished with status ${manager.status} (${completeness}% completeness)`)
+    console.log(
+      `Simulation finished with status ${manager.status} (${completeness}% completeness = ${receivedNumberContributors}/${initialNumberContributors}); time = ${manager.globalTime}`
+    )
+
+    const nodes = Object.values(manager.nodes).filter(e => e.role !== NodeRole.Backup)
+    const failedNodes = nodes.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
+    const contributors = Object.values(manager.nodes).filter(e => e.role === NodeRole.Contributor)
+    const failedContributors = contributors.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
+    const workers = Object.values(manager.nodes).filter(
+      e => e.role !== NodeRole.Backup && e.role !== NodeRole.Contributor
+    )
+    const failedWorkers = workers.filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0)
+
+    console.log(
+      `${(failedNodes.length / nodes.length) * 100}% of nodes failed (${failedNodes.length} / ${
+        nodes.length
+      }, ${backupListSize} backups)`
+    )
     console.log(
       `${
-        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100
-      }% of nodes failed (${Object.values(manager.nodes).filter(e => !e.alive).length} / ${
-        Object.values(manager.nodes).length
-      })`
+        (Object.values(manager.nodes).filter(e => e.deathTime <= manager.globalTime && e.deathTime >= 0).length /
+          Object.values(manager.nodes).length) *
+        100
+      }% of nodes failed network-wide`
     )
 
     if (this.debug) {
@@ -371,12 +562,12 @@ export class ExperimentRunner {
     const oldMessages: AugmentedMessage[] = []
     if (this.fullExport) {
       const oldIds: number[] = []
-      manager.oldMessages.forEach(m => {
+      for (const m of manager.oldMessages) {
         if (!oldIds.includes(m.id)) {
           oldIds.push(m.id)
           oldMessages.push(m)
         }
-      })
+      }
     }
 
     return {
@@ -386,10 +577,14 @@ export class ExperimentRunner {
       latency: manager.globalTime,
       completeness,
       circulatingAggregateIds: Object.keys(manager.circulatingAggregateIds).length,
-      finalUsedBandwidth: manager.usedBandwidth,
-      observedFailureRate:
-        (Object.values(manager.nodes).filter(e => !e.alive).length / Object.values(manager.nodes).length) * 100,
+      finalInboundBandwidth: manager.inboundBandwidth,
+      finalOutboundBandwidth: manager.outboundBandwidth,
+      observedFailureRate: (failedNodes.length / nodes.length) * 100,
+      observedContributorsFailureRate: (failedContributors.length / contributors.length) * 100,
+      observedWorkersFailureRate: (failedWorkers.length / workers.length) * 100,
+      abortedReplacements: manager.abortedReplacements,
       ...manager.statisticsPerRole(),
+      ...manager.statisticsPerLevel(),
       messages: oldMessages,
     }
   }
