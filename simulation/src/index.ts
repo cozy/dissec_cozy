@@ -22,7 +22,7 @@ const useCheckpoint = false
 if (debug) {
   configs = [
     {
-      buildingBlocks: STRATEGIES.HYBRID_BLOCK,
+      buildingBlocks: STRATEGIES.ONESHOT,
       selectivity: 0.1,
       maxToAverageRatio: 10,
       averageLatency: 0.033,
@@ -34,7 +34,7 @@ if (debug) {
       healthCheckPeriod: 3,
       multicastSize: 5,
       deadline: 50000000,
-      failureRate: 142.857,
+      failureRate: 166.666,
       adaptedFailures: false,
       backupsToAggregatorsRatio: 0.2,
       depth: 4,
@@ -42,23 +42,23 @@ if (debug) {
       groupSize: 5,
       concentration: 0,
       random: false,
-      seed: '3-9',
+      seed: '5-16',
     },
   ]
 } else {
-  const seedPrefix = '5-'
+  const seedPrefix = ''
   const retries = 20
 
   configs = [
     ...createRunConfigs({
       strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_BLOCK],
-      depths: [3, 4],
+      depths: [3, 4, 5],
       failures: [
         0, 10000.0, 400.0, 333.333, 285.714, 250.0, 222.222, 200.0, 166.666, 142.857, 125.0, 111.111, 100.0, 90.909,
         83.333,
       ],
-      groupSizes: [5],
-      modelSizes: [1],
+      groupSizes: [4, 5, 6],
+      modelSizes: [1, 2 ** 8, 2 ** 10, 2 ** 12, 2 ** 14],
       retries,
       fullSpace: true,
       seedPrefix,

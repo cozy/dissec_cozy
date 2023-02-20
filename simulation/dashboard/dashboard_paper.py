@@ -131,7 +131,6 @@ def get_data(path, aggregate_message=True):
     df.loc[df["failure_window"] == 0, "failure_window"] = np.inf
     df["failure_probability"] = 100 / df["failure_window"]
     df["failure_probability"] = df["failure_probability"].round(5)
-    # df["failure_probability"] = df["failure_probability"].round(3)
 
     df["has_result"] = df["completeness"] > 0
 
@@ -144,7 +143,6 @@ def get_data(path, aggregate_message=True):
         )
         df["work_avg" + c] = df["work" + c] / df["fanout"] ** (df["depth"] - depth)
 
-    # Cherry picking...
     to_drop = [
         {"seed": "2-3", "depth": 4, "model_size": 1024, "group_size": 5},
         {"seed": "3-6", "depth": 4, "model_size": 1024, "group_size": 5},
@@ -216,7 +214,7 @@ def generate_summary(data, status, strategies):
     )
 
 
-def generate_graphs(data, strategies_map, tab="failure_probability"):
+def generate_graphs(data, strategies_map, tab="failure_probability", export=True):
     graphs = dict()
 
     strategies = pd.unique(data["strategy"])
@@ -335,7 +333,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                     np.where(
                         map_work[j, i, complete_strategies]
                         == np.min(map_work[j, i, complete_strategies])
-                    )[0][0]
+                    )[0]
                 ]
             ]
             intersect = np.intersect1d(
@@ -345,16 +343,6 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             most_efficient_strategy = (
                 complete_strategies if len(intersect) == 0 else intersect
             )
-            # print(
-            #     f"fail{failure} d{depth} s{model_size}",
-            #     completeness_margin * np.max(map_completeness[j, i, :]),
-            #     strat_symbol,
-            #     map_completeness[j, i, :],
-            #     map_work[j, i, :],
-            #     complete_strategies,
-            #     efficient_strategies,
-            #     most_efficient_strategy,
-            # )
 
             best_strat_work_labels_map[j][i] = ", ".join(
                 [strat_symbol[index] for index in most_efficient_strategy]
@@ -364,6 +352,51 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             best_strat_latency_labels_map[j][i] = strat_symbol[
                 np.where(map_latency[j, i, :] == np.min(map_latency[j, i, :]))[0][0]
             ]
+
+    # Export
+    if export:
+        dfs_completeness = []
+        dfs_work = []
+        dfs_latency = []
+
+        def map_to_df(map_data, k, strat):
+            df = pd.DataFrame(
+                map_data,
+                columns=["None", "Few", "Some", "A lot", "Extreme"],
+                index=y_maps_values,
+            )
+            df["strat"] = strat
+            df = df[["strat"] + ["None", "Few", "Some", "A lot", "Extreme"]]
+            return df
+
+        for (k, strat) in enumerate(strategies):
+            dfs_completeness.append(map_to_df(map_completeness[:, :, k], k, strat))
+            dfs_work.append(map_to_df(map_work[:, :, k], k, strat))
+            dfs_latency.append(map_to_df(map_latency[:, :, k], k, strat))
+
+        pd.concat(dfs_completeness, axis=0).to_csv(
+            f"./outputs/final/map_completeness.csv",
+            sep=";",
+            index=True,
+            index_label="(Height, Model size)",
+        )
+        pd.concat(dfs_work, axis=0).to_csv(
+            f"./outputs/final/map_work.csv",
+            sep=";",
+            index=True,
+            index_label="(Height, Model size)",
+        )
+        pd.concat(dfs_latency, axis=0).to_csv(
+            f"./outputs/final/map_latency.csv",
+            sep=";",
+            index=True,
+            index_label="(Height, Model size)",
+        )
+        pd.DataFrame(
+            best_strat_work_labels_map,
+            columns=["None", "Few", "Some", "A lot", "Extreme"],
+            index=y_maps_values,
+        ).to_csv(f"./outputs/final/map_bests.csv", sep=";", index=False)
 
     graphs["map_completeness"] = go.Figure(
         data=go.Heatmap(
@@ -418,9 +451,74 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         ),
     ).update_layout(width=1500, height=600)
 
-    plots_config = {
-        "some_failure_completeness": dict(
+    plots_config = [
+        dict(
             {
+                "name": "some_failure_tiny_model_completeness",
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == 1)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "completeness",
+                "range_x": [0.2, 0.55],
+                "range_y": [60, 110],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        dict(
+            {
+                "name": "some_failure_tiny_model_latency",
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == 1)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "simulation_length",
+                "range_x": [0.2, 0.55],
+                "range_y": [0, 10],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        dict(
+            {
+                "name": "some_failure_tiny_model_work_per_node",
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == 1)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "work_per_node_total",
+                "range_x": [0.2, 0.55],
+                "range_y": [0, 15],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        dict(
+            {
+                "name": "some_failure_tiny_model_bandwidth_per_node",
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == 1)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "inbound_bandwidth_total",
+                "range_x": [0.2, 0.55],
+                "range_y": [0, 50000],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        dict(
+            {
+                "name": "some_failure_completeness",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["model_size"] == default_size)
@@ -434,8 +532,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "some_failure_latency": dict(
+        dict(
             {
+                "name": "some_failure_latency",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["model_size"] == default_size)
@@ -449,8 +548,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "some_failure_work_per_node": dict(
+        dict(
             {
+                "name": "some_failure_work_per_node",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["model_size"] == default_size)
@@ -464,8 +564,25 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "high_failures_completeness": dict(
+        dict(
             {
+                "name": "some_failure_bandwidth",
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["model_size"] == default_size)
+                    & (data["group_size"] == default_group)
+                ],
+                "x": "failure_probability",
+                "y": "inbound_bandwidth_total",
+                "range_x": [0.2, 0.55],
+                "range_y": [0, 50000000],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+        dict(
+            {
+                "name": "high_failures_completeness",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["model_size"] == default_size)
@@ -479,8 +596,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "high_failures_latency": dict(
+        dict(
             {
+                "name": "high_failures_latency",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["model_size"] == default_size)
@@ -494,8 +612,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "depth_completeness": dict(
+        dict(
             {
+                "name": "depth_completeness",
                 "data": data[
                     (data["failure_probability"] == default_failure)
                     & (data["model_size"] == default_size)
@@ -509,8 +628,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "depth_latency": dict(
+        dict(
             {
+                "name": "depth_latency",
                 "data": data[
                     (data["failure_probability"] == default_failure)
                     & (data["model_size"] == default_size)
@@ -524,8 +644,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "size_completeness": dict(
+        dict(
             {
+                "name": "size_completeness",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["failure_probability"] == default_failure)
@@ -539,8 +660,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "size_latency": dict(
+        dict(
             {
+                "name": "size_latency",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["failure_probability"] == default_failure)
@@ -554,8 +676,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "group_completeness": dict(
+        dict(
             {
+                "name": "group_completeness",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["failure_probability"] == default_failure)
@@ -569,8 +692,9 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-        "group_latency": dict(
+        dict(
             {
+                "name": "group_latency",
                 "data": data[
                     (data["depth"] == default_depth)
                     & (data["failure_probability"] == default_failure)
@@ -584,7 +708,23 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 "log_y": False,
             }
         ),
-    }
+        dict(
+            {
+                "name": "group_work",
+                "data": data[
+                    (data["depth"] == default_depth)
+                    & (data["failure_probability"] == default_failure)
+                    & (data["model_size"] == default_size)
+                ],
+                "x": "group_size",
+                "y": "work_per_node_total",
+                "range_x": [3.5, 6.5],
+                "range_y": [0, 50],
+                "log_x": False,
+                "log_y": False,
+            }
+        ),
+    ]
 
     def make_final_box_plot(config):
         if len(config["data"]) == 0:
@@ -609,7 +749,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             df = df.groupby(["name"]).mean()
             df.sort_values(config["x"], inplace=True)
             df.to_csv(
-                f"./outputs/final/{config['x']}_{config['range_x']}-{config['y']}.csv",
+                f"./outputs/final/{config['name']}_{config['x']}_{config['range_x']}-{config['y']}.csv",
                 sep=";",
                 index=False,
             )
@@ -627,8 +767,8 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             log_y=config["log_y"],
         )
 
-    for key in plots_config:
-        graphs[key] = make_final_box_plot(plots_config[key])
+    for conf in plots_config:
+        graphs[conf["name"]] = make_final_box_plot(conf)
 
     graphs[f"count_failure_paper"] = px.box(
         data[(data["depth"] == default_depth) & (data["model_size"] == default_size)],
@@ -963,7 +1103,14 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
 
     # Stacked bars
     def create_bars(
-        df, x_axis, x_label, y_axis, y_label, columns=["_Worker", "_Contributor"]
+        df,
+        x_axis,
+        x_label,
+        y_axis,
+        y_label,
+        columns=["_Worker", "_Contributor"],
+        export=False,
+        prefix="",
     ):
         plot_df = df.groupby([x_axis, "strategy"], as_index=False).mean()
         columns = [y_axis + col for col in columns]
@@ -982,6 +1129,32 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
             width=800,
             height=730,
         )
+
+        if export:
+            dfs = []
+            for x in pd.unique(plot_df[x_axis]):
+                for cols in columns:
+                    tmp = []
+                    # strategies = pd.unique(plot_df["strategy"])
+                    for strat in strategies:
+                        tmp.append(
+                            plot_df[
+                                (plot_df["strategy"] == strat) & (plot_df[x_axis] == x)
+                            ][cols].iloc[0]
+                        )
+
+                    dfs.append(
+                        pd.DataFrame(
+                            [[x, cols.split("_")[-1]] + tmp],
+                            columns=[x_label, "Level"] + [s for s in strategies],
+                        )
+                    )
+
+            pd.concat(dfs, axis=0,).to_csv(
+                f"./outputs/final/{prefix}bars_{x_axis}-{y_axis}.csv",
+                sep=";",
+                index=False,
+            )
 
         # add bars
         for cols in columns:
@@ -1077,12 +1250,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         cols,
     )
 
-    graphs[f"versions_level_bar_focus"] = create_bars(
+    graphs[f"versions_level_tiny_bar_focus"] = create_bars(
         data[
             (data["depth"] == default_depth)
-            & (data["model_size"] == default_size)
-            & (data["failure_window"] <= 400)
-            & (data["failure_window"] >= 200)
+            & (data["model_size"] == 1)
             & (data["strategy"] != "Min Cost")
         ],
         "failure_probability",
@@ -1090,13 +1261,13 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         "versions_percent",
         "Versions",
         cols,
+        True,
+        "tiny_",
     )
-    graphs[f"work_level_bar_focus"] = create_bars(
+    graphs[f"work_level_tiny_bar_focus"] = create_bars(
         data[
             (data["depth"] == default_depth)
-            & (data["model_size"] == default_size)
-            & (data["failure_window"] <= 400)
-            & (data["failure_window"] >= 200)
+            & (data["model_size"] == 1)
             & (data["strategy"] != "Min Cost")
         ],
         "failure_probability",
@@ -1104,6 +1275,34 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         "work_avg",
         "Average work per node",
         cols,
+        True,
+        "tiny_",
+    )
+    graphs[f"versions_level_bar_focus"] = create_bars(
+        data[
+            (data["depth"] == default_depth)
+            & (data["model_size"] == default_size)
+            & (data["strategy"] != "Min Cost")
+        ],
+        "failure_probability",
+        "Failure rate (%/s)",
+        "versions_percent",
+        "Versions",
+        cols,
+        export,
+    )
+    graphs[f"work_level_bar_focus"] = create_bars(
+        data[
+            (data["depth"] == default_depth)
+            & (data["model_size"] == default_size)
+            & (data["strategy"] != "Min Cost")
+        ],
+        "failure_probability",
+        "Failure rate (%/s)",
+        "work_avg",
+        "Average work per node",
+        cols,
+        export,
     )
     graphs[f"versions_level_bar_simpler"] = px.bar(
         data[
@@ -1232,7 +1431,7 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
         graphs[plot] = graphs[plot].update_layout(boxgap=0.005, boxgroupgap=0.01)
 
     for plot in plots_config:
-        # graphs[plot] = graphs[plot].update_traces(marker=dict(opacity=0))
+        # graphs[plot['name']] = graphs[plot['name']].update_traces(marker=dict(opacity=0))
         pass
 
     return html.Div(
@@ -1248,10 +1447,10 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                         style={
                             "width": "600px",
                         },
-                        id=key,
-                        figure=graphs[key],
+                        id=conf["name"],
+                        figure=graphs[conf["name"]],
                     )
-                    for key in plots_config
+                    for conf in plots_config
                 ],
             ),
             html.Div(
@@ -1604,6 +1803,23 @@ def generate_graphs(data, strategies_map, tab="failure_probability"):
                 },
                 children=[
                     dcc.Graph(
+                        id=f"versions_level_tiny_bar_focus",
+                        figure=graphs["versions_level_tiny_bar_focus"],
+                    ),
+                    dcc.Graph(
+                        id=f"work_level_tiny_bar_focus",
+                        figure=graphs["work_level_tiny_bar_focus"],
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "display": "flex",
+                    "flex-direction": "row",
+                    "justify-content": "center",
+                },
+                children=[
+                    dcc.Graph(
                         id=f"avg_work_contributors_paper",
                         figure=graphs["avg_work_contributors_paper"],
                     ),
@@ -1670,7 +1886,7 @@ if __name__ == "__main__":
     for k in set(strategies_map.keys()).difference(strategies):
         del strategies_map[k]
 
-    graphs = generate_graphs(data, strategies_map)
+    graphs = generate_graphs(data, strategies_map, False)
     summary = generate_summary(data, status, strategies)
 
     app = dash.Dash(__name__)
@@ -1834,7 +2050,7 @@ if __name__ == "__main__":
             & (df["model_size"] <= selected_model[1])
         ]
 
-        graphs = generate_graphs(df, strategies_map, tab)
+        graphs = generate_graphs(df, strategies_map, tab, False)
 
         return [generate_summary(df, status, strategies), graphs]
 

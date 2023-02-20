@@ -1,4 +1,4 @@
 {
   "dataPath": "./outputs/raw.json",
-  "defaultGraph": "./outputs/raw.json"
+  "defaultGraph": "./outputs/final_results.csv"
 }
