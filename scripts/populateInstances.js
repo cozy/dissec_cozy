@@ -5,6 +5,7 @@ const { execSync } = require('child_process')
 const splitClasses = require('../src/lib/splitClasses')
 const { updateWebhook } = require('./webhooks')
 const { loadWebhooks } = require('./loadWebhooks')
+const { createLogger } = require('../src/targets/services/helpers/utils')
 
 const populateInstances = async (
   nInstances = 10,
@@ -12,21 +13,25 @@ const populateInstances = async (
   operationsPerInstance = 30,
   fixtureFile = './assets/fixtures-l.json'
 ) => {
-  console.log('Clearing old webhooks...')
+  const { log } = createLogger()
+
+  log('Clearing old webhooks...')
   try {
     execSync('rm ./assets/webhooks.json')
-  } catch {}
+  } finally {
+    log('Cleared!')
+  }
 
   const classes = splitClasses(nInstances, nClasses)
 
   for (let i = 0; i < nInstances; i++) {
     const domain = `test${i + 1}.localhost:8080`
 
-    console.log('Destroying instance', domain)
+    log('Destroying instance', domain)
     try {
       execSync(`cozy-stack instances destroy ${domain} --force`)
     } catch (err) {
-      console.log('Instance does not exist')
+      log('Instance does not exist')
     }
 
     execSync(
@@ -34,7 +39,7 @@ const populateInstances = async (
     )
     execSync(`cozy-stack instances modify ${domain} --onboarding-finished`)
 
-    console.log(`Importing operations of the following classes: ${classes[i]}`)
+    log(`Importing operations of the following classes: ${classes[i]}`)
     const ACHToken = execSync(
       `cozy-stack instances token-cli ${domain} io.cozy.bank.operations`
     )
@@ -48,7 +53,7 @@ const populateInstances = async (
       `cozy-stack apps install --domain ${domain} dissecozy file://${process.cwd()}/build/`
     )
 
-    console.log('Saving webhooks...')
+    log('Saving webhooks...')
     await updateWebhook(
       `http://${domain}`,
       token.toString().replace('\n', ''),
@@ -56,7 +61,7 @@ const populateInstances = async (
     )
   }
 
-  console.log('Updating the querier with fresh webhooks...')
+  log('Updating the querier with fresh webhooks...')
   const token = execSync(
     `cozy-stack instances token-app cozy.localhost:8080 dissecozy`
   )

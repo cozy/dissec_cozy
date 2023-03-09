@@ -26,9 +26,7 @@ const loadWebhooks = async (uri, token, outputFile) => {
 
   // Create a new doc for each instance
   // Using collection to force the doctype
-  const newWebhooks = JSON.parse(
-    fs.readFileSync(outputFile).toString()
-  )
+  const newWebhooks = JSON.parse(fs.readFileSync(outputFile).toString())
   await client.collection(NODES_DOCTYPE).updateAll(newWebhooks)
 }
 

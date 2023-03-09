@@ -1,14 +1,21 @@
-global.fetch = require('node-fetch').default
-
-import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
+import fs from 'fs'
+
+import dissecConfig from '../../../dissec.config.json'
 import { BANK_DOCTYPE } from '../../doctypes'
 import { createLogger, getAppDirectory } from './helpers'
 import { Model } from './model'
-import dissecConfig from '../../../dissec.config.json'
+
+global.fetch = require('node-fetch').default
 
 export const contribution = async () => {
-  const { parents, nbShares, pretrained, executionId, filters = {} } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
+  const {
+    parents,
+    nbShares,
+    pretrained,
+    executionId,
+    filters = {}
+  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   if (parents.length !== nbShares) {
     return
@@ -16,7 +23,7 @@ export const contribution = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const log = createLogger(client.stackClient.uri)
+  const { log } = createLogger(client.stackClient.uri.split('/')[2])
 
   const selector = filters.minOperationDate
     ? {

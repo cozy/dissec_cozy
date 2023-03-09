@@ -10,6 +10,7 @@ const dissecConfig = require('../dissec.config.json')
 const aggregationNodes = require('../assets/webhooks.json')
 const createTree = require('../src/lib/createTree')
 const getClient = require('../src/lib/getClient')
+const { createLogger } = require('../src/targets/services/helpers/utils')
 
 /**
  * This script measures performances of DISSEC vs local learning.
@@ -38,6 +39,8 @@ const runExperiment = async (
     .toString()
     .replace('\n', '')
 
+  const { log } = createLogger()
+
   // Helper
   const getCategory = doc => {
     return doc.manualCategoryId || doc.localCategoryId || doc.cozyCategoryId
@@ -61,7 +64,7 @@ const runExperiment = async (
       .indexFields(['date'])
   )
 
-  console.log(`Local instance has ${sortedOperations.length} data`)
+  log(`Local instance has ${sortedOperations.length} data`)
 
   // Filter and update data
   const allCategories = sortedOperations.map(e => getCategory(e))
@@ -79,7 +82,7 @@ const runExperiment = async (
     : new Date(validationSet[0].date)
   const validationIds = validationSet.map(e => e.id)
 
-  console.log(
+  log(
     `Training on ${sortedOperations.length -
       validationSet.length} data, validating on ${validationSet.length}`
   )
@@ -96,7 +99,7 @@ const runExperiment = async (
       }
     })
 
-  console.log('Waiting for the local categorization to finish...')
+  log('Waiting for the local categorization to finish...')
   const jobData = await client
     .collection(JOBS_DOCTYPE)
     .waitFor(localTrainingJob.id)
@@ -125,7 +128,7 @@ const runExperiment = async (
 
   let localAccuracy = correct / validationSet.length
 
-  console.log('Local accuracy', localAccuracy)
+  log('Local accuracy', localAccuracy)
 
   /** ===== DISSEC TRAINING ===== **/
   // Create the tree, exclude the querier from contributors and aggregators
@@ -163,13 +166,13 @@ const runExperiment = async (
   }
 
   // Watching for update on the model
-  console.log('DISSEC aggregation started, waiting for it to finish...')
+  log('DISSEC aggregation started, waiting for it to finish...')
   fs.watchFile(dissecConfig.localModelPath, async (curr, prev) => {
     if (curr.ctime <= prev.ctime) {
       throw new Error('Updating the model failed')
     }
 
-    console.log('Model has been updated')
+    log('Model has been updated')
     // Using the model to classify
     const { data: dissecTrainingJob } = await client
       .collection(JOBS_DOCTYPE)
@@ -182,7 +185,7 @@ const runExperiment = async (
         }
       })
 
-    console.log('Waiting for the local categorization to finish...')
+    log('Waiting for the local categorization to finish...')
     const jobData = await client
       .collection(JOBS_DOCTYPE)
       .waitFor(dissecTrainingJob.id)
@@ -210,7 +213,7 @@ const runExperiment = async (
 
     let localAccuracy = correct / validationSet.length
 
-    console.log('DISSEC accuracy', localAccuracy)
+    log('DISSEC accuracy', localAccuracy)
     fs.unwatchFile(dissecConfig.localModelPath)
   })
 }

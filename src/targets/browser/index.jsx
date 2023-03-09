@@ -1,15 +1,14 @@
 /* global cozy */
-import 'cozy-ui/transpiled/react/stylesheet.css'
 import 'cozy-ui/dist/cozy-ui.utils.min.css'
-
+import 'cozy-ui/transpiled/react/stylesheet.css'
 import 'styles'
 
-import React from 'react'
 import CozyClient, { CozyProvider } from 'cozy-client'
-import { render } from 'react-dom'
-import { I18n } from 'cozy-ui/react/I18n'
 import { BreakpointsProvider } from 'cozy-ui/react/hooks/useBreakpoints'
+import { I18n } from 'cozy-ui/react/I18n'
 import schema from 'doctypes'
+import React from 'react'
+import { render } from 'react-dom'
 
 let appLocale
 const renderApp = function(client) {
