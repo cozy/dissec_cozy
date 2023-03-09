@@ -23,7 +23,11 @@ const populateInstances = async (
     const domain = `test${i + 1}.localhost:8080`
 
     console.log('Destroying instance', domain)
-    execSync(`cozy-stack instances destroy ${domain} --force`)
+    try {
+      execSync(`cozy-stack instances destroy ${domain} --force`)
+    } catch (err) {
+      console.log('Instance does not exist')
+    }
 
     execSync(
       `cozy-stack instances add --apps drive,photos ${domain} --passphrase cozy`
@@ -35,9 +39,7 @@ const populateInstances = async (
       `cozy-stack instances token-cli ${domain} io.cozy.bank.operations`
     )
     execSync(
-      `ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${
-        classes[i]
-      } ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
+      `ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes[i]} ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
     )
 
     const token = execSync(`cozy-stack instances token-app ${domain} dissecozy`)
@@ -65,4 +67,9 @@ const populateInstances = async (
   )
 }
 
-populateInstances(process.argv[2], process.argv[3], process.argv[4], process.argv[5])
+populateInstances(
+  process.argv[2],
+  process.argv[3],
+  process.argv[4],
+  process.argv[5]
+)

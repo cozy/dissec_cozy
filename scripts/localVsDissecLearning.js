@@ -2,7 +2,7 @@ global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { v4: uuid } = require('uuid')
 const { Q } = require('cozy-client')
-
+const { execSync } = require('child_process')
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
 const dissecConfig = require('../dissec.config.json')
@@ -164,7 +164,11 @@ const runExperiment = async (
 
   // Watching for update on the model
   console.log('DISSEC aggregation started, waiting for it to finish...')
-  fs.watchFile(dissecConfig.localModelPath, async () => {
+  fs.watchFile(dissecConfig.localModelPath, async (curr, prev) => {
+    if (curr.ctime <= prev.ctime) {
+      throw new Error('Updating the model failed')
+    }
+
     console.log('Model has been updated')
     // Using the model to classify
     const { data: dissecTrainingJob } = await client
