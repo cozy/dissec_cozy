@@ -1,11 +1,12 @@
 /// TODO: Merge this script with `populateCentralized` once the centralized population is more flexible
 
-const { execSync } = require('child_process')
-
+const util = require('node:util');
+const exec = util.promisify(require('node:child_process').exec);
+const fs = require('fs')
 const splitClasses = require('../src/lib/splitClasses')
-const { updateWebhook } = require('./webhooks')
 const { loadWebhooks } = require('./loadWebhooks')
 const { createLogger } = require('../src/targets/services/helpers/utils')
+const { default: CozyClient, Q } = require('cozy-client')
 
 const populateInstances = async (
   nInstances = 10,
@@ -17,58 +18,98 @@ const populateInstances = async (
 
   log('Clearing old webhooks...')
   try {
-    execSync('rm ./assets/webhooks.json')
-  } finally {
+    await exec('rm ./assets/webhooks.json')
     log('Cleared!')
+  } catch(err) {
+    log('No webhooks to clear')
   }
 
   const classes = splitClasses(nInstances, nClasses)
 
-  for (let i = 0; i < nInstances; i++) {
-    const domain = `test${i + 1}.localhost:8080`
-
+  const populateSingleInstance = async (domain, classes) => {
     log('Destroying instance', domain)
     try {
-      execSync(`cozy-stack instances destroy ${domain} --force`)
+      await exec(`cozy-stack instances destroy ${domain} --force`)
     } catch (err) {
       log('Instance does not exist')
     }
 
-    execSync(
+    await exec(
       `cozy-stack instances add --apps drive,photos ${domain} --passphrase cozy`
     )
-    execSync(`cozy-stack instances modify ${domain} --onboarding-finished`)
+    await exec(`cozy-stack instances modify ${domain} --onboarding-finished`)
 
-    log(`Importing operations of the following classes: ${classes[i]}`)
-    const ACHToken = execSync(
+    log(`Importing operations of the following classes for instance ${domain}: ${classes}`)
+    const { stdout: ACHToken} = await exec(
       `cozy-stack instances token-cli ${domain} io.cozy.bank.operations`
     )
-    execSync(
-      `ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes[i]} ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
+    await exec(
+      `ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes} ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
     )
 
-    const token = execSync(`cozy-stack instances token-app ${domain} dissecozy`)
-
-    execSync(
+    await exec(
       `cozy-stack apps install --domain ${domain} dissecozy file://${process.cwd()}/build/`
-    )
-
-    log('Saving webhooks...')
-    await updateWebhook(
-      `http://${domain}`,
-      token.toString().replace('\n', ''),
-      './assets/webhooks.json'
     )
   }
 
+  const domains = Array(nInstances).fill("").map((_, i) => `test${i + 1}.localhost:8080`)
+
+  // Populate instances
+  await Promise.all(domains.map((e, i) => populateSingleInstance(e, classes[i])))
+
+  // Collect webhooks
+  const webhooks = await Promise.all(domains.map(async (domain) => {
+    const uri = `http://${domain}`
+
+    // Get a token
+    const {stdout} = await exec(`cozy-stack instances token-app ${domain} dissecozy`)
+    const token = stdout.toString().replace('\n', '')
+
+    // Connect to the instance
+    const client = new CozyClient({
+      uri: uri,
+      schema: {
+        triggers: {
+          doctype: 'io.cozy.triggers',
+          attributes: {},
+          relationships: {}
+        }
+      },
+      token: token
+    })
+
+    // Fetch triggers
+    const data = await client.queryAll(Q('io.cozy.triggers'))
+
+    // Filter for webhooks
+    let webhooks = data.filter(hook => hook.attributes.type === '@webhook')
+
+    // Save DISSEC webhooks
+    let entry = { label: uri }
+    for (let webhook of webhooks) {
+      if (webhook.attributes.message.name === 'contribution') {
+        entry.contributionWebhook = webhook.links.webhook
+      } else if (webhook.attributes.message.name === 'receiveShares') {
+        entry.aggregationWebhook = webhook.links.webhook
+      }
+    }
+
+    return entry
+  }))
+
+  // Write fetched webhooks to the disk
+  const webhooksPath = './assets/webhooks.json'
+  fs.writeFileSync(webhooksPath, JSON.stringify(webhooks, null, 2))
+
+  // Upload webhooks on the coordinating instance
   log('Updating the querier with fresh webhooks...')
-  const token = execSync(
+  const {stdout: token} = await exec(
     `cozy-stack instances token-app cozy.localhost:8080 dissecozy`
   )
   await loadWebhooks(
     'http://cozy.localhost:8080',
     token.toString().replace('\n', ''),
-    './assets/webhooks.json'
+    webhooksPath
   )
 }
 
