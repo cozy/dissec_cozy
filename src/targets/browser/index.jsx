@@ -14,7 +14,10 @@ let appLocale
 const renderApp = function(client) {
   const App = require('components/App').default
   render(
-    <I18n lang={appLocale} dictRequire={appLocale => require(`locales/${appLocale}`)}>
+    <I18n
+      lang={appLocale}
+      dictRequire={appLocale => require(`locales/${appLocale}`)}
+    >
       <CozyProvider client={client}>
         <BreakpointsProvider>
           <App />
@@ -36,11 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const root = document.querySelector('[role=application]')
   const data = root.dataset
 
-  const appIcon = getDataOrDefault(data.cozyIconPath, require('../vendor/assets/icon.svg'))
+  const appIcon = getDataOrDefault(
+    data.cozyIconPath,
+    require('../vendor/assets/icon.svg')
+  )
 
-  const appNamePrefix = getDataOrDefault(data.cozyAppNamePrefix || require('../../../manifest.webapp').name_prefix, '')
+  const appNamePrefix = getDataOrDefault(
+    data.cozyAppNamePrefix || require('../../../manifest.webapp').name_prefix,
+    ''
+  )
 
-  const appName = getDataOrDefault(data.cozyAppName, require('../../../manifest.webapp').name)
+  const appName = getDataOrDefault(
+    data.cozyAppName,
+    require('../../../manifest.webapp').name
+  )
 
   appLocale = getDataOrDefault(data.cozyLocale, 'en')
 

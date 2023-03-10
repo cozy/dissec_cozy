@@ -21,46 +21,37 @@ export const Webhook = ({ hook, onUpdate }) => {
     }
   }
 
-  const handleCallWebhook = useCallback(
-    async () => {
-      setIsWorking(true)
+  const handleCallWebhook = useCallback(async () => {
+    setIsWorking(true)
 
-      let body
-      if (name === 'categorize') {
-        await client.collection(JOBS_DOCTYPE).create('service', {
-          slug: 'dissecozy',
-          name: 'categorize',
-          pretrained: pretrained
-        })
-      } else {
-        try {
-          await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
-        } catch (err) {
-          console.log(err)
-        }
+    let body
+    if (name === 'categorize') {
+      await client.collection(JOBS_DOCTYPE).create('service', {
+        slug: 'dissecozy',
+        name: 'categorize',
+        pretrained: pretrained
+      })
+    } else {
+      try {
+        await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
+      } catch (err) {
+        console.error(err)
       }
+    }
 
-      setIsWorking(false)
-    },
-    [client, hook, name, pretrained, setIsWorking, client.stackClient]
-  )
+    setIsWorking(false)
+  }, [client, hook, name, pretrained, setIsWorking])
 
-  const handleRemoveWebhook = useCallback(
-    async () => {
-      setIsWorking(true)
-      await client.destroy(hook)
-      setIsWorking(false)
-      onUpdate && onUpdate()
-    },
-    [hook, client, onUpdate, setIsWorking]
-  )
+  const handleRemoveWebhook = useCallback(async () => {
+    setIsWorking(true)
+    await client.destroy(hook)
+    setIsWorking(false)
+    onUpdate && onUpdate()
+  }, [hook, client, onUpdate, setIsWorking])
 
-  const handlePretrained = useCallback(
-    () => {
-      setPretrained(!pretrained)
-    },
-    [pretrained, setPretrained]
-  )
+  const handlePretrained = useCallback(() => {
+    setPretrained(!pretrained)
+  }, [pretrained, setPretrained])
 
   const handleLabelChange = useCallback(
     async e => {
@@ -79,7 +70,13 @@ export const Webhook = ({ hook, onUpdate }) => {
         <>
           <FormControlLabel
             label="Use pretrained model?"
-            control={<Switch checked={pretrained} onChange={handlePretrained} name="Use pretrained model?" />}
+            control={
+              <Switch
+                checked={pretrained}
+                onChange={handlePretrained}
+                name="Use pretrained model?"
+              />
+            }
           />
         </>
       ) : name === 'aggregation' ? (

@@ -9,23 +9,26 @@ export const OperationsDeleteAll = props => {
   const { operations } = props
   const [isWorking, setIsWorking] = useState(false)
 
-  const handleDelete = useCallback(
-    async () => {
-      setIsWorking(true)
+  const handleDelete = useCallback(async () => {
+    setIsWorking(true)
 
-      await client.collection(BANK_DOCTYPE).destroyAll(operations)
+    await client.collection(BANK_DOCTYPE).destroyAll(operations)
 
-      setIsWorking(false)
-    },
-    [client, operations, setIsWorking]
-  )
+    setIsWorking(false)
+  }, [client, operations, setIsWorking])
 
   if (!operations || !operations.length) return null
 
   return (
     <div>
       <h2>Delete all Operation:</h2>
-      <Button onClick={handleDelete} busy={isWorking} theme="danger" label="delete all" size="large" />
+      <Button
+        onClick={handleDelete}
+        busy={isWorking}
+        theme="danger"
+        label="delete all"
+        size="large"
+      />
     </div>
   )
 }

@@ -27,16 +27,13 @@ export const NodeUpload = () => {
     [setEntries]
   )
 
-  const handleUpload = useCallback(
-    async () => {
-      setIsWorking(true)
-      for (let entry of entries) {
-        await client.create(NODES_DOCTYPE, entry)
-      }
-      setIsWorking(false)
-    },
-    [client, entries]
-  )
+  const handleUpload = useCallback(async () => {
+    setIsWorking(true)
+    for (const entry of entries) {
+      await client.create(NODES_DOCTYPE, entry)
+    }
+    setIsWorking(false)
+  }, [client, entries])
 
   return (
     <div>
@@ -45,7 +42,13 @@ export const NodeUpload = () => {
         <Label htmlFor="aggregation-input">JSON File:</Label>
         <FileInput hidden={false} onChange={handleFileChange} />
         {entries && `Found ${entries.length} entries`}
-        <Button className="upload-node-button" onClick={handleUpload} busy={isWorking} label="Upload" size="large" />
+        <Button
+          className="upload-node-button"
+          onClick={handleUpload}
+          busy={isWorking}
+          label="Upload"
+          size="large"
+        />
       </form>
     </div>
   )

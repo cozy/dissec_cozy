@@ -5,5 +5,7 @@ test('Returns a list of list of classes', () => {
 
   splitClasses(4, 2)
 
-  expect(console.log).toHaveBeenCalledWith('0,100 200,300 200000,200100 200110,200120')
+  expect(console.log).toHaveBeenCalledWith(
+    '0,100 200,300 200000,200100 200110,200120'
+  )
 })
