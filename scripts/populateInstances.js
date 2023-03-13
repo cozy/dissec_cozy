@@ -1,7 +1,7 @@
 /// TODO: Merge this script with `populateCentralized` once the centralized population is more flexible
 
-const util = require('node:util');
-const exec = util.promisify(require('node:child_process').exec);
+const util = require('node:util')
+const exec = util.promisify(require('node:child_process').exec)
 const fs = require('fs')
 const splitClasses = require('../src/lib/splitClasses')
 const { loadWebhooks } = require('./loadWebhooks')
@@ -20,7 +20,7 @@ const populateInstances = async (
   try {
     await exec('rm ./assets/webhooks.json')
     log('Cleared!')
-  } catch(err) {
+  } catch (err) {
     log('No webhooks to clear')
   }
 
@@ -39,12 +39,14 @@ const populateInstances = async (
     )
     await exec(`cozy-stack instances modify ${domain} --onboarding-finished`)
 
-    log(`Importing operations of the following classes for instance ${domain}: ${classes}`)
-    const { stdout: ACHToken} = await exec(
+    log(
+      `Importing operations of the following classes for instance ${domain}: ${classes}`
+    )
+    const { stdout: ACHToken } = await exec(
       `cozy-stack instances token-cli ${domain} io.cozy.bank.operations`
     )
     await exec(
-      `ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes} ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
+      `yarn run ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes} ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
     )
 
     await exec(
@@ -52,50 +54,64 @@ const populateInstances = async (
     )
   }
 
-  const domains = Array(nInstances).fill("").map((_, i) => `test${i + 1}.localhost:8080`)
+  const domains = Array(nInstances)
+    .fill('')
+    .map((_, i) => `test${i + 1}.localhost:8080`)
 
   // Populate instances
-  await Promise.all(domains.map((e, i) => populateSingleInstance(e, classes[i])))
+  await Promise.all(
+    domains.map((e, i) => populateSingleInstance(e, classes[i]))
+  )
 
   // Collect webhooks
-  const webhooks = await Promise.all(domains.map(async (domain) => {
-    const uri = `http://${domain}`
+  const webhooks = await Promise.all(
+    domains.map(async domain => {
+      const uri = `http://${domain}`
 
-    // Get a token
-    const {stdout} = await exec(`cozy-stack instances token-app ${domain} dissecozy`)
-    const token = stdout.toString().replace('\n', '')
+      // Get a token
+      const { stdout } = await exec(
+        `cozy-stack instances token-app ${domain} dissecozy`
+      )
+      const token = stdout.toString().replace('\n', '')
 
-    // Connect to the instance
-    const client = new CozyClient({
-      uri: uri,
-      schema: {
-        triggers: {
-          doctype: 'io.cozy.triggers',
-          attributes: {},
-          relationships: {}
+      // Connect to the instance
+      const client = new CozyClient({
+        uri: uri,
+        schema: {
+          triggers: {
+            doctype: 'io.cozy.triggers',
+            attributes: {},
+            relationships: {}
+          }
+        },
+        token: token
+      })
+
+      // NOTE: Fetching all triggers returns, document links like webhooks.
+      // We need those links to avoid reconstructing it from the document
+      // we could have fetched when adding a where clause.
+      // See https://github.com/cozy/cozy-client/blob/master/packages/cozy-stack-client/src/TriggerCollection.js#L119
+
+      // Fetch triggers
+      const triggers = await client.queryAll(Q('io.cozy.triggers'))
+      // Filter for webhooks
+      let webhooks = triggers.filter(
+        trigger => trigger.attributes.type === '@webhook'
+      )
+
+      // Save DISSEC webhooks
+      let entry = { label: uri }
+      for (let webhook of webhooks) {
+        if (webhook.attributes.message.name === 'contribution') {
+          entry.contributionWebhook = webhook.links.webhook
+        } else if (webhook.attributes.message.name === 'receiveShares') {
+          entry.aggregationWebhook = webhook.links.webhook
         }
-      },
-      token: token
-    })
-
-    // Fetch triggers
-    const data = await client.queryAll(Q('io.cozy.triggers'))
-
-    // Filter for webhooks
-    let webhooks = data.filter(hook => hook.attributes.type === '@webhook')
-
-    // Save DISSEC webhooks
-    let entry = { label: uri }
-    for (let webhook of webhooks) {
-      if (webhook.attributes.message.name === 'contribution') {
-        entry.contributionWebhook = webhook.links.webhook
-      } else if (webhook.attributes.message.name === 'receiveShares') {
-        entry.aggregationWebhook = webhook.links.webhook
       }
-    }
 
-    return entry
-  }))
+      return entry
+    })
+  )
 
   // Write fetched webhooks to the disk
   const webhooksPath = './assets/webhooks.json'
@@ -103,7 +119,7 @@ const populateInstances = async (
 
   // Upload webhooks on the coordinating instance
   log('Updating the querier with fresh webhooks...')
-  const {stdout: token} = await exec(
+  const { stdout: token } = await exec(
     `cozy-stack instances token-app cozy.localhost:8080 dissecozy`
   )
   await loadWebhooks(
