@@ -4562,10 +4562,41 @@ cozy-jobs-cli@1.10.4:
     replay "2.4.0"
     strip-json-comments "3.0.1"
 
-cozy-konnector-libs@4.56.4, cozy-konnector-libs@^4.32.0:
+cozy-konnector-libs@^4.32.0:
   version "4.56.4"
   resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-4.56.4.tgz#139fcda7569173be8c585b141132ea85e260fc28"
   integrity sha512-GSrOxKkpGSkBCAqVcdAht3+7Tv0l6cw+GtwYOCPl3YiCvcN5PzxfiaXndBXu9VDNHTgNFmAKMNdJVNDedlRKuQ==
+  dependencies:
+    babel-runtime "^6.26.0"
+    bluebird "^3.7.2"
+    bluebird-retry "^0.11.0"
+    btoa "1.2.1"
+    cheerio "^1.0.0-rc.9"
+    classificator "^0.3.3"
+    cozy-client "^33.2.0"
+    cozy-client-js "^0.20.0"
+    cozy-device-helper "^2.1.0"
+    cozy-doctypes "^1.83.8"
+    cozy-flags "^2.8.7"
+    cozy-logger "^1.8.0"
+    date-fns "^2.22.1"
+    file-type "^16.5.0"
+    geco "git+https://github.com/konnectors/geco.git#0.11.2"
+    lodash-id "^0.14.0"
+    lowdb "^1.0.0"
+    mime-types "^2.1.31"
+    node-fetch "^2.6.1"
+    raven "^2.6.4"
+    raw-body "^2.4.1"
+    request "^2.88.2"
+    request-debug "^0.2.0"
+    request-promise "^4.2.6"
+    strip-json-comments "^3.1.1"
+
+cozy-konnector-libs@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-5.1.0.tgz#64c877e539fa153d321d2e68cb640b6fc1e8b9d5"
+  integrity sha512-LvFhV/Sk3hBNr47GClBUkttkdQFtINk6MjsyoAz8Vaelt2BnMlj5h4C3Xk+OnahD6J1AF7RN7eb8GyDCZl1ZVg==
   dependencies:
     babel-runtime "^6.26.0"
     bluebird "^3.7.2"
@@ -9957,13 +9988,7 @@ mini-css-extract-plugin@0.5.0:
     schema-utils "^1.0.0"
     webpack-sources "^1.1.0"
 
-minilog@3.1.0:
-  version "3.1.0"
-  resolved "git+https://github.com/cozy/minilog.git#6da0aa58759c4f1a1a7e0fd093dbe2a67c035c55"
-  dependencies:
-    microee "0.0.6"
-
-"minilog@https://github.com/cozy/minilog.git#master":
+minilog@3.1.0, "minilog@https://github.com/cozy/minilog.git#master":
   version "3.1.0"
   resolved "https://github.com/cozy/minilog.git#945cf4d569594d6e166d0187a83afd6c46cdf733"
   dependencies:
