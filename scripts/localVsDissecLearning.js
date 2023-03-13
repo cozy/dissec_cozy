@@ -168,7 +168,12 @@ const runExperiment = async (
   // Watching for update on the model
   log('DISSEC aggregation started, waiting for it to finish...')
   fs.watchFile(dissecConfig.localModelPath, async (curr, prev) => {
-    if (curr.ctime <= prev.ctime) {
+    if (!curr.ctimeMs) {
+      // The model was just created, this event is only the creation of the file with no content.
+      // Wait for writing to finish
+      return
+    }
+    if (curr.ctimeMs <= prev.ctimeMs) {
       throw new Error('Updating the model failed')
     }
 
