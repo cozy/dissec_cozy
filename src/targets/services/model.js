@@ -60,7 +60,7 @@ export class Model {
 
     const classifier = NaiveBayes({
       tokenizer,
-      ...getClassifierOptions(this.uniqueY).initialization
+      ...getClassifierOptions(this.uniqueY.length).initialization
     })
     for (let j = 0; j < this.uniqueY.length; j++) {
       for (let i = 0; i < vocabulary.length; i++) {

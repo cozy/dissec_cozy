@@ -4562,10 +4562,10 @@ cozy-jobs-cli@1.10.4:
     replay "2.4.0"
     strip-json-comments "3.0.1"
 
-cozy-konnector-libs@^4.32.0:
-  version "4.56.4"
-  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-4.56.4.tgz#139fcda7569173be8c585b141132ea85e260fc28"
-  integrity sha512-GSrOxKkpGSkBCAqVcdAht3+7Tv0l6cw+GtwYOCPl3YiCvcN5PzxfiaXndBXu9VDNHTgNFmAKMNdJVNDedlRKuQ==
+cozy-konnector-libs@5.2.1:
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-5.2.1.tgz#5958fe370afcf0583f4a6115af00ef8673002744"
+  integrity sha512-llIjcryiO5odYHKvSVQ0hICBtaUtg63+RMoVXCVdbcqw1wsRVwjdS94bWNzy1WIDMh1IjaO4GZYwhUA+xG+dIA==
   dependencies:
     babel-runtime "^6.26.0"
     bluebird "^3.7.2"
@@ -4593,10 +4593,10 @@ cozy-konnector-libs@^4.32.0:
     request-promise "^4.2.6"
     strip-json-comments "^3.1.1"
 
-cozy-konnector-libs@^5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-5.1.0.tgz#64c877e539fa153d321d2e68cb640b6fc1e8b9d5"
-  integrity sha512-LvFhV/Sk3hBNr47GClBUkttkdQFtINk6MjsyoAz8Vaelt2BnMlj5h4C3Xk+OnahD6J1AF7RN7eb8GyDCZl1ZVg==
+cozy-konnector-libs@^4.32.0:
+  version "4.56.4"
+  resolved "https://registry.yarnpkg.com/cozy-konnector-libs/-/cozy-konnector-libs-4.56.4.tgz#139fcda7569173be8c585b141132ea85e260fc28"
+  integrity sha512-GSrOxKkpGSkBCAqVcdAht3+7Tv0l6cw+GtwYOCPl3YiCvcN5PzxfiaXndBXu9VDNHTgNFmAKMNdJVNDedlRKuQ==
   dependencies:
     babel-runtime "^6.26.0"
     bluebird "^3.7.2"
