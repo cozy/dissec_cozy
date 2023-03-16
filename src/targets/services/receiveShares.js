@@ -1,17 +1,27 @@
-global.fetch = require('node-fetch').default
-
 import CozyClient, { Q } from 'cozy-client'
+
 import { createLogger, getAppDirectory } from './helpers'
+
+global.fetch = require('node-fetch').default
 
 export const receiveShares = async () => {
   // Worker's arguments
-  const { docId, sharecode, uri, nbShares, parent, finalize, level, aggregatorId, executionId, nbChild } = JSON.parse(
-    process.env['COZY_PAYLOAD'] || '{}'
-  )
+  const {
+    docId,
+    sharecode,
+    uri,
+    nbShares,
+    parent,
+    finalize,
+    level,
+    aggregatorId,
+    executionId,
+    nbChild
+  } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const log = createLogger(client.stackClient.uri)
+  const { log } = createLogger(client.stackClient.uri.split('/')[2])
 
   log('Received share')
 
@@ -33,7 +43,9 @@ export const receiveShares = async () => {
     store: false
   })
 
-  const response = await sharedClient.collection('io.cozy.files').fetchFileContentById(docId)
+  const response = await sharedClient
+    .collection('io.cozy.files')
+    .fetchFileContentById(docId)
   const share = await response.text()
 
   const appDirectory = await getAppDirectory(client)
@@ -65,7 +77,7 @@ export const receiveShares = async () => {
   })
   log('Stored share!')
 
-  // Aggergations are triggered after writing the share
+  // Aggregations are triggered after writing the share
   // It prevents synchronicity issues
   // TODO: Remove hierarchy and base only on metadata and id
   // Count files in the aggregation folder

@@ -1,17 +1,20 @@
-global.fetch = require('node-fetch').default
-
-import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
-import { BANK_DOCTYPE } from '../../doctypes'
-import { Model } from './model'
+import fs from 'fs'
+
 import dissecConfig from '../../../dissec.config.json'
+import { BANK_DOCTYPE } from '../../doctypes'
 import { JOBS_DOCTYPE } from '../../doctypes/jobs'
+import { Model } from './model'
+
+global.fetch = require('node-fetch').default
 
 export const categorize = async () => {
   const client = CozyClient.fromEnv(process.env, {})
 
   // Fetching parameters (if any) from the jobs
-  const { data: job } = await client.query(Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2]))
+  const { data: job } = await client.query(
+    Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2])
+  )
 
   const { pretrained, filters = {} } = job.attributes.message
 
@@ -23,7 +26,9 @@ export const categorize = async () => {
   if (pretrained) {
     // Use the shared model
     try {
-      const compressedAggregate = fs.readFileSync(dissecConfig.localModelPath).toString()
+      const compressedAggregate = fs
+        .readFileSync(dissecConfig.localModelPath)
+        .toString()
       model = await Model.fromCompressedAggregate(compressedAggregate)
     } catch (err) {
       throw `Model does not exist at path ${dissecConfig.localModelPath} ? ${err}`
@@ -31,7 +36,11 @@ export const categorize = async () => {
   } else {
     // Apply filters first
     let filteredOperations = filters.minOperationDate
-      ? operations.filter(e => new Date(e.date).valueOf() <= new Date(filters.minOperationDate).valueOf())
+      ? operations.filter(
+          e =>
+            new Date(e.date).valueOf() <=
+            new Date(filters.minOperationDate).valueOf()
+        )
       : operations
 
     model = await Model.fromDocs(filteredOperations)

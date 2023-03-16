@@ -46,7 +46,14 @@ export const OperationAdd = () => {
       setOperationToAdd('')
       setAmountToAdd('')
     },
-    [operationToAdd, amountToAdd, client, setOperationToAdd, setAmountToAdd, setIsWorking]
+    [
+      operationToAdd,
+      amountToAdd,
+      client,
+      setOperationToAdd,
+      setAmountToAdd,
+      setIsWorking
+    ]
   )
 
   return (
@@ -54,9 +61,18 @@ export const OperationAdd = () => {
       <h2>Add a new Operation:</h2>
       <form>
         <Label htmlFor="todo-add-input"> Operation label: </Label>
-        <Input value={operationToAdd} onChange={handleLabelChange} id="todo-add-input" />
+        <Input
+          value={operationToAdd}
+          onChange={handleLabelChange}
+          id="todo-add-input"
+        />
         <Label htmlFor="todo-add-input"> Operation amount: </Label>
-        <Input value={amountToAdd} onChange={handleAmountChange} id="todo-add-input" type="number" />
+        <Input
+          value={amountToAdd}
+          onChange={handleAmountChange}
+          id="todo-add-input"
+          type="number"
+        />
         <Button
           onClick={handleSubmit}
           busy={isWorking}

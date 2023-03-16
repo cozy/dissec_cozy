@@ -1,21 +1,23 @@
 /* global cozy */
-import 'cozy-ui/transpiled/react/stylesheet.css'
 import 'cozy-ui/dist/cozy-ui.utils.min.css'
-
+import 'cozy-ui/transpiled/react/stylesheet.css'
 import 'styles'
 
-import React from 'react'
 import CozyClient, { CozyProvider } from 'cozy-client'
-import { render } from 'react-dom'
-import { I18n } from 'cozy-ui/react/I18n'
 import { BreakpointsProvider } from 'cozy-ui/react/hooks/useBreakpoints'
+import { I18n } from 'cozy-ui/react/I18n'
 import schema from 'doctypes'
+import React from 'react'
+import { render } from 'react-dom'
 
 let appLocale
 const renderApp = function(client) {
   const App = require('components/App').default
   render(
-    <I18n lang={appLocale} dictRequire={appLocale => require(`locales/${appLocale}`)}>
+    <I18n
+      lang={appLocale}
+      dictRequire={appLocale => require(`locales/${appLocale}`)}
+    >
       <CozyProvider client={client}>
         <BreakpointsProvider>
           <App />
@@ -37,11 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const root = document.querySelector('[role=application]')
   const data = root.dataset
 
-  const appIcon = getDataOrDefault(data.cozyIconPath, require('../vendor/assets/icon.svg'))
+  const appIcon = getDataOrDefault(
+    data.cozyIconPath,
+    require('../vendor/assets/icon.svg')
+  )
 
-  const appNamePrefix = getDataOrDefault(data.cozyAppNamePrefix || require('../../../manifest.webapp').name_prefix, '')
+  const appNamePrefix = getDataOrDefault(
+    data.cozyAppNamePrefix || require('../../../manifest.webapp').name_prefix,
+    ''
+  )
 
-  const appName = getDataOrDefault(data.cozyAppName, require('../../../manifest.webapp').name)
+  const appName = getDataOrDefault(
+    data.cozyAppName,
+    require('../../../manifest.webapp').name
+  )
 
   appLocale = getDataOrDefault(data.cozyLocale, 'en')
 

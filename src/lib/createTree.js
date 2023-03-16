@@ -8,7 +8,11 @@ const { v4: uuid } = require('uuid')
  * @param {Webhooks[]} contributorsWebhooks The list of webhooks used by contributors
  * @returns
  */
-const createTree = (querierWebhooks, aggregatorsWebhooks, contributorsWebhooks) => {
+const createTree = (
+  querierWebhooks,
+  aggregatorsWebhooks,
+  contributorsWebhooks
+) => {
   // TODO: Make a dynamic tree
   const querier = {
     webhook: querierWebhooks.aggregationWebhook,

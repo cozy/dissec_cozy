@@ -1,16 +1,16 @@
-global.fetch = require('node-fetch').default
-
-import fs from 'fs'
 import CozyClient, { Q } from 'cozy-client'
+import fs from 'fs'
 
+import dissecConfig from '../../../dissec.config.json'
 import { createLogger } from './helpers'
 import { Model } from './model'
-import dissecConfig from '../../../dissec.config.json'
+
+global.fetch = require('node-fetch').default
 
 export const aggregation = async () => {
   const client = CozyClient.fromEnv(process.env, {})
 
-  const log = createLogger(client.stackClient.uri)
+  const { log } = createLogger(client.stackClient.uri.split('/')[2])
 
   const jobId = process.env['COZY_JOB_ID'].split('/')[2]
 
@@ -43,12 +43,18 @@ export const aggregation = async () => {
   // Fetch all stored shares
   const compressedShares = []
   for (let s of receivedShares) {
-    const response = await client.collection('io.cozy.files').fetchFileContentById(s._id)
+    const response = await client
+      .collection('io.cozy.files')
+      .fetchFileContentById(s._id)
     const receivedShare = await response.text()
     compressedShares.push(receivedShare)
   }
 
-  log('Downloaded', compressedShares.length, 'shares')
+  log(
+    `Downloaded ${compressedShares.length} shares${
+      finalize ? ', finalizing' : ''
+    }`
+  )
 
   // Combine the shares
   let model = Model.fromCompressedShares(compressedShares, {
@@ -57,7 +63,10 @@ export const aggregation = async () => {
 
   if (finalize) {
     // Write a file that will be used as a remote asset by the stack
-    fs.writeFileSync(dissecConfig.localModelPath, model.getCompressedAggregate())
+    fs.writeFileSync(
+      dissecConfig.localModelPath,
+      model.getCompressedAggregate()
+    )
     log('Model has been written to the disk')
   } else {
     // Store the aggregate as a file to be shared

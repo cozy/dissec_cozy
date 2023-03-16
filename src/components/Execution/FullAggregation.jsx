@@ -10,97 +10,93 @@ const FullAggregation = ({ nodes, webhooks }) => {
   const [isWorking, setIsWorking] = useState(false)
   const [contributors, setContributors] = useState()
 
-  const handleGenerateTree = useCallback(
-    async () => {
-      setIsWorking(true)
+  const handleGenerateTree = useCallback(async () => {
+    setIsWorking(true)
 
-      if (!webhooks) return
+    if (!webhooks) return
 
-      let querier = {
-        webhook: webhooks.filter(webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES)[0].links
-          .webhook,
-        level: 0,
-        nbChild: 3,
+    let querier = {
+      webhook: webhooks.filter(
+        webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES
+      )[0].links.webhook,
+      level: 0,
+      nbChild: 3,
+      aggregatorId: uuid(),
+      finalize: true
+    }
+
+    let aggregators = [
+      {
+        webhook: nodes[0].aggregationWebhook,
+        level: 1,
+        nbChild: 7,
+        parent: querier,
         aggregatorId: uuid(),
-        finalize: true
+        finalize: false
+      },
+      {
+        webhook: nodes[1].aggregationWebhook,
+        level: 1,
+        nbChild: 7,
+        parent: querier,
+        aggregatorId: uuid(),
+        finalize: false
+      },
+      {
+        webhook: nodes[2].aggregationWebhook,
+        level: 1,
+        nbChild: 7,
+        parent: querier,
+        aggregatorId: uuid(),
+        finalize: false
       }
+    ]
 
-      let aggregators = [
-        {
-          webhook: nodes[0].aggregationWebhook,
-          level: 1,
-          nbChild: 7,
-          parent: querier,
-          aggregatorId: uuid(),
-          finalize: false
-        },
-        {
-          webhook: nodes[1].aggregationWebhook,
-          level: 1,
-          nbChild: 7,
-          parent: querier,
-          aggregatorId: uuid(),
-          finalize: false
-        },
-        {
-          webhook: nodes[2].aggregationWebhook,
-          level: 1,
-          nbChild: 7,
-          parent: querier,
-          aggregatorId: uuid(),
-          finalize: false
-        }
-      ]
+    let contributors = [
+      { ...nodes[3], level: 2, nbChild: 0, parents: aggregators },
+      { ...nodes[4], level: 2, nbChild: 0, parents: aggregators },
+      { ...nodes[5], level: 2, nbChild: 0, parents: aggregators },
+      { ...nodes[6], level: 2, nbChild: 0, parents: aggregators },
+      { ...nodes[7], level: 2, nbChild: 0, parents: aggregators },
+      { ...nodes[8], level: 2, nbChild: 0, parents: aggregators },
+      { ...nodes[9], level: 2, nbChild: 0, parents: aggregators }
+    ]
 
-      let contributors = [
-        { ...nodes[3], level: 2, nbChild: 0, parents: aggregators },
-        { ...nodes[4], level: 2, nbChild: 0, parents: aggregators },
-        { ...nodes[5], level: 2, nbChild: 0, parents: aggregators },
-        { ...nodes[6], level: 2, nbChild: 0, parents: aggregators },
-        { ...nodes[7], level: 2, nbChild: 0, parents: aggregators },
-        { ...nodes[8], level: 2, nbChild: 0, parents: aggregators },
-        { ...nodes[9], level: 2, nbChild: 0, parents: aggregators }
-      ]
+    setContributors(contributors)
 
-      setContributors(contributors)
+    setIsWorking(false)
+  }, [nodes, webhooks, setIsWorking, setContributors])
 
-      setIsWorking(false)
-    },
-    [nodes, webhooks, setIsWorking, setContributors]
-  )
+  useEffect(() => {
+    if (!contributors && webhooks.length !== 0) handleGenerateTree()
+  }, [webhooks, contributors, handleGenerateTree])
 
-  useEffect(
-    () => {
-      if (!contributors && webhooks.length !== 0) handleGenerateTree()
-    },
-    [webhooks, contributors, handleGenerateTree]
-  )
+  const handleLaunchExecution = useCallback(async () => {
+    if (!contributors) return
 
-  const handleLaunchExecution = useCallback(
-    async () => {
-      if (!contributors) return
+    setIsWorking(true)
 
-      setIsWorking(true)
+    const executionId = uuid()
 
-      const executionId = uuid()
-
-      for (const contributor of contributors) {
-        const contributionBody = {
-          executionId,
-          pretrained: false,
-          nbShares: 3,
-          parents: contributor.parents
-        }
-        await new Promise(resolve => {
-          setTimeout(resolve, 1000)
-        })
-        await client.stackClient.fetchJSON('POST', contributor.contributionWebhook, contributionBody)
+    for (const contributor of contributors) {
+      const contributionBody = {
+        executionId,
+        pretrained: false,
+        nbShares: 3,
+        parents: contributor.parents
       }
+      await new Promise(resolve => {
+        setTimeout(resolve, 1000)
+      })
+      await client.stackClient.fetchJSON(
+        'POST',
+        contributor.contributionWebhook,
+        contributionBody
+      )
+    }
 
-      setIsWorking(false)
-    },
-    [contributors, client, setIsWorking]
-  )
+    setIsWorking(false)
+  }, [contributors, client, setIsWorking])
 
   return (
     <div className="selected-single-node">

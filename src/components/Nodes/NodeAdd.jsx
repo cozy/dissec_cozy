@@ -37,36 +37,33 @@ export const NodeAdd = () => {
   )
 
   // create a new node to be used during the protocol
-  const handleSubmit = useCallback(
-    async () => {
-      // reset the input and display a spinner during the process
-      setIsWorking(true)
+  const handleSubmit = useCallback(async () => {
+    // reset the input and display a spinner during the process
+    setIsWorking(true)
 
-      await client.create(NODES_DOCTYPE, {
-        label,
-        contributionWebhook,
-        aggregationWebhook
-      })
-
-      // remove the spinner
-      setIsWorking(false)
-
-      // Reset fields
-      setLabel('')
-      setContributionWebhook('')
-      setAggregationWebhook('')
-    },
-    [
+    await client.create(NODES_DOCTYPE, {
       label,
       contributionWebhook,
-      aggregationWebhook,
-      client,
-      setIsWorking,
-      setLabel,
-      setContributionWebhook,
-      setAggregationWebhook
-    ]
-  )
+      aggregationWebhook
+    })
+
+    // remove the spinner
+    setIsWorking(false)
+
+    // Reset fields
+    setLabel('')
+    setContributionWebhook('')
+    setAggregationWebhook('')
+  }, [
+    label,
+    contributionWebhook,
+    aggregationWebhook,
+    client,
+    setIsWorking,
+    setLabel,
+    setContributionWebhook,
+    setAggregationWebhook
+  ])
 
   return (
     <div>
@@ -82,8 +79,19 @@ export const NodeAdd = () => {
           type="url"
         />
         <Label htmlFor="aggregation-input">Aggregation webhook:</Label>
-        <Input value={aggregationWebhook} onChange={handleAggregationWebhookChange} id="aggregation-input" type="url" />
-        <Button className="add-node-button" onClick={handleSubmit} busy={isWorking} label="add" size="large" />
+        <Input
+          value={aggregationWebhook}
+          onChange={handleAggregationWebhookChange}
+          id="aggregation-input"
+          type="url"
+        />
+        <Button
+          className="add-node-button"
+          onClick={handleSubmit}
+          busy={isWorking}
+          label="add"
+          size="large"
+        />
       </form>
     </div>
   )

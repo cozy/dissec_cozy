@@ -10,25 +10,41 @@ export const Sidebar = ({ t }) => {
       <nav>
         <ul className="c-nav">
           <li className="c-nav-item">
-            <NavLink to="/operations" className="c-nav-link" activeClassName="is-active">
+            <NavLink
+              to="/operations"
+              className="c-nav-link"
+              activeClassName="is-active"
+            >
               <Icon className="c-nav-icon" icon={NavIcon} />
               {t('Nav.operations')}
             </NavLink>
           </li>
           <li className="c-nav-item">
-            <NavLink to="/execution" className="c-nav-link" activeClassName="is-active">
+            <NavLink
+              to="/execution"
+              className="c-nav-link"
+              activeClassName="is-active"
+            >
               <Icon className="c-nav-icon" icon={NavIcon} />
               {t('Nav.execution')}
             </NavLink>
           </li>
           <li className="c-nav-item">
-            <NavLink to="/nodes" className="c-nav-link" activeClassName="is-active">
+            <NavLink
+              to="/nodes"
+              className="c-nav-link"
+              activeClassName="is-active"
+            >
               <Icon className="c-nav-icon" icon={NavIcon} />
               {t('Nav.nodes')}
             </NavLink>
           </li>
           <li className="c-nav-item">
-            <NavLink to="/analyze" className="c-nav-link" activeClassName="is-active">
+            <NavLink
+              to="/analyze"
+              className="c-nav-link"
+              activeClassName="is-active"
+            >
               <Icon className="c-nav-icon" icon={NavIcon} />
               {t('Nav.analyze')}
             </NavLink>

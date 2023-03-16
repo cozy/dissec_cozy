@@ -8,16 +8,13 @@ export const NodeRemoveButton = ({ node }) => {
 
   const [isWorking, setIsWorking] = useState(false)
 
-  const removeNode = useCallback(
-    async () => {
-      setIsWorking(true)
+  const removeNode = useCallback(async () => {
+    setIsWorking(true)
 
-      await client.destroy(node)
+    await client.destroy(node)
 
-      setIsWorking(false)
-    },
-    [node, client, setIsWorking]
-  )
+    setIsWorking(false)
+  }, [node, client, setIsWorking])
 
   return (
     <Button

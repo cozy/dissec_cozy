@@ -10,7 +10,11 @@ import Button from 'cozy-ui/react/Button'
 import Webhook from './Webhook'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import FullAggregation from './FullAggregation.jsx'
-import { SERVICE_CATEGORIZE, SERVICE_CONTRIBUTION, SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
+import {
+  SERVICE_CATEGORIZE,
+  SERVICE_CONTRIBUTION,
+  SERVICE_RECEIVE_SHARES
+} from '../../targets/services/helpers'
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -22,53 +26,48 @@ export const Execution = ({ nodes }) => {
   const [webhooks, setWebhooks] = useState([])
   const [singleNode, setSingleNode] = useState(data[0])
 
-  const createWebhooks = useCallback(
-    async () => {
-      const query = async name => {
-        setIsWorking(true)
+  const createWebhooks = useCallback(async () => {
+    const query = async name => {
+      setIsWorking(true)
 
-        await client.create('io.cozy.triggers', {
-          type: '@webhook',
-          worker: 'service',
-          message: {
-            slug: 'dissecozy',
-            name: name
-          }
-        })
-      }
+      await client.create('io.cozy.triggers', {
+        type: '@webhook',
+        worker: 'service',
+        message: {
+          slug: 'dissecozy',
+          name: name
+        }
+      })
+    }
 
-      // Register categorization webhook
-      await query(SERVICE_CATEGORIZE)
+    // Register categorization webhook
+    await query(SERVICE_CATEGORIZE)
 
-      // Register contribution webhook
-      await query(SERVICE_CONTRIBUTION)
+    // Register contribution webhook
+    await query(SERVICE_CONTRIBUTION)
 
-      // Register aggregation webhook
-      await query(SERVICE_RECEIVE_SHARES)
+    // Register aggregation webhook
+    await query(SERVICE_RECEIVE_SHARES)
 
-      setTimeout(async () => {
-        await fetchWebhooks()
-        setIsWorking(false)
-      }, 3000)
-    },
-    [client, fetchWebhooks]
-  )
+    setTimeout(async () => {
+      await fetchWebhooks()
+      setIsWorking(false)
+    }, 3000)
+  }, [client, fetchWebhooks])
 
-  const fetchWebhooks = useCallback(
-    async () => {
-      let { data: webhooks } = await client.collection('io.cozy.triggers').all()
+  const fetchWebhooks = useCallback(async () => {
+    let { data: webhooks } = await client.collection('io.cozy.triggers').all()
 
-      setWebhooks(webhooks.filter(hook => hook.type === '@webhook').sort((a, b) => a.id > b.id))
-    },
-    [client, setWebhooks]
-  )
+    setWebhooks(
+      webhooks
+        .filter(hook => hook.type === '@webhook')
+        .sort((a, b) => a.id > b.id)
+    )
+  }, [client, setWebhooks])
 
-  useEffect(
-    () => {
-      fetchWebhooks()
-    },
-    [fetchWebhooks]
-  )
+  useEffect(() => {
+    fetchWebhooks()
+  }, [fetchWebhooks])
 
   return (
     <div className="todos">
@@ -87,7 +86,9 @@ export const Execution = ({ nodes }) => {
               <b>Single node aggregation</b>
             </div>
             <div>
-              <Label htmlFor="single-node-selector">Select the node performing the execution: </Label>
+              <Label htmlFor="single-node-selector">
+                Select the node performing the execution:{' '}
+              </Label>
               <SelectBox
                 id="single-node-selector"
                 options={options}
@@ -100,7 +101,10 @@ export const Execution = ({ nodes }) => {
           </div>
         </>
       )}
-      {webhooks && webhooks.map(hook => <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />)}
+      {webhooks &&
+        webhooks.map(hook => (
+          <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
+        ))}
       {isWorking ? (
         <Spinner size="xxlarge" middle />
       ) : (

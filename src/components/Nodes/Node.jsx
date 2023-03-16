@@ -11,23 +11,17 @@ export const Node = ({ node }) => {
 
   const { label, contributionWebhook, aggregationWebhook } = node
 
-  const handleContributionClick = useCallback(
-    async () => {
-      setIsWorking(true)
-      await client.stackClient.fetchJSON('POST', contributionWebhook)
-      setIsWorking(false)
-    },
-    [client, contributionWebhook, setIsWorking]
-  )
+  const handleContributionClick = useCallback(async () => {
+    setIsWorking(true)
+    await client.stackClient.fetchJSON('POST', contributionWebhook)
+    setIsWorking(false)
+  }, [client, contributionWebhook, setIsWorking])
 
-  const handleAggregationClick = useCallback(
-    async () => {
-      setIsWorking(true)
-      await client.stackClient.fetchJSON('POST', aggregationWebhook)
-      setIsWorking(false)
-    },
-    [client, aggregationWebhook, setIsWorking]
-  )
+  const handleAggregationClick = useCallback(async () => {
+    setIsWorking(true)
+    await client.stackClient.fetchJSON('POST', aggregationWebhook)
+    setIsWorking(false)
+  }, [client, aggregationWebhook, setIsWorking])
 
   return (
     <div className="node">

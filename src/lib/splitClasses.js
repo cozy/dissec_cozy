@@ -1,6 +1,8 @@
 const fs = require('fs')
 
-const classes = JSON.parse(fs.readFileSync('./src/assets/classes.json').toString())
+const classes = JSON.parse(
+  fs.readFileSync('./src/assets/classes.json').toString()
+)
 
 /**
  * Splits the category labels between a given number of instances.
@@ -14,7 +16,9 @@ const splitClasses = (nInstances = 1, nClassesPerInstance = 1) => {
   for (let current = 1; current <= nInstances; current++) {
     const instanceResult = []
     for (let i = 0; i < nClassesPerInstance; i++) {
-      instanceResult.push(keys[((current - 1) * nClassesPerInstance + i) % keys.length])
+      instanceResult.push(
+        keys[((current - 1) * nClassesPerInstance + i) % keys.length]
+      )
     }
     result.push(instanceResult.join(','))
   }

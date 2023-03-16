@@ -15,50 +15,61 @@ const SingleNodeAggregation = ({ node }) => {
   const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
 
-  const handleLaunchExecution = useCallback(
-    async () => {
-      setIsWorking(true)
-      // Create a tree with one contributor, nbShares aggregators and one finalizer
-      const finalAggregatorId = uuid()
-      const parents = Array(nbShares)
-        .fill()
-        .map(() => ({
-          level: 0,
-          aggregatorId: uuid(),
-          nbChild: 1,
-          finalize: false,
+  const handleLaunchExecution = useCallback(async () => {
+    setIsWorking(true)
+    // Create a tree with one contributor, nbShares aggregators and one finalizer
+    const finalAggregatorId = uuid()
+    const parents = Array(nbShares)
+      .fill()
+      .map(() => ({
+        level: 0,
+        aggregatorId: uuid(),
+        nbChild: 1,
+        finalize: false,
+        webhook: node.aggregationWebhook,
+        parent: {
+          level: 1,
+          aggregatorId: finalAggregatorId,
+          nbChild: nbShares,
           webhook: node.aggregationWebhook,
-          parent: {
-            level: 1,
-            aggregatorId: finalAggregatorId,
-            nbChild: nbShares,
-            webhook: node.aggregationWebhook,
-            finalize: true
-          }
-        }))
-      const contributionBody = {
-        executionId: uuid(),
-        pretrained,
-        nbShares,
-        parents
-      }
-      await client.stackClient.fetchJSON('POST', node.contributionWebhook, contributionBody)
-      setIsWorking(false)
-    },
-    [node, client, nbShares, pretrained, setIsWorking]
-  )
+          finalize: true
+        }
+      }))
+    const contributionBody = {
+      executionId: uuid(),
+      pretrained,
+      nbShares,
+      parents
+    }
+    await client.stackClient.fetchJSON(
+      'POST',
+      node.contributionWebhook,
+      contributionBody
+    )
+    setIsWorking(false)
+  }, [node, client, nbShares, pretrained, setIsWorking])
 
   return (
     <div className="selected-single-node">
-      <div className="single-node-title">{node && (node.label ? node.label : node.id)}</div>
+      <div className="single-node-title">
+        {node && (node.label ? node.label : node.id)}
+      </div>
       <div>
         <Label htmlFor="single-node-shares">Number of shares: </Label>
-        <Input value={nbShares} onChange={e => setNbShares(e.target.value)} id="single-node-shares" />
+        <Input
+          value={nbShares}
+          onChange={e => setNbShares(e.target.value)}
+          id="single-node-shares"
+        />
       </div>
       <FormControlLabel
         label="Use pretrained model?"
         control={
-          <Switch checked={pretrained} onChange={() => setPretrained(old => !old)} name="Use pretrained model?" />
+          <Switch
+            checked={pretrained}
+            onChange={() => setPretrained(old => !old)}
+            name="Use pretrained model?"
+          />
         }
       />
       <Button
