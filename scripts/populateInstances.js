@@ -1,19 +1,22 @@
 /// TODO: Merge this script with `populateCentralized` once the centralized population is more flexible
 
-const util = require('node:util')
-const exec = util.promisify(require('node:child_process').exec)
+const util = require('util')
+const exec = util.promisify(require('child_process').exec)
 const fs = require('fs')
 const splitClasses = require('../src/lib/splitClasses')
 const { loadWebhooks } = require('./loadWebhooks')
 const { createLogger } = require('../src/targets/services/helpers/utils')
 const { default: CozyClient, Q } = require('cozy-client')
 
-const populateInstances = async (
+const populateInstances = async ({
   nInstances = 10,
   nClasses = 10,
   operationsPerInstance = 30,
-  fixtureFile = './assets/fixtures-l.json'
-) => {
+  fixtureFile = './assets/fixtures-l.json',
+  centralized = false,
+  outputWebhooksPath = './assets/webhooks.json',
+  supervisingInstanceDomain = 'cozy.localhost:8080'
+}) => {
   const { log } = createLogger()
 
   log('Clearing old webhooks...')
@@ -24,7 +27,10 @@ const populateInstances = async (
     log('No webhooks to clear')
   }
 
-  const classes = splitClasses(nInstances, nClasses)
+  const classes = splitClasses(
+    centralized ? nInstances - 1 : nInstances,
+    nClasses
+  )
 
   const populateSingleInstance = async (domain, classes) => {
     log('Destroying instance', domain)
@@ -60,7 +66,17 @@ const populateInstances = async (
 
   // Populate instances
   await Promise.all(
-    domains.map((e, i) => populateSingleInstance(e, classes[i]))
+    domains.map(async (e, i) => {
+      if (centralized) {
+        if (i === 0) {
+          await populateSingleInstance(e, classes.flat())
+        } else {
+          await populateSingleInstance(e, classes[i - 1])
+        }
+      } else {
+        await populateSingleInstance(e, classes[i])
+      }
+    })
   )
 
   // Collect webhooks
@@ -114,24 +130,18 @@ const populateInstances = async (
   )
 
   // Write fetched webhooks to the disk
-  const webhooksPath = './assets/webhooks.json'
-  fs.writeFileSync(webhooksPath, JSON.stringify(webhooks, null, 2))
+  fs.writeFileSync(outputWebhooksPath, JSON.stringify(webhooks, null, 2))
 
   // Upload webhooks on the coordinating instance
   log('Updating the querier with fresh webhooks...')
   const { stdout: token } = await exec(
-    `cozy-stack instances token-app cozy.localhost:8080 dissecozy`
+    `cozy-stack instances token-app ${supervisingInstanceDomain} dissecozy`
   )
   await loadWebhooks(
-    'http://cozy.localhost:8080',
+    `http://${supervisingInstanceDomain}`,
     token.toString().replace('\n', ''),
-    webhooksPath
+    outputWebhooksPath
   )
 }
 
-populateInstances(
-  process.argv[2],
-  process.argv[3],
-  process.argv[4],
-  process.argv[5]
-)
+module.exports = populateInstances

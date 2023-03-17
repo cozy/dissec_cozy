@@ -1,14 +1,17 @@
-const { execSync } = require('child_process')
+const util = require('util')
+const exec = util.promisify(require('child_process').exec)
 const { Q } = require('cozy-client')
 
-const populateInstancesCentralized = require('../scripts/populateInstancesCentralized')
+const populateInstances = require('../scripts/populateInstances')
 const dissecLearning = require('./learning/dissecLearning')
 const localLearning = require('./learning/localLearning')
 const getClient = require('../src/lib/getClient')
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
+const { createLogger } = require('../src/targets/services/helpers')
 
 describe('Compares the performance of a centralized learning vs the DISSEC one', () => {
   const defaultTimeout = 300000
+  const { log } = createLogger()
 
   const uri = 'http://test1.localhost:8080'
   let client
@@ -19,13 +22,15 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
   let cutoffDate
 
   beforeAll(async () => {
-    await populateInstancesCentralized()
+    await populateInstances({
+      centralized: true,
+      operationsPerInstance: 10
+    })
 
-    token = execSync(
+    const { stdout } = await exec(
       `cozy-stack instances token-app ${uri.replace('http://', '')} dissecozy`
     )
-      .toString()
-      .replace('\n', '')
+    token = stdout.toString().replace('\n', '')
 
     // Helper
     const getCategory = doc => {
@@ -41,7 +46,7 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
       }
     }
     client = await getClient(uri, schema, { token })
-    console.log(client)
+    log(client)
 
     // Download all bank operations
     operations = await client.queryAll(
@@ -51,7 +56,7 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
         .indexFields(['date'])
     )
 
-    console.log(`Local instance has ${operations.length} data`)
+    log(`Local instance has ${operations.length} data`)
 
     // Filter and update data
     const allCategories = operations.map(e => getCategory(e))
@@ -62,7 +67,7 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
     validationSet = operations
     cutoffDate = new Date(validationSet[validationSet.length - 1].date)
 
-    console.log(
+    log(
       `Training on ${operations.length -
         validationSet.length} data, validating on ${validationSet.length}`
     )
