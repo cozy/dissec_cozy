@@ -31,31 +31,14 @@ $ yarn install
 
 Cozy's apps use a standard set of _npm scripts_ to run common tasks, like watch, lint, test, build…
 
+If you want to check that everything is working smoothly, you can check [integration test](#tests).
+If you want to see how the protocol works in details, run the [demonstrattion](#demonstration).
+
 ### Configuration
 
 In order to allow continuous enhancement of performances, nodes in the protocol can start training from a pretrained model, which is the result of the last training.
 
 Currently, this model is stored on the local file system and the path needs to be defined for the execution to work. In the file `dissec.config.json`, set the `localModelPath` value to a path where you want this shared model to be stored.
-
-### Living on the edge
-
-[Cozy-ui] is our frontend stack library that provides common styles and components accross the whole Cozy's apps. You can use it for you own application to follow the official Cozy's guidelines and styles. If you need to develop / hack cozy-ui, it's sometimes more useful to develop on it through another app. You can do it by cloning cozy-ui locally and link it to yarn local index:
-
-```sh
-git clone https://github.com/cozy/cozy-ui.git
-cd cozy-ui
-yarn install
-yarn link
-```
-
-then go back to your app project and replace the distributed cozy-ui module with the linked one:
-
-```sh
-cd cozy-drive
-yarn link cozy-ui
-```
-
-[Cozy-client-js] is our API library that provides an unified API on top of the cozy-stack. If you need to develop / hack cozy-client-js in parallel of your application, you can use the same trick that we used with [cozy-ui]: yarn linking.
 
 ### Tests
 
@@ -90,15 +73,15 @@ The steps to to execute the demonstration are as follows:
 1. Have a `build` folder in the in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
 2. Launch `cozy-stack serve --disable-csp` to start the stack with the dissecozy app loaded.
 3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provides 10 banking operations of 10 different categories by default. It will also output a JSON file containing all these instances' webhooks, and uploads these webhooks to the querier to use them to construct the aggregation tree. The file is located in `assets/webhooks.json`.
-4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.tools:8080/`)
+4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.localhost:8080/`)
 5. In the *Nodes* section, click the 'Choose a file' button and select the JSON file containing webhooks. Then, click upload to register all the test instances to the querier.
 6. Go to the *Execution* section and, in the *Full Aggregation* sub section, first click the 'Generate new tree' button, then 'Launch execution' button.
 
 Congratulations, you launched the execution. After a few seconds, you should see new file created at the location indicated by `localModelPath` value of `dissec.config.json` file.
 
-The script located at `scripts/localVsDissecLearning.js` can be used to demonstrate the efficiency of distributed learning.
+The command `yarn run measure` can be used to demonstrate the efficiency of distributed learning.
 It runs both type of learning and measures the accuracy on a single validation dataset.
-This script implies that `populateInstances` has been run before.
+This script implies that `yarn run populate` has been run before.
 
 ## Simulation
 
