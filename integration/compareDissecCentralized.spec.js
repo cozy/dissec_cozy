@@ -3,8 +3,8 @@ const exec = util.promisify(require('child_process').exec)
 const { Q } = require('cozy-client')
 
 const populateInstances = require('../scripts/populateInstances')
-const dissecLearning = require('./learning/dissecLearning')
-const localLearning = require('./learning/localLearning')
+const dissecLearning = require('../scripts/learning/dissecLearning')
+const localLearning = require('../scripts/learning/localLearning')
 const getClient = require('../src/lib/getClient')
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { createLogger } = require('../src/targets/services/helpers')
@@ -24,7 +24,7 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
   beforeAll(async () => {
     await populateInstances({
       centralized: true,
-      operationsPerInstance: 10
+      operationsPerInstance: 15
     })
 
     const { stdout } = await exec(
@@ -46,7 +46,6 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
       }
     }
     client = await getClient(uri, schema, { token })
-    log(client)
 
     // Download all bank operations
     operations = await client.queryAll(
@@ -79,6 +78,8 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
       const local = await localLearning(client, cutoffDate, validationSet)
       const dissec = await dissecLearning(client, cutoffDate, validationSet)
 
+      log('Local', local)
+      log('Dissec', dissec)
       expect(local).toEqual(dissec)
     },
     defaultTimeout

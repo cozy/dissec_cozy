@@ -1,16 +1,11 @@
 global.fetch = require('node-fetch').default
-const fs = require('fs')
-const { v4: uuid } = require('uuid')
 const { Q } = require('cozy-client')
 const { execSync } = require('child_process')
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
-const { JOBS_DOCTYPE } = require('../src/doctypes/jobs')
-const dissecConfig = require('../dissec.config.json')
-
-const aggregationNodes = require('../assets/webhooks.json')
-const createTree = require('../src/lib/createTree')
 const getClient = require('../src/lib/getClient')
 const { createLogger } = require('../src/targets/services/helpers/utils')
+const localLearning = require('./learning/localLearning')
+const dissecLearning = require('./learning/dissecLearning')
 
 /**
  * This script measures performances of DISSEC vs local learning.
@@ -80,7 +75,6 @@ const runExperiment = async (
   const cutoffDate = noSplit
     ? new Date(validationSet[validationSet.length - 1].date)
     : new Date(validationSet[0].date)
-  const validationIds = validationSet.map(e => e.id)
 
   log(
     `Training on ${sortedOperations.length -
@@ -88,139 +82,19 @@ const runExperiment = async (
   )
 
   /** ===== LOCAL TRAINING ===== **/
-  const { data: localTrainingJob } = await client
-    .collection(JOBS_DOCTYPE)
-    .create('service', {
-      slug: 'dissecozy',
-      name: 'categorize',
-      pretrained: false,
-      filters: {
-        minOperationDate: cutoffDate
-      }
-    })
-
-  log('Waiting for the local categorization to finish...')
-  const jobData = await client
-    .collection(JOBS_DOCTYPE)
-    .waitFor(localTrainingJob.id)
-
-  if (jobData.state !== 'done')
-    throw new Error(
-      'Local training finished with invalid status:' + jobData.state
-    )
-
-  // Measure performance
-  const locallyTrainedValidationSet = await client.queryAll(
-    Q(BANK_DOCTYPE)
-      .getByIds(validationIds)
-      .sortBy([{ date: 'asc' }])
-      .indexFields(['date'])
-  )
-
-  // Both array are sorted and contain the same elements
-  let correct = 0
-  for (let i = 0; i < validationSet.length; i++) {
-    const truth = getCategory(validationSet[i])
-    const prediction = locallyTrainedValidationSet[i].automaticCategoryId
-
-    if (truth === prediction) correct++
-  }
-
-  let localAccuracy = correct / validationSet.length
+  let localAccuracy = await localLearning(client, cutoffDate, validationSet)
 
   log('Local accuracy', localAccuracy)
 
   /** ===== DISSEC TRAINING ===== **/
-  // Create the tree, exclude the querier from contributors and aggregators
-  const querierWebhooks = aggregationNodes.filter(e => e.label === uri)[0]
-  const aggregatorsWebhooks = aggregationNodes.filter(e => e.label !== uri)
-  const contributorsWebhooks = aggregatorsWebhooks
-
-  const contributors = createTree(
-    querierWebhooks,
-    aggregatorsWebhooks,
-    contributorsWebhooks
+  let dissecAccuracy = await dissecLearning(
+    client,
+    cutoffDate,
+    validationSet,
+    uri
   )
-  const executionId = uuid()
 
-  /**
-   * The way DISSEC works currently, contributors do their local computations before passing the aggregate to their parents.
-   * Contributors know the whole tree's structure and pass it to aggregators upon contributing.
-   * To run DISSEC, we thus only trigger contributors by indicating their parents.
-   */
-  for (const contributor of contributors) {
-    const contributionBody = {
-      executionId,
-      pretrained: false,
-      nbShares: 3,
-      parents: contributor.parents
-    }
-    await new Promise(resolve => {
-      setTimeout(resolve, 1000)
-    })
-    await client.stackClient.fetchJSON(
-      'POST',
-      contributor.contributionWebhook,
-      contributionBody
-    )
-  }
-
-  // Watching for update on the model
-  log('DISSEC aggregation started, waiting for it to finish...')
-  fs.watchFile(dissecConfig.localModelPath, async (curr, prev) => {
-    if (!curr.ctimeMs) {
-      // The model was just created, this event is only the creation of the file with no content.
-      // Wait for writing to finish
-      return
-    }
-    if (curr.ctimeMs <= prev.ctimeMs) {
-      throw new Error('Updating the model failed')
-    }
-
-    log('Model has been updated')
-    // Using the model to classify
-    const { data: dissecTrainingJob } = await client
-      .collection(JOBS_DOCTYPE)
-      .create('service', {
-        slug: 'dissecozy',
-        name: 'categorize',
-        pretrained: true,
-        filters: {
-          minOperationDate: cutoffDate
-        }
-      })
-
-    log('Waiting for the local categorization to finish...')
-    const jobData = await client
-      .collection(JOBS_DOCTYPE)
-      .waitFor(dissecTrainingJob.id)
-
-    if (jobData.state !== 'done')
-      throw new Error(
-        'DISSEC training finished with invalid status:' + jobData.state
-      )
-
-    // Measure performance
-    const dissecTrainedValidationSet = await client.queryAll(
-      Q(BANK_DOCTYPE)
-        .getByIds(validationIds)
-        .sortBy([{ date: 'asc' }])
-    )
-
-    // Both array are sorted and contain the same elements
-    let correct = 0
-    for (let i = 0; i < validationSet.length; i++) {
-      const truth = getCategory(validationSet[i])
-      const prediction = dissecTrainedValidationSet[i].automaticCategoryId
-
-      if (truth === prediction) correct++
-    }
-
-    let localAccuracy = correct / validationSet.length
-
-    log('DISSEC accuracy', localAccuracy)
-    fs.unwatchFile(dissecConfig.localModelPath)
-  })
+  log('DISSEC accuracy', dissecAccuracy)
 }
 
 runExperiment(process.argv[2], process.argv[3], process.argv[4])

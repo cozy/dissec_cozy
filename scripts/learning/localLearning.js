@@ -4,6 +4,7 @@ const { Q } = require('cozy-client')
 const getCategory = require('../../src/lib/getCategory')
 const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
+const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 /**
  * Measures performance on the validation set with a model trained on all data earlier than cutoffDate
@@ -13,7 +14,9 @@ const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
  * @returns The accuracy of the model on the validation set
  */
 const localLearning = async (client, cutoffDate, validationSet) => {
-  /** ===== LOCAL TRAINING ===== **/
+  const { log } = createLogger()
+
+  log('starting local training')
   const { data: localTrainingJob } = await client
     .collection(JOBS_DOCTYPE)
     .create('service', {
@@ -25,7 +28,7 @@ const localLearning = async (client, cutoffDate, validationSet) => {
       }
     })
 
-  console.log('Waiting for the local categorization to finish...')
+  log('Waiting for the local categorization to finish...')
   const jobData = await client
     .collection(JOBS_DOCTYPE)
     .waitFor(localTrainingJob.id)

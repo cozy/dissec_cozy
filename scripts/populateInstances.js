@@ -15,7 +15,8 @@ const populateInstances = async ({
   fixtureFile = './assets/fixtures-l.json',
   centralized = false,
   outputWebhooksPath = './assets/webhooks.json',
-  supervisingInstanceDomain = 'cozy.localhost:8080'
+  supervisingInstanceDomain = 'cozy.localhost:8080',
+  instancePrefix = 'test'
 }) => {
   const { log } = createLogger()
 
@@ -62,7 +63,7 @@ const populateInstances = async ({
 
   const domains = Array(nInstances)
     .fill('')
-    .map((_, i) => `test${i + 1}.localhost:8080`)
+    .map((_, i) => `${instancePrefix}${i + 1}.localhost:8080`)
 
   // Populate instances
   await Promise.all(
