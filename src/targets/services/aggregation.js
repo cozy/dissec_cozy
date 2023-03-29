@@ -67,6 +67,7 @@ export const aggregation = async () => {
       dissecConfig.localModelPath,
       model.getCompressedAggregate()
     )
+    log(model.occurences.map(e => e.reduce((a, b) => a + b)))
     log('Model has been written to the disk')
   } else {
     // Store the aggregate as a file to be shared

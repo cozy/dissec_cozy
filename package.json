@@ -23,8 +23,8 @@
     "dissecozy:categorize": "yarn run cozy-konnector-dev -m manifest.webapp build/services/categorize/dissecozy.js",
     "dissecozy:contribution": "yarn run cozy-konnector-dev -m manifest.webapp build/services/contribution/dissecozy.js",
     "test:centralized-vs-dissec": "bash ./scripts/testCentralizedVsDissec.sh",
-    "populate": "node ./scripts/populateInstances.js",
-    "populate:centralized": "node ./scripts/populateInstancesCentralized.js",
+    "populate": "node ./scripts/cli/populate.js",
+    "populate:centralized": "node ./scripts/cli/populate.js --centralized",
     "measure": "node ./scripts/localVsDissecLearning.js"
   },
   "repository": {
@@ -58,6 +58,7 @@
     "btoa": "^1.2.1",
     "classificator": "^0.3.4",
     "clsx": "^1.1.1",
+    "commander": "^10.0.0",
     "cozy-bar": "7.12.3",
     "cozy-client": "35.3.1",
     "cozy-doctypes": "^1.82.2",

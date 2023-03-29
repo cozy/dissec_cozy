@@ -8,6 +8,7 @@ const getCategory = require('../../src/lib/getCategory')
 const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
 const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
 const dissecConfig = require('../../dissec.config.json')
+const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 /**
  * Measures performance on the validation set with a model trained on all data earlier than cutoffDate.
@@ -24,6 +25,8 @@ const dissecLearning = async (
   validationSet,
   uri = 'http://test1.localhost:8080'
 ) => {
+  const { log } = createLogger()
+
   // Create the tree, exclude the querier from contributors and aggregators
   const aggregationNodes = JSON.parse(
     fs.readFileSync(`${process.cwd()}/assets/webhooks.json`).toString()
@@ -62,10 +65,19 @@ const dissecLearning = async (
   }
 
   // Watching for update on the model
-  console.log('DISSEC aggregation started, waiting for it to finish...')
+  log('DISSEC aggregation started, waiting for it to finish...')
   return await new Promise(async resolve => {
-    fs.watchFile(dissecConfig.localModelPath, async () => {
-      console.log('Model has been updated')
+    fs.watchFile(dissecConfig.localModelPath, async (curr, prev) => {
+      if (!curr.ctimeMs) {
+        // The model was just created, this event is only the creation of the file with no content.
+        // Wait for writing to finish
+        return
+      }
+      if (curr.ctimeMs <= prev.ctimeMs) {
+        throw new Error('Updating the model failed')
+      }
+
+      log('Model has been updated')
       // Using the model to classify
       const { data: dissecTrainingJob } = await client
         .collection(JOBS_DOCTYPE)
@@ -78,7 +90,7 @@ const dissecLearning = async (
           }
         })
 
-      console.log('Waiting for the local categorization to finish...')
+      log('Waiting for the local categorization to finish...')
       const jobData = await client
         .collection(JOBS_DOCTYPE)
         .waitFor(dissecTrainingJob.id)
