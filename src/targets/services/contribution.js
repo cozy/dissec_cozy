@@ -97,21 +97,27 @@ export const contribution = async () => {
   // Call webhooks of parents with the share
   for (let i in shareCodes) {
     // HACK: Using a delay to give enough time to the responding service to store shares
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise(resolve =>
+      setTimeout(resolve, 2000 * (1 + Math.random()))
+    )
     // TODO: Launch the webhook without using fetchJSON
-    await client.stackClient.fetchJSON('POST', parents[i].webhook, {
+    await client.stackClient.fetchJSON('POST', parents[i].aggregationWebhook, {
       executionId,
       docId: files[i],
       sharecode: shareCodes[i],
       uri: client.stackClient.uri,
       nbShares,
-      parent: parents[i].parent,
+      parents: parents[i].parents,
       finalize: parents[i].finalize,
       level: parents[i].level,
       aggregatorId: parents[i].aggregatorId,
       nbChild: parents[i].nbChild
     })
-    log(`Sent share ${Number(i) + 1} to aggregator ${parents[i].webhook}`)
+    log(
+      `Sent share ${Number(i) + 1} to aggregator ${
+        parents[i].aggregationWebhook
+      }`
+    )
   }
 }
 

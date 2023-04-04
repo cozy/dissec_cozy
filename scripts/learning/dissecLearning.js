@@ -19,27 +19,34 @@ const { createLogger } = require('../../src/targets/services/helpers/utils')
  * @param {Object[]} validationSet - The dataset used for measuring performances
  * @returns The accuracy of the model on the validation set
  */
-const dissecLearning = async (
+const dissecLearning = async ({
   client,
   cutoffDate,
   validationSet,
-  uri = 'http://test1.localhost:8080'
-) => {
+  uri = 'http://test1.localhost:8080',
+  pretrained = false
+}) => {
   const { log } = createLogger()
 
   // Create the tree, exclude the querier from contributors and aggregators
   const aggregationNodes = JSON.parse(
     fs.readFileSync(`${process.cwd()}/assets/webhooks.json`).toString()
   )
-  const querierWebhooks = aggregationNodes.filter(e => e.label === uri)[0]
-  const aggregatorsWebhooks = aggregationNodes.filter(e => e.label !== uri)
-  const contributorsWebhooks = aggregatorsWebhooks
 
-  const contributors = createTree(
-    querierWebhooks,
-    aggregatorsWebhooks,
-    contributorsWebhooks
-  )
+  const treeStructure = [
+    {
+      numberOfNodes: 1,
+      mustInclude: [uri]
+    },
+    {
+      numberOfNodes: 2
+    },
+    {
+      numberOfNodes: 2
+    }
+  ]
+
+  const contributors = createTree(treeStructure, aggregationNodes)
   const executionId = uuid()
 
   /**
@@ -50,8 +57,8 @@ const dissecLearning = async (
   for (const contributor of contributors) {
     const contributionBody = {
       executionId,
-      pretrained: false,
-      nbShares: 3,
+      pretrained,
+      nbShares: contributor.parents.length,
       parents: contributor.parents
     }
     await new Promise(resolve => {
