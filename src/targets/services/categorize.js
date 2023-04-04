@@ -38,13 +38,20 @@ export const categorize = async () => {
     let filteredOperations = filters.minOperationDate
       ? operations.filter(
           e =>
-            new Date(e.date).valueOf() <=
+            new Date(e.date).valueOf() <
             new Date(filters.minOperationDate).valueOf()
         )
       : operations
 
     model = await Model.fromDocs(filteredOperations)
   }
+
+  console.log(
+    model.occurences.map((e, i) => [
+      model.uniqueY[i],
+      e.reduce((a, b) => a + b)
+    ])
+  )
 
   // Categorize each doc and update it
   const categorized = operations.map(operation => {

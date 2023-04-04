@@ -25,9 +25,14 @@ export const aggregation = async () => {
     aggregatorId,
     level,
     nbShares,
-    parent,
+    parents,
     finalize
   } = job.data.attributes.message.metadata
+
+  // Aggregators only use one parent
+  if (!finalize && !parents?.length) {
+    throw new Error('Invalid parents')
+  }
 
   const { data: unfilteredFiles } = await client.query(
     Q('io.cozy.files')
@@ -67,9 +72,11 @@ export const aggregation = async () => {
       dissecConfig.localModelPath,
       model.getCompressedAggregate()
     )
-    log(model.occurences.map(e => e.reduce((a, b) => a + b)))
     log('Model has been written to the disk')
   } else {
+    // Only using the first parent for aggregators
+    const parent = parents[0]
+
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {
       type: 'file',
@@ -94,17 +101,17 @@ export const aggregation = async () => {
     })
     const shareCode = sharing.attributes.shortcodes[`parent${aggregatorId}`]
 
-    log('Sharing code is', shareCode, 'sent to', parent.webhook)
+    log('Sharing code is', shareCode, 'sent to', parent.aggregationWebhook)
 
     // Call parent's receiving webhook to send the aggregate
     // TODO: Callwebhook without using fetchJSON
-    await client.stackClient.fetchJSON('POST', parent.webhook, {
+    await client.stackClient.fetchJSON('POST', parent.aggregationWebhook, {
       executionId,
       docId: aggregate.id,
       sharecode: shareCode,
       uri: client.stackClient.uri,
       nbShares,
-      parent: parent.parent,
+      parents: parent.parents,
       finalize: parent.finalize,
       level: parent.level,
       aggregatorId: parent.aggregatorId,

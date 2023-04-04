@@ -3,60 +3,52 @@ const { v4: uuid } = require('uuid')
 /**
  * This function is used to create the aggregation tree
  *
- * @param {Webhooks} querierWebhooks The webhooks of the querier
- * @param {Webhooks[]} aggregatorsWebhooks The list of webhooks used by aggregators
- * @param {Webhooks[]} contributorsWebhooks The list of webhooks used by contributors
+ * @param {object} treeStructure The structure defining the tree
+ * @param {Webhooks[]} nodesWebhooks The list of webhooks used by nodes
  * @returns
  */
-const createTree = (
-  querierWebhooks,
-  aggregatorsWebhooks,
-  contributorsWebhooks
-) => {
-  // TODO: Make a dynamic tree
-  const querier = {
-    webhook: querierWebhooks.aggregationWebhook,
-    level: 0,
-    nbChild: 3,
-    aggregatorId: uuid(),
-    finalize: true
-  }
+const createTree = (treeStructure, nodesWebhooks) => {
+  let remainingNodes = nodesWebhooks
+  let matchingNodes = remainingNodes.slice()
+  let lastLevel = []
 
-  const aggregators = [
-    {
-      webhook: aggregatorsWebhooks[0].aggregationWebhook,
-      level: 1,
-      nbChild: contributorsWebhooks.length,
-      parent: querier,
-      aggregatorId: uuid(),
-      finalize: false
-    },
-    {
-      webhook: aggregatorsWebhooks[1].aggregationWebhook,
-      level: 1,
-      nbChild: contributorsWebhooks.length,
-      parent: querier,
-      aggregatorId: uuid(),
-      finalize: false
-    },
-    {
-      webhook: aggregatorsWebhooks[2].aggregationWebhook,
-      level: 1,
-      nbChild: contributorsWebhooks.length,
-      parent: querier,
-      aggregatorId: uuid(),
-      finalize: false
+  treeStructure.forEach((level, j) => {
+    const currentLevel = []
+    matchingNodes = remainingNodes.slice()
+
+    // Apply filters if there are any
+    if (level.mustInclude) {
+      if (level.mustInclude.length < level.numberOfNodes) {
+        throw new Error(
+          'Invalid tree structure: level not including enough nodes'
+        )
+      } else {
+        matchingNodes = remainingNodes.filter(node =>
+          level.mustInclude.includes(node.label)
+        )
+      }
     }
-  ]
 
-  let contributors = contributorsWebhooks.map(e => ({
-    ...e,
-    level: 2,
-    nbChild: 0,
-    parents: aggregators
-  }))
+    // Move nodes to the current level
+    for (let i = 0; i < level.numberOfNodes; i++) {
+      currentLevel.push({
+        ...remainingNodes.splice(
+          remainingNodes.indexOf(matchingNodes.shift()),
+          1
+        )[0],
+        level: j,
+        nbChild:
+          j < treeStructure.length - 1 ? treeStructure[j + 1].numberOfNodes : 0,
+        parents: j > 0 ? lastLevel : undefined,
+        aggregatorId: uuid(),
+        finalize: j === 0
+      })
+    }
 
-  return contributors
+    lastLevel = currentLevel.slice()
+  })
+
+  return lastLevel
 }
 
 module.exports = createTree
