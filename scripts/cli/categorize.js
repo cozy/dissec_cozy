@@ -7,7 +7,10 @@ const { createLogger } = require('../../src/targets/services/helpers/utils')
 const localLearning = require('../learning/localLearning')
 
 program
-  .option('-n, --no-split', 'Use all data available,  not just half of it.')
+  .option(
+    '-s, --split',
+    'Split the data in half, train on the first and validate on the second'
+  )
   .option(
     '-d, --domain',
     'Domain of the instance supervising the protocol',
@@ -18,7 +21,6 @@ program
 program.parse()
 
 const options = program.opts()
-options.noSplit = !options.split
 
 async function main() {
   if (!options.domain)
@@ -32,7 +34,7 @@ async function main() {
     .toString()
     .replace('\n', '')
 
-  const { log } = createLogger()
+  const { log } = createLogger('cli/categorize')
 
   // Helper
   const getCategory = doc => {
@@ -67,16 +69,17 @@ async function main() {
   )
 
   // Since data in the set are not modified during the execution, the validation set is just a reference to the training set
-  const validationSet = options.noSplit
-    ? sortedOperations
-    : sortedOperations.slice(Math.round(sortedOperations.length / 2))
-  const cutoffDate = options.noSplit
-    ? new Date(validationSet[validationSet.length - 1].date)
-    : new Date(validationSet[0].date)
+  const validationSet = options.split
+    ? sortedOperations.slice(Math.round(sortedOperations.length / 2))
+    : sortedOperations
+  const cutoffDate = options.split ? new Date(validationSet[0].date) : undefined
 
   log(
-    `Training on ${sortedOperations.length -
-      validationSet.length} data, validating on ${validationSet.length}`
+    `Training on ${
+      options.split
+        ? sortedOperations.length - validationSet.length
+        : sortedOperations.length
+    } data, validating on ${validationSet.length}`
   )
   const accuracy = await localLearning({
     client,

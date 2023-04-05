@@ -4,12 +4,15 @@ import fs from 'fs'
 import dissecConfig from '../../../dissec.config.json'
 import { BANK_DOCTYPE } from '../../doctypes'
 import { JOBS_DOCTYPE } from '../../doctypes/jobs'
+import { createLogger } from './helpers'
 import { Model } from './model'
 
 global.fetch = require('node-fetch').default
 
 export const categorize = async () => {
   const client = CozyClient.fromEnv(process.env, {})
+
+  const { log } = createLogger(client.stackClient.uri.split('/')[2])
 
   // Fetching parameters (if any) from the jobs
   const { data: job } = await client.query(
@@ -44,9 +47,11 @@ export const categorize = async () => {
       : operations
 
     model = await Model.fromDocs(filteredOperations)
+    log(filteredOperations)
+    log(`Trained a local model on ${filteredOperations.length} operations`)
   }
 
-  console.log(
+  log(
     model.occurences.map((e, i) => [
       model.uniqueY[i],
       e.reduce((a, b) => a + b)

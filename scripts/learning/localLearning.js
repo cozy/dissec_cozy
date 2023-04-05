@@ -11,10 +11,16 @@ const { createLogger } = require('../../src/targets/services/helpers/utils')
  * @param {CozyClient} client - The CozyClient connected to the instance
  * @param {Date} cutoffDate - Data earlier than this date are used to train the model
  * @param {Object[]} validationSet - The dataset used for measuring performances
+ * @param {boolean} pretrained - Whether to use a pretrained model
  * @returns The accuracy of the model on the validation set
  */
-const localLearning = async ({ client, cutoffDate, validationSet }) => {
-  const { log } = createLogger()
+const localLearning = async ({
+  client,
+  cutoffDate,
+  validationSet,
+  pretrained
+}) => {
+  const { log } = createLogger('learning/local')
 
   log('starting local training')
   const { data: localTrainingJob } = await client
@@ -22,7 +28,7 @@ const localLearning = async ({ client, cutoffDate, validationSet }) => {
     .create('service', {
       slug: 'dissecozy',
       name: 'categorize',
-      pretrained: false,
+      pretrained,
       filters: {
         minOperationDate: cutoffDate
       }

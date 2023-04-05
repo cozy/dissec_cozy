@@ -40,16 +40,8 @@ const dissecLearning = async ({
   cutoffDate,
   validationSet,
   uri = 'http://test1.localhost:8080',
-  pretrained = false
-}) => {
-  const { log } = createLogger()
-
-  // Create the tree, exclude the querier from contributors and aggregators
-  const aggregationNodes = JSON.parse(
-    fs.readFileSync(`${process.cwd()}/assets/webhooks.json`).toString()
-  )
-
-  const treeStructure = [
+  pretrained = false,
+  treeStructure = [
     {
       numberOfNodes: 1,
       mustInclude: [uri]
@@ -61,6 +53,13 @@ const dissecLearning = async ({
       numberOfNodes: 2
     }
   ]
+}) => {
+  const { log } = createLogger('learning/dissec')
+
+  // Create the tree, exclude the querier from contributors and aggregators
+  const aggregationNodes = JSON.parse(
+    fs.readFileSync(`${process.cwd()}/assets/webhooks.json`).toString()
+  )
 
   const contributors = createTree(treeStructure, aggregationNodes)
   const executionId = uuid()

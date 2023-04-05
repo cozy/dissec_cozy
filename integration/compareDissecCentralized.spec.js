@@ -9,9 +9,10 @@ const getClient = require('../src/lib/getClient')
 const { BANK_DOCTYPE } = require('../src/doctypes/bank')
 const { createLogger } = require('../src/targets/services/helpers')
 
+// NOTE: This assumes that the current classes and vocabulary
 describe('Compares the performance of a centralized learning vs the DISSEC one', () => {
   const defaultTimeout = 300000
-  const { log } = createLogger()
+  const { log } = createLogger('integration')
 
   const uri = 'http://test1.localhost:8080'
   let client
@@ -23,8 +24,9 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
 
   beforeAll(async () => {
     await populateInstances({
-      centralized: true,
-      operationsPerInstance: 15
+      nInstances: 5,
+      operationsPerInstance: 2,
+      fixtureFile: './assets/fixtures-s.json'
     })
 
     const { stdout } = await exec(
@@ -73,14 +75,29 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
   }, defaultTimeout)
 
   test(
-    'Both trainings must have equal accuracy',
+    'Local training is worst because it uses less data',
     async () => {
-      const local = await localLearning(client, cutoffDate, validationSet)
-      const dissec = await dissecLearning(client, cutoffDate, validationSet)
+      const local = await localLearning({ client, cutoffDate, validationSet })
+      const dissec = await dissecLearning({ client, cutoffDate, validationSet })
 
       log('Local', local)
       log('Dissec', dissec)
-      expect(local).toEqual(dissec)
+      expect(local).toEqual(0.5)
+      expect(dissec).toEqual(1)
+    },
+    defaultTimeout
+  )
+
+  test(
+    'Training locally equals the dissec training when they have the same data',
+    async () => {
+      const local = await localLearning({ client, validationSet })
+      const dissec = await dissecLearning({ client, validationSet })
+
+      log('Local', local)
+      log('Dissec', dissec)
+      expect(local).toEqual(1)
+      expect(dissec).toEqual(1)
     },
     defaultTimeout
   )
