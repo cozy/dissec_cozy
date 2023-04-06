@@ -24,7 +24,7 @@ program
   .option(
     '-w, --webhooks <path>',
     'File where the webhooks of created instances will be stored',
-    './assets/webhooks.json'
+    './generated/webhooks.json'
   )
   .option(
     '-s, --supervisor <domain>',
