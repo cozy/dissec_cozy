@@ -3,7 +3,7 @@
 scripts/.token.json
 
 # DISSECOZY
-assets/
+generated/
 dissec.config.json
 checkpoint.json
 

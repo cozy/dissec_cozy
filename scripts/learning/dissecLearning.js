@@ -58,7 +58,7 @@ const dissecLearning = async ({
 
   // Create the tree, exclude the querier from contributors and aggregators
   const aggregationNodes = JSON.parse(
-    fs.readFileSync(`${process.cwd()}/assets/webhooks.json`).toString()
+    fs.readFileSync(`${process.cwd()}/generated/webhooks.json`).toString()
   )
 
   const contributors = createTree(treeStructure, aggregationNodes)

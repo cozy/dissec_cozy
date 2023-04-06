@@ -72,7 +72,7 @@ The steps to to execute the demonstration are as follows:
 
 1. Have a `build` folder in the in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
 2. Launch `cozy-stack serve --disable-csp` to start the stack with the dissecozy app loaded.
-3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provides 10 banking operations of 10 different categories by default. It will also output a JSON file containing all these instances' webhooks, and uploads these webhooks to the querier to use them to construct the aggregation tree. The file is located in `assets/webhooks.json`.
+3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provides 10 banking operations of 10 different categories by default. It will also output a JSON file containing all these instances' webhooks, and uploads these webhooks to the querier to use them to construct the aggregation tree. The file is located in `generated/webhooks.json`.
 4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.localhost:8080/`)
 5. In the *Nodes* section, click the 'Choose a file' button and select the JSON file containing webhooks. Then, click upload to register all the test instances to the querier.
 6. Go to the *Execution* section and, in the *Full Aggregation* sub section, first click the 'Generate new tree' button, then 'Launch execution' button.
