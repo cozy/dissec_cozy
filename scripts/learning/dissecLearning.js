@@ -11,12 +11,28 @@ const dissecConfig = require('../../dissec.config.json')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 /**
+ * @typedef TreeLevelDescriptor
+ * @type {object}
+ * @property {number} numberOfNodes - The number of nodes in the level
+ * @property {string[] | undefined} mustInclude - An optional array of instance URIs that need to be included in the level
+ */
+
+/**
+ * @typedef DissecLearningOptions
+ * @type {object}
+ * @property {CozyClient} client - The CozyClient connected to the instance
+ * @property {Date} cutoffDate - Data older than this will be used to learn
+ * @property {Object[]} validationSet - The dataset used for measuring performances
+ * @property {string} uri - URI of the final aggregator
+ * @property {boolean} pretrained - Whether we are using the pretrained local model
+ * @property {TreeLevelDescriptor[]} treeStructure - An array describing each levels of the tree.
+ */
+
+/**
  * Measures performance on the validation set with a model trained on all data earlier than cutoffDate.
  * All the instances populated (have their webhooks in the asset folder) are contributing.
  *
- * @param {CozyClient} client - The CozyClient connected to the instance
- * @param {Date} cutoffDate - Data older than this will be used to learn
- * @param {Object[]} validationSet - The dataset used for measuring performances
+ * @param {DissecLearningOptions}
  * @returns The accuracy of the model on the validation set
  */
 const dissecLearning = async ({
