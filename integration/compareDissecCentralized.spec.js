@@ -77,8 +77,18 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
   test(
     'Local training is worst because it uses less data',
     async () => {
-      const local = await localLearning({ client, cutoffDate, validationSet })
-      const dissec = await dissecLearning({ client, cutoffDate, validationSet })
+      const local = await localLearning({
+        client,
+        cutoffDate,
+        validationSet,
+        useTiny: true
+      })
+      const dissec = await dissecLearning({
+        client,
+        cutoffDate,
+        validationSet,
+        useTiny: true
+      })
 
       log('Local', local)
       log('Dissec', dissec)
@@ -91,8 +101,16 @@ describe('Compares the performance of a centralized learning vs the DISSEC one',
   test(
     'Training locally equals the dissec training when they have the same data',
     async () => {
-      const local = await localLearning({ client, validationSet })
-      const dissec = await dissecLearning({ client, validationSet })
+      const local = await localLearning({
+        client,
+        validationSet,
+        useTiny: true
+      })
+      const dissec = await dissecLearning({
+        client,
+        validationSet,
+        useTiny: true
+      })
 
       log('Local', local)
       log('Dissec', dissec)

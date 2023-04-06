@@ -19,7 +19,7 @@ export const categorize = async () => {
     Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2])
   )
 
-  const { pretrained, filters = {} } = job.attributes.message
+  const { pretrained, useTiny, filters = {} } = job.attributes.message
 
   // Fetch data
   const { data: operations } = await client.query(Q(BANK_DOCTYPE))
@@ -32,7 +32,9 @@ export const categorize = async () => {
       const compressedAggregate = fs
         .readFileSync(dissecConfig.localModelPath)
         .toString()
-      model = await Model.fromCompressedAggregate(compressedAggregate)
+      model = await Model.fromCompressedAggregate(compressedAggregate, {
+        useTiny
+      })
     } catch (err) {
       throw `Model does not exist at path ${dissecConfig.localModelPath} ? ${err}`
     }
@@ -46,7 +48,7 @@ export const categorize = async () => {
         )
       : operations
 
-    model = await Model.fromDocs(filteredOperations)
+    model = await Model.fromDocs(filteredOperations, { useTiny })
     log(`Trained a local model on ${filteredOperations.length} operations`)
   }
 

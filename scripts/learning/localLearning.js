@@ -7,18 +7,26 @@ const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 /**
+ * @typedef LocalLearningOptions
+ * @type {object}
+ * @property {CozyClient} client - The CozyClient connected to the instance
+ * @property {Date} cutoffDate - Data older than this will be used to learn
+ * @property {Object[]} validationSet - The dataset used for measuring performances
+ * @property {Object[]} pretrained - The dataset used for measuring performances
+ * @property {boolean} useTiny - Whether to use the tiny version of classes and vocabulary
+ */
+
+/**
  * Measures performance on the validation set with a model trained on all data earlier than cutoffDate
- * @param {CozyClient} client - The CozyClient connected to the instance
- * @param {Date} cutoffDate - Data earlier than this date are used to train the model
- * @param {Object[]} validationSet - The dataset used for measuring performances
- * @param {boolean} pretrained - Whether to use a pretrained model
+ * @param {LocalLearningOptions} options - Local learning options
  * @returns The accuracy of the model on the validation set
  */
 const localLearning = async ({
   client,
   cutoffDate,
   validationSet,
-  pretrained
+  pretrained,
+  useTiny
 }) => {
   const { log } = createLogger('learning/local')
 
@@ -29,6 +37,7 @@ const localLearning = async ({
       slug: 'dissecozy',
       name: 'categorize',
       pretrained,
+      useTiny,
       filters: {
         minOperationDate: cutoffDate
       }

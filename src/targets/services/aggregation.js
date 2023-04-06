@@ -26,7 +26,8 @@ export const aggregation = async () => {
     level,
     nbShares,
     parents,
-    finalize
+    finalize,
+    useTiny
   } = job.data.attributes.message.metadata
 
   // Aggregators only use one parent
@@ -63,7 +64,8 @@ export const aggregation = async () => {
 
   // Combine the shares
   let model = Model.fromCompressedShares(compressedShares, {
-    shouldFinalize: finalize
+    shouldFinalize: finalize,
+    useTiny
   })
 
   if (finalize) {
