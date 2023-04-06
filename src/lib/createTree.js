@@ -3,7 +3,7 @@ const { v4: uuid } = require('uuid')
 /**
  * This function is used to create the aggregation tree
  *
- * @param {object} treeStructure The structure defining the tree
+ * @param {TreeLevelDescriptor[]} treeStructure The structure defining the tree
  * @param {Webhooks[]} nodesWebhooks The list of webhooks used by nodes
  * @returns
  */
@@ -21,7 +21,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
     if (level.mustInclude) {
       if (level.mustInclude.length < level.numberOfNodes) {
         throw new Error(
-          'Invalid tree structure: level not including enough nodes'
+          'Invalid tree structure: the "mustInclude" parameter must match the number of nodes'
         )
       } else {
         matchingNodes = remainingNodes.filter(node =>
@@ -32,6 +32,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
 
     // Move nodes to the current level
     if (level.numberOfNodes) {
+      // The level has a valid number of nodes, add exactly that amount
       for (let i = 0; i < level.numberOfNodes; i++) {
         currentLevel.push({
           ...remainingNodes.splice(
@@ -49,6 +50,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
         })
       }
     } else {
+      // Undefined number of nodes means add all remaining nodes
       while (matchingNodes.length > 0) {
         currentLevel.push({
           ...remainingNodes.splice(
