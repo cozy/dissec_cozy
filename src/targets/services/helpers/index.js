@@ -1,7 +1,7 @@
-import largeClasses from '../../../assets/classes.json'
-import tinyClasses from '../../../assets/classesTiny.json'
-import largeVocabulary from '../../../assets/vocabulary.json'
-import tinyVocabulary from '../../../assets/vocabularyTiny.json'
+import largeClasses from 'assets/classes.json'
+import tinyClasses from 'assets/classesTiny.json'
+import largeVocabulary from 'assets/vocabulary.json'
+import tinyVocabulary from 'assets/vocabularyTiny.json'
 
 export const SERVICE_CONTRIBUTION = 'contribution'
 export const SERVICE_CATEGORIZE = 'categorize'

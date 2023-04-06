@@ -38,6 +38,9 @@
   "bugs": {
     "url": "https://github.com/JulienMirval/dissec_cozy/issues"
   },
+  "imports": {
+    "/": "src"
+  },
   "homepage": "https://github.com/JulienMirval/dissec_cozy#readme",
   "devDependencies": {
     "babel-preset-cozy-app": "^2.0.2",

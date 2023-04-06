@@ -47,11 +47,11 @@ export const categorize = async () => {
       : operations
 
     model = await Model.fromDocs(filteredOperations)
-    log(filteredOperations)
     log(`Trained a local model on ${filteredOperations.length} operations`)
   }
 
   log(
+    'Sum of occurences in the categorization model:',
     model.occurences.map((e, i) => [
       model.uniqueY[i],
       e.reduce((a, b) => a + b)
