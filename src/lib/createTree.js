@@ -9,13 +9,13 @@ const { v4: uuid } = require('uuid')
  */
 const createTree = (treeStructure, nodesWebhooks) => {
   let remainingNodes = nodesWebhooks
-  let matchingNodes = remainingNodes.slice()
+  let matchingNodes = [...remainingNodes]
   let lastLevel = []
 
   for (let j = 0; j < treeStructure.length; j++) {
     const level = treeStructure[j]
     const currentLevel = []
-    matchingNodes = remainingNodes.slice()
+    matchingNodes = [...remainingNodes]
 
     // Apply filters if there are any
     if (level.mustInclude) {
@@ -69,7 +69,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
       break
     }
 
-    lastLevel = currentLevel.slice()
+    lastLevel = [...currentLevel]
   }
 
   return lastLevel
