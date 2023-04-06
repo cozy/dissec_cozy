@@ -26,6 +26,7 @@ const { createLogger } = require('../../src/targets/services/helpers/utils')
  * @property {string} uri - URI of the final aggregator
  * @property {boolean} pretrained - Whether we are using the pretrained local model
  * @property {TreeLevelDescriptor[]} treeStructure - An array describing each levels of the tree.
+ * @property {boolean} useTiny - Whether to use the tiny version of classes and vocabulary
  */
 
 /**
@@ -52,7 +53,8 @@ const dissecLearning = async ({
     {
       numberOfNodes: 2
     }
-  ]
+  ],
+  useTiny = true
 }) => {
   const { log } = createLogger('learning/dissec')
 
@@ -74,7 +76,8 @@ const dissecLearning = async ({
       executionId,
       pretrained,
       nbShares: contributor.parents.length,
-      parents: contributor.parents
+      parents: contributor.parents,
+      useTiny
     }
     await new Promise(resolve => {
       setTimeout(resolve, 1000)
@@ -107,6 +110,7 @@ const dissecLearning = async ({
           slug: 'dissecozy',
           name: 'categorize',
           pretrained: true,
+          useTiny,
           filters: {
             minOperationDate: cutoffDate
           }

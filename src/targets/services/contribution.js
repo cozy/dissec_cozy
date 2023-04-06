@@ -14,6 +14,7 @@ export const contribution = async () => {
     nbShares,
     pretrained,
     executionId,
+    useTiny,
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
@@ -43,14 +44,14 @@ export const contribution = async () => {
   if (pretrained) {
     try {
       let backup = fs.readFileSync(dissecConfig.localModelPath)
-      model = Model.fromBackup(backup)
+      model = Model.fromCompressedAggregate(backup, { useTiny: true })
 
       model.train(operations)
     } catch (e) {
       throw `Model does not exist at path ${dissecConfig.localModelPath}`
     }
   } else {
-    model = await Model.fromDocs(operations)
+    model = await Model.fromDocs(operations, { useTiny: true })
   }
 
   const appDirectory = await getAppDirectory(client)
@@ -111,7 +112,8 @@ export const contribution = async () => {
       finalize: parents[i].finalize,
       level: parents[i].level,
       aggregatorId: parents[i].aggregatorId,
-      nbChild: parents[i].nbChild
+      nbChild: parents[i].nbChild,
+      useTiny
     })
     log(
       `Sent share ${Number(i) + 1} to aggregator ${

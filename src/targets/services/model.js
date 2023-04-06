@@ -4,7 +4,7 @@ import { tokenizer } from 'cozy-konnector-libs/dist/libs/categorization/helpers'
 import { getClassifierOptions } from 'cozy-konnector-libs/dist/libs/categorization/localModel/classifier'
 import LZUTF8 from 'lzutf8'
 
-import { classes, vocabulary } from './helpers'
+import { classes, tinyClasses, tinyVocabulary, vocabulary } from './helpers'
 
 // FIXME: Importing cozy-konnector-libs requires the COZY_CREDENTIALS env var to be in a specific format
 // .. To make this work, libs must include this PR: https://github.com/konnectors/libs/pull/851
@@ -13,15 +13,15 @@ import { classes, vocabulary } from './helpers'
 const NOISE_CEILING = 300000
 
 export class Model {
-  constructor() {
-    this.uniqueY = Object.keys(classes)
-    this.priors = Array(classes.length).fill(1)
+  constructor({ useTiny = true }) {
+    this.vocabulary = useTiny ? tinyVocabulary : vocabulary
+    this.uniqueY = Object.keys(useTiny ? tinyClasses : classes)
     this.classifiers = []
 
     // Using map to allocate a new array for each line
     this.occurences = Array(this.uniqueY.length)
       .fill(0)
-      .map(() => Array(vocabulary.length).fill(0))
+      .map(() => Array(this.vocabulary.length).fill(0))
     this.contributions = 1
   }
 
@@ -40,7 +40,7 @@ export class Model {
       for (const token of Object.keys(
         this.classifiers[0].wordFrequencyCount[category]
       )) {
-        const wordIndex = vocabulary.findIndex(e => e == token)
+        const wordIndex = this.vocabulary.findIndex(e => e == token)
         if (wordIndex === -1) continue
         this.occurences[catIndex][
           wordIndex
@@ -65,37 +65,46 @@ export class Model {
     this.uniqueY.forEach(category => classifier.initializeCategory(category))
 
     for (let j = 0; j < this.uniqueY.length; j++) {
-      for (let i = 0; i < vocabulary.length; i++) {
+      for (let i = 0; i < this.vocabulary.length; i++) {
         // Keep the matrix sparse by skiping zeroes
         if (this.occurences[j][i] === 0) continue
 
         // Initialize word
-        if (!classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]])
-          classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]] = 0
-        if (!classifier.vocabulary[vocabulary[i]])
-          classifier.vocabulary[vocabulary[i]] = 0
+        if (!classifier.wordFrequencyCount[this.uniqueY[j]][this.vocabulary[i]])
+          classifier.wordFrequencyCount[this.uniqueY[j]][this.vocabulary[i]] = 0
+        if (!classifier.vocabulary[this.vocabulary[i]])
+          classifier.vocabulary[this.vocabulary[i]] = 0
 
         classifier.wordFrequencyCount[this.uniqueY[j]][
-          vocabulary[i]
+          this.vocabulary[i]
         ] += this.occurences[j][i]
-        classifier.vocabulary[vocabulary[i]] += this.occurences[j][i]
+        classifier.vocabulary[this.vocabulary[i]] += this.occurences[j][i]
         classifier.wordCount[this.uniqueY[j]] += this.occurences[j][i]
       }
     }
 
-    classifier.vocabularySize = vocabulary.length
+    classifier.vocabularySize = this.vocabulary.length
     this.classifiers = [classifier]
   }
+
+  /**
+   * @typedef CreateModelFromAggregateOptions
+   * @type {object}
+   * @property {boolean} useGlobalModel
+   * @property {boolean} useTiny
+   */
 
   /**
    * Returns a new model created using a model representation
    *
    * @param {Object} doc The aggregate
-   * @param {{useGlobalModel: boolean}} options Use the global model as well
+   * @param {CreateModelFromAggregateOptions} options Use the global model as well
    * @return {Promise<Model>} The new model
    */
-  static async fromAggregate(doc, options = { useGlobalModel: false }) {
-    let model = new Model()
+  static async fromAggregate(doc, options = {}) {
+    options = Object.assign({ useGlobalModel: false, useTiny: true }, options)
+
+    let model = new Model({ useTiny: options.useTiny })
     model.occurences = doc.occurences
     model.contributions = doc.contributions
     model.initializeClassifier()
@@ -111,28 +120,40 @@ export class Model {
    * Returns a new model created using a compressed model representation
    *
    * @param {string} compressedAggregate The compressed aggregate
+   * @param {CreateModelFromAggregateOptions} options
    * @return {Promise<Model>} The new model
    */
-  static async fromCompressedAggregate(compressedAggregate) {
+  static async fromCompressedAggregate(compressedAggregate, options = {}) {
+    options = Object.assign({ useGlobalModel: false, useTiny: true }, options)
+
     const doc = Model.compressedBinaryToShare(compressedAggregate)
-    return await Model.fromAggregate(doc)
+    return await Model.fromAggregate(doc, options)
   }
+
+  /**
+   * @typedef ModelCreationOptions
+   * @type {object}
+   * @property {boolean} shouldFinalize - Whether to finalize the model
+   * @property {boolean} useTiny - Whether to use the tiny version of the model
+   */
 
   /**
    * Returns a new model created using shares
    *
    * @param {Object[]} shares The array of shares
-   * @param {{ shouldFinalize: boolean }} options Reconstruction options
+   * @param {ModelCreationOptions} options Reconstruction options
    * @return {Model} The new model
    */
   static fromShares(shares, options = {}) {
+    options = Object.assign({ useTiny: true, shouldFinalize: false }, options)
+
     // TODO: Do not write an occurences matrix, only the wordFrequencyCount
-    let model = new Model()
+    let model = new Model({ useTiny: options.useTiny })
     model.contributions = 0
     shares.forEach(share => (model.contributions += share.contributions))
 
     for (let j = 0; j < model.uniqueY.length; j++) {
-      for (let i = 0; i < vocabulary.length; i++) {
+      for (let i = 0; i < model.vocabulary.length; i++) {
         let acc = 0
         for (let k = 0; k < shares.length; k++) {
           acc += shares[k].occurences[j][i]
@@ -143,7 +164,7 @@ export class Model {
 
     if (options.shouldFinalize) {
       for (let j = 0; j < model.uniqueY.length; j++) {
-        for (let i = 0; i < vocabulary.length; i++) {
+        for (let i = 0; i < model.vocabulary.length; i++) {
           model.occurences[j][i] /= shares.length
         }
       }
@@ -158,10 +179,12 @@ export class Model {
    * Returns a new model created using compressed shares
    *
    * @param {string[]} compressedShares The array of compressed shares
-   * @param {{ shouldFinalize: boolean }} options Reconstruction options
+   * @param {ModelCreationOptions} options Reconstruction options
    * @return {Model} The new model
    */
-  static fromCompressedShares(compressedShares, options) {
+  static fromCompressedShares(compressedShares, options = {}) {
+    options = Object.assign({ shouldFinalize: false, useTiny: true }, options)
+
     const shares = compressedShares.map(cshare => {
       return Model.compressedBinaryToShare(String(cshare))
     })
@@ -169,14 +192,23 @@ export class Model {
   }
 
   /**
+   * @typedef CreateModelFromDocsOptions
+   * @type {object}
+   * @property {boolean} useGlobalModel
+   * @property {boolean} useTiny
+   */
+
+  /**
    * Returns a new model trained with the given documents
    *
    * @param {object[]} docs An array of documents
-   * @param {{useGlobalModel: boolean}} options Use the global model as well
+   * @param {CreateModelFromDocsOptions} options Use the global model as well
    * @return {Promise<Model>} The new model
    */
-  static async fromDocs(docs, options = { useGlobalModel: false }) {
-    const model = new Model()
+  static async fromDocs(docs, options = {}) {
+    options = Object.assign({ useGlobalModel: false, useTiny: true }, options)
+
+    const model = new Model({ useTiny: options.useTiny })
     const { categorize, classifiers } = await createCategorizer({
       useGlobalModel: options.useGlobalModel,
       customTransactionFetcher: () => docs.filter(tx => tx.manualCategoryId)
@@ -211,7 +243,7 @@ export class Model {
       const catIndex = this.uniqueY.indexOf(operation.manualCategoryId)
       if (catIndex === -1) continue
       for (const token of tokens) {
-        const tokenIndex = vocabulary.indexOf(token)
+        const tokenIndex = this.vocabulary.indexOf(token)
         if (tokenIndex === -1) continue
         this.occurences[catIndex][tokenIndex] += 1
       }
@@ -249,7 +281,7 @@ export class Model {
 
     // Add noise on top of shares
     for (let j = 0; j < this.uniqueY.length; j++) {
-      for (let i = 0; i < vocabulary.length; i++) {
+      for (let i = 0; i < this.vocabulary.length; i++) {
         // Generate noises
         let finalNoise = 0
         for (let k = 0; k < nbShares; k++) {
@@ -299,9 +331,13 @@ export class Model {
    * @param {Object} share A share object to compress
    * @return {string} the string representing the compressed share
    */
-  static shareToCompressedBinary(share) {
-    const rows = Object.keys(classes).length
-    const cols = vocabulary.length
+  static shareToCompressedBinary(share, options = {}) {
+    options = Object.assign({ useTiny: true }, options)
+
+    const vocab = options.useTiny ? tinyVocabulary : vocabulary
+    const uniqueY = Object.keys(options.useTiny ? tinyClasses : classes)
+    const rows = uniqueY.length
+    const cols = vocab.length
     const numberSize = 4
     const buf = Buffer.alloc((rows * cols + 1) * numberSize)
 
@@ -326,13 +362,17 @@ export class Model {
    * @param {string} compressed The compressed share
    * @return {Object} The share object
    */
-  static compressedBinaryToShare(compressed) {
+  static compressedBinaryToShare(compressed, options = {}) {
+    options = Object.assign({ useTiny: true }, options)
+
+    const vocab = options.useTiny ? tinyVocabulary : vocabulary
+    const uniqueY = Object.keys(options.useTiny ? tinyClasses : classes)
     const decompressed = LZUTF8.decompress(compressed, {
       inputEncoding: 'StorageBinaryString'
     })
     const buf = Buffer.from(decompressed, 'base64')
-    const rows = Object.keys(classes).length
-    const cols = vocabulary.length
+    const rows = uniqueY.length
+    const cols = vocab.length
     const numberSize = 4
     const contributions = buf.readInt32BE()
     const occurences = Array(rows)

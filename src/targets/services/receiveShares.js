@@ -16,7 +16,8 @@ export const receiveShares = async () => {
     level,
     aggregatorId,
     executionId,
-    nbChild
+    nbChild,
+    useTiny
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
@@ -86,7 +87,8 @@ export const receiveShares = async () => {
       nbShares,
       parents,
       finalize,
-      nbChild
+      nbChild,
+      useTiny
     }
   })
   log('Stored share!')
@@ -123,7 +125,8 @@ export const receiveShares = async () => {
         level,
         nbShares,
         parents,
-        finalize
+        finalize,
+        useTiny
       }
     })
   }
