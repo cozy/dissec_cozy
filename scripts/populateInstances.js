@@ -22,18 +22,27 @@ const populateInstances = async ({
 
   log('Clearing old webhooks...')
   try {
-    await exec('rm ./assets/webhooks.json')
+    await exec(`rm ${outputWebhooksPath}`)
     log('Cleared!')
   } catch (err) {
     log('No webhooks to clear')
   }
 
+  const fixtures = JSON.parse(fs.readFileSync(fixtureFile).toString())
+  const allClasses = [
+    ...new Set(fixtures['io.cozy.bank.operations'].map(e => e.manualCategoryId))
+  ]
   const classes = splitClasses(
     centralized ? nInstances - 1 : nInstances,
-    nClasses
+    nClasses,
+    allClasses
   )
 
-  const populateSingleInstance = async (domain, classes) => {
+  const populateSingleInstance = async (
+    domain,
+    classes,
+    operations = operationsPerInstance
+  ) => {
     log('Destroying instance', domain)
     try {
       await exec(`cozy-stack instances destroy ${domain} --force`)
@@ -47,13 +56,13 @@ const populateInstances = async ({
     await exec(`cozy-stack instances modify ${domain} --onboarding-finished`)
 
     log(
-      `Importing operations of the following classes for instance ${domain}: ${classes}`
+      `Importing ${operations} operations of the following classes for instance ${domain}: ${classes}`
     )
     const { stdout: ACHToken } = await exec(
       `cozy-stack instances token-cli ${domain} io.cozy.bank.operations`
     )
     await exec(
-      `yarn run ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes} ${operationsPerInstance} ${domain} -x -t ${ACHToken}`
+      `yarn run ACH -u http://${domain} -y script banking/importFilteredOperations ${fixtureFile} ${classes} ${operations} ${domain} -x -t ${ACHToken}`
     )
 
     await exec(

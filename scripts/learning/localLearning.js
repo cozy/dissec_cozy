@@ -13,7 +13,7 @@ const { createLogger } = require('../../src/targets/services/helpers/utils')
  * @param {Object[]} validationSet - The dataset used for measuring performances
  * @returns The accuracy of the model on the validation set
  */
-const localLearning = async (client, cutoffDate, validationSet) => {
+const localLearning = async ({ client, cutoffDate, validationSet }) => {
   const { log } = createLogger()
 
   log('starting local training')
