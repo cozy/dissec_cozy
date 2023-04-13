@@ -82,17 +82,17 @@ const runExperiment = async (
   )
 
   /** ===== LOCAL TRAINING ===== **/
-  let localAccuracy = await localLearning(client, cutoffDate, validationSet)
+  let localAccuracy = await localLearning({ client, cutoffDate, validationSet })
 
   log('Local accuracy', localAccuracy)
 
   /** ===== DISSEC TRAINING ===== **/
-  let dissecAccuracy = await dissecLearning(
+  let dissecAccuracy = await dissecLearning({
     client,
     cutoffDate,
     validationSet,
     uri
-  )
+  })
 
   log('DISSEC accuracy', dissecAccuracy)
 }
