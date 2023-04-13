@@ -11,7 +11,7 @@ export const receiveShares = async () => {
     sharecode,
     uri,
     nbShares,
-    parent,
+    parents,
     finalize,
     level,
     aggregatorId,
@@ -53,16 +53,30 @@ export const receiveShares = async () => {
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
   // TODO: Remove hierarchy and base only on metadata and id
-  const { data: aggregationDirectory } = await client
-    .collection('io.cozy.files')
-    .getDirectoryOrCreate(executionId, appDirectory)
-  const aggregationDirectoryId = aggregationDirectory._id
+  let aggregationDirectory
+  try {
+    const { data } = await client
+      .collection('io.cozy.files')
+      .getDirectoryOrCreate(executionId, appDirectory)
+    aggregationDirectory = data
+  } catch (err) {
+    if (err.status === 409) {
+      const { data } = await client
+        .collection('io.cozy.files')
+        .statByPath(`${appDirectory.attributes.path}/${executionId}`)
+      aggregationDirectory = data
+    } else {
+      throw new Error(
+        `Error while creating the execution folder ${executionId}`
+      )
+    }
+  }
 
   // Save the received share
   await client.create('io.cozy.files', {
     type: 'file',
     data: share,
-    dirId: aggregationDirectoryId,
+    dirId: aggregationDirectory._id,
     name: `aggregator_${aggregatorId}_level_${level}_${sharecode}`,
     metadata: {
       dissec: true,
@@ -70,7 +84,7 @@ export const receiveShares = async () => {
       aggregatorId,
       level,
       nbShares,
-      parent,
+      parents,
       finalize,
       nbChild
     }
@@ -84,7 +98,7 @@ export const receiveShares = async () => {
   const { data: unfilteredFiles } = await client.query(
     Q('io.cozy.files')
       .where({
-        dir_id: aggregationDirectoryId
+        dir_id: aggregationDirectory._id
       })
       .indexFields(['dir_id'])
   )
@@ -102,13 +116,13 @@ export const receiveShares = async () => {
         slug: 'dissecozy'
       },
       metadata: {
-        aggregationDirectoryId,
+        aggregationDirectoryId: aggregationDirectory._id,
         dissec: true,
         executionId,
         aggregatorId,
         level,
         nbShares,
-        parent,
+        parents,
         finalize
       }
     })
