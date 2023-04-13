@@ -4,24 +4,30 @@ const populateInstances = require('../populateInstances')
 program
   .option('--centralized')
   .option(
-    '-n, --n-instances',
+    '-n, --n-instances <n>',
     "Number of instances spawned. Can't be used yet.",
+    Number,
     10
   )
-  .option('-c, --classes', 'Number of classes per instance', 10)
-  .option('-o, --operations', 'Number of bank operations per instance', 30)
+  .option('-c, --classes <n>', 'Number of classes per instance', Number, 10)
   .option(
-    '-f, --fixture',
+    '-o, --operations <n>',
+    'Number of bank operations per instance',
+    Number,
+    30
+  )
+  .option(
+    '-f, --fixture <path>',
     'Fixture file for bank operations',
     './assets/fixtures-l.json'
   )
   .option(
-    '-w, --webhooks',
+    '-w, --webhooks <path>',
     'File where the webhooks of created instances will be stored',
     './assets/webhooks.json'
   )
   .option(
-    '-s, --supervisor',
+    '-s, --supervisor <domain>',
     'Domain of the instance supervising the protocol',
     'cozy.localhost:8080'
   )
