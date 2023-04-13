@@ -25,7 +25,8 @@
     "test:centralized-vs-dissec": "bash ./scripts/testCentralizedVsDissec.sh",
     "populate": "node ./scripts/cli/populate.js",
     "populate:centralized": "node ./scripts/cli/populate.js --centralized",
-    "measure": "node ./scripts/localVsDissecLearning.js"
+    "measure": "node ./scripts/localVsDissecLearning.js",
+    "categorize": "node ./scripts/cli/categorize.js"
   },
   "repository": {
     "type": "git",
