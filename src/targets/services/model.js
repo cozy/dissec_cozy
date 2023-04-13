@@ -62,28 +62,28 @@ export class Model {
       tokenizer,
       ...getClassifierOptions(this.uniqueY.length).initialization
     })
+    this.uniqueY.forEach(category => classifier.initializeCategory(category))
+
     for (let j = 0; j < this.uniqueY.length; j++) {
       for (let i = 0; i < vocabulary.length; i++) {
         // Keep the matrix sparse by skiping zeroes
         if (this.occurences[j][i] === 0) continue
 
-        if (!classifier.wordFrequencyCount[this.uniqueY[j]])
-          classifier.wordFrequencyCount[this.uniqueY[j]] = {}
+        // Initialize word
         if (!classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]])
           classifier.wordFrequencyCount[this.uniqueY[j]][vocabulary[i]] = 0
+        if (!classifier.vocabulary[vocabulary[i]])
+          classifier.vocabulary[vocabulary[i]] = 0
+
         classifier.wordFrequencyCount[this.uniqueY[j]][
           vocabulary[i]
         ] += this.occurences[j][i]
-
-        if (!classifier.vocabulary[vocabulary[i]])
-          classifier.vocabulary[vocabulary[i]] = 0
         classifier.vocabulary[vocabulary[i]] += this.occurences[j][i]
-
-        if (!classifier.wordCount[this.uniqueY[j]])
-          classifier.wordCount[this.uniqueY[j]] = 0
         classifier.wordCount[this.uniqueY[j]] += this.occurences[j][i]
       }
     }
+
+    classifier.vocabularySize = vocabulary.length
     this.classifiers = [classifier]
   }
 
