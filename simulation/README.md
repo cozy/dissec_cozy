@@ -1,6 +1,6 @@
-# DARPA-FL Simulator
+# Protocols Simulator
 
-This repository contains the code of the simulation of the DISSEC-ML protocol.
+This repository contains the code of the simulation of our protocols.
 It focuses on the part of the protocol after the tree has been constructed, so nodes know their parents, group members, children and the backup list.
 
 ## Usage
