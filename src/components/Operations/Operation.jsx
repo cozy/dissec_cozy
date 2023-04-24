@@ -29,7 +29,7 @@ export const Operation = ({ operation }) => {
       setCategory(e.target.value)
       await client.save({
         ...operation,
-        cozyCategoryId: uncategorized ? undefined : e.target.value
+        manualCategoryId: uncategorized ? undefined : e.target.value
       })
     },
     [client, operation, setCategory]
