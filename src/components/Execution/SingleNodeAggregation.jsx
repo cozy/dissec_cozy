@@ -1,19 +1,25 @@
-import React, { useCallback, useState } from 'react'
-
-import Label from 'cozy-ui/react/Label'
-import Input from 'cozy-ui/react/Input'
-import { Switch, FormControlLabel } from '@material-ui/core'
+import { FormControlLabel, Switch } from '@material-ui/core'
+import { queryConnect, useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
-
-import { useClient } from 'cozy-client'
+import Input from 'cozy-ui/react/Input'
+import Label from 'cozy-ui/react/Label'
+import Spinner from 'cozy-ui/react/Spinner'
+import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
+import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 
-const SingleNodeAggregation = ({ node }) => {
+import { nodesQuery } from '../../doctypes'
+
+const SingleNodeAggregation = ({ nodes }) => {
   const client = useClient()
+
+  const { isLoading, data } = nodes
+  const options = data.map(e => ({ value: e, label: e.label || e.id }))
 
   const [isWorking, setIsWorking] = useState(false)
   const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
+  const [node, setSingleNode] = useState(data[0])
 
   const handleLaunchExecution = useCallback(async () => {
     setIsWorking(true)
@@ -49,43 +55,72 @@ const SingleNodeAggregation = ({ node }) => {
     setIsWorking(false)
   }, [node, client, nbShares, pretrained, setIsWorking])
 
-  return (
-    <div className="selected-single-node">
-      <div className="single-node-title">
-        {node && (node.label ? node.label : node.id)}
+  return isLoading ? (
+    <Spinner size="xxlarge" middle />
+  ) : (
+    <div className="card">
+      <div className="card-title">
+        <b>Single node aggregation</b>
       </div>
       <div>
-        <Label htmlFor="single-node-shares">Number of shares: </Label>
-        <Input
-          value={nbShares}
-          onChange={e => setNbShares(e.target.value)}
-          id="single-node-shares"
+        Performs the distributed aggregation protocol using different processes
+        of the same instance: the instance compute a local model, sends shares
+        to itself, aggregates them and then does the final aggregation.
+      </div>
+      <div>
+        <Label htmlFor="single-node-selector">
+          Select the node performing the execution:{' '}
+        </Label>
+        <SelectBox
+          id="single-node-selector"
+          options={options}
+          name="Select a node"
+          onChange={e => setSingleNode(e.value)}
         />
       </div>
-      <FormControlLabel
-        label="Use pretrained model?"
-        control={
-          <Switch
-            checked={pretrained}
-            onChange={() => setPretrained(old => !old)}
-            name="Use pretrained model?"
+      <div className="spacer-sm" />
+      <div className="selected-single-node">
+        <div className="single-node-title">
+          {node && (node.label ? node.label : node.id)}
+        </div>
+        <div>
+          <Label htmlFor="single-node-shares">Number of shares: </Label>
+          <Input
+            value={nbShares}
+            onChange={e => setNbShares(e.target.value)}
+            id="single-node-shares"
           />
-        }
-      />
-      <Button
-        className="todo-remove-button"
-        //theme="danger"
-        iconOnly
-        label="Launch execution"
-        busy={isWorking}
-        disabled={isWorking}
-        onClick={handleLaunchExecution}
-        extension="narrow"
-      >
-        Launch execution
-      </Button>
+        </div>
+        <FormControlLabel
+          label="Use pretrained model?"
+          control={
+            <Switch
+              checked={pretrained}
+              onChange={() => setPretrained(old => !old)}
+              name="Use pretrained model?"
+            />
+          }
+        />
+        <Button
+          className="todo-remove-button"
+          //theme="danger"
+          iconOnly
+          label="Launch execution"
+          busy={isWorking}
+          disabled={!node || isWorking}
+          onClick={handleLaunchExecution}
+          extension="narrow"
+        >
+          Launch execution
+        </Button>
+      </div>
     </div>
   )
 }
 
-export default SingleNodeAggregation
+export default queryConnect({
+  nodes: {
+    query: nodesQuery,
+    as: 'nodes'
+  }
+})(SingleNodeAggregation)

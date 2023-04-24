@@ -1,12 +1,16 @@
-import { useClient } from 'cozy-client'
+import { queryConnect, useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
+import Spinner from 'cozy-ui/react/Spinner'
 import React, { useCallback, useEffect, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 
+import { nodesQuery } from '../../doctypes'
 import { SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
 
 const FullAggregation = ({ nodes, webhooks }) => {
   const client = useClient()
+
+  const { isLoading, data } = nodes
 
   const [isWorking, setIsWorking] = useState(false)
   const [contributors, setContributors] = useState()
@@ -28,7 +32,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
 
     let aggregators = [
       {
-        webhook: nodes[0].aggregationWebhook,
+        webhook: data[0].aggregationWebhook,
         level: 1,
         nbChild: 7,
         parent: querier,
@@ -36,7 +40,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
         finalize: false
       },
       {
-        webhook: nodes[1].aggregationWebhook,
+        webhook: data[1].aggregationWebhook,
         level: 1,
         nbChild: 7,
         parent: querier,
@@ -44,7 +48,7 @@ const FullAggregation = ({ nodes, webhooks }) => {
         finalize: false
       },
       {
-        webhook: nodes[2].aggregationWebhook,
+        webhook: data[2].aggregationWebhook,
         level: 1,
         nbChild: 7,
         parent: querier,
@@ -54,19 +58,19 @@ const FullAggregation = ({ nodes, webhooks }) => {
     ]
 
     let contributors = [
-      { ...nodes[3], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[4], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[5], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[6], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[7], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[8], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[9], level: 2, nbChild: 0, parents: aggregators }
+      { ...data[3], level: 2, nbChild: 0, parents: aggregators },
+      { ...data[4], level: 2, nbChild: 0, parents: aggregators },
+      { ...data[5], level: 2, nbChild: 0, parents: aggregators },
+      { ...data[6], level: 2, nbChild: 0, parents: aggregators },
+      { ...data[7], level: 2, nbChild: 0, parents: aggregators },
+      { ...data[8], level: 2, nbChild: 0, parents: aggregators },
+      { ...data[9], level: 2, nbChild: 0, parents: aggregators }
     ]
 
     setContributors(contributors)
 
     setIsWorking(false)
-  }, [nodes, webhooks, setIsWorking, setContributors])
+  }, [data, webhooks, setIsWorking, setContributors])
 
   useEffect(() => {
     if (!contributors && webhooks.length !== 0) handleGenerateTree()
@@ -99,7 +103,9 @@ const FullAggregation = ({ nodes, webhooks }) => {
     setIsWorking(false)
   }, [contributors, client, setIsWorking])
 
-  return (
+  return isLoading ? (
+    <Spinner size="xxlarge" middle />
+  ) : (
     <div className="selected-single-node">
       <div className="single-node-title">Actions</div>
       <Button
@@ -118,4 +124,9 @@ const FullAggregation = ({ nodes, webhooks }) => {
   )
 }
 
-export default FullAggregation
+export default queryConnect({
+  nodes: {
+    query: nodesQuery,
+    as: 'nodes'
+  }
+})(FullAggregation)

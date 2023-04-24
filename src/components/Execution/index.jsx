@@ -1,8 +1,6 @@
 import { queryConnect, useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
-import Label from 'cozy-ui/transpiled/react/Label'
-import SelectBox from 'cozy-ui/transpiled/react/SelectBox'
 import { nodesQuery } from 'doctypes'
 import React, { useCallback, useEffect, useState } from 'react'
 
@@ -12,15 +10,11 @@ import FullAggregation from './FullAggregation.jsx'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import Webhook from './Webhook'
 
-export const Execution = ({ nodes }) => {
+export const Execution = () => {
   const client = useClient()
-
-  const { isLoading, data } = nodes
-  const options = data.map(e => ({ value: e, label: e.id }))
 
   const [isWorking, setIsWorking] = useState(false)
   const [webhooks, setWebhooks] = useState([])
-  const [singleNode, setSingleNode] = useState(data[0])
 
   const fetchWebhooks = useCallback(async () => {
     let { data: webhooks } = await client.collection(TRIGGERS_DOCTYPE).all()
@@ -74,36 +68,15 @@ export const Execution = ({ nodes }) => {
 
   return (
     <div className="todos">
-      {isLoading ? (
-        <Spinner size="xxlarge" middle />
-      ) : (
-        <>
-          <div className="card">
-            <div className="card-title">
-              <b>Full aggreation</b>
-            </div>
-            <FullAggregation nodes={data} webhooks={webhooks} />
+      <>
+        <div className="card">
+          <div className="card-title">
+            <b>Full aggreation</b>
           </div>
-          <div className="card">
-            <div className="card-title">
-              <b>Single node aggregation</b>
-            </div>
-            <div>
-              <Label htmlFor="single-node-selector">
-                Select the node performing the execution:{' '}
-              </Label>
-              <SelectBox
-                id="single-node-selector"
-                options={options}
-                name="Select a node"
-                onChange={e => setSingleNode(e.value)}
-              />
-            </div>
-            <div className="spacer-sm" />
-            {singleNode && <SingleNodeAggregation node={singleNode} />}
-          </div>
-        </>
-      )}
+          <FullAggregation webhooks={webhooks} />
+        </div>
+        <SingleNodeAggregation />
+      </>
       {webhooks &&
         webhooks.map(hook => (
           <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
