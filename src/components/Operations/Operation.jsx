@@ -7,17 +7,14 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  TextField,
+  TextField
 } from '@material-ui/core'
 import { useClient } from 'cozy-client'
 import React, { useCallback, useState } from 'react'
 
 import categories from '../../assets/classes.json'
+import { capitalizeFirstLetter } from '../../lib/utils'
 import OperationRemoveButton from './OperationRemoveButton'
-
-const capitalizeFirstLetter = str => {
-  return str.charAt(0).toUpperCase() + str.substring(1, str.length)
-}
 
 export const Operation = ({ operation }) => {
   const client = useClient()
