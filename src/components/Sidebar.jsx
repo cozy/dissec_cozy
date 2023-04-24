@@ -1,7 +1,8 @@
-import React from 'react'
-import Icon from 'cozy-ui/react/Icon'
 import { translate } from 'cozy-ui/react/I18n'
+import Icon from 'cozy-ui/react/Icon'
+import React from 'react'
 import { NavLink } from 'react-router-dom'
+
 import NavIcon from '../assets/icons/icon-bullet-point.svg'
 
 export const Sidebar = ({ t }) => {
@@ -37,16 +38,6 @@ export const Sidebar = ({ t }) => {
             >
               <Icon className="c-nav-icon" icon={NavIcon} />
               {t('Nav.nodes')}
-            </NavLink>
-          </li>
-          <li className="c-nav-item">
-            <NavLink
-              to="/analyze"
-              className="c-nav-link"
-              activeClassName="is-active"
-            >
-              <Icon className="c-nav-icon" icon={NavIcon} />
-              {t('Nav.analyze')}
             </NavLink>
           </li>
         </ul>

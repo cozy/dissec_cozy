@@ -2,7 +2,6 @@
   "Nav": {
     "operations": "Operations",
     "execution": "Execution",
-    "nodes": "Nodes",
-    "analyze": "Analyze"
+    "nodes": "Nodes"
   }
 }
