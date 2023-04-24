@@ -1,23 +1,19 @@
-import React, { useState, useCallback } from 'react'
-import { useClient } from 'cozy-client'
-
 import {
   Accordion,
+  AccordionDetails,
   AccordionSummary,
-  AccordionDetails
-} from '@material-ui/core'
-import {
   Divider,
   FormControl,
-  Select,
-  MenuItem,
   InputLabel,
-  TextField
+  MenuItem,
+  Select,
+  TextField,
 } from '@material-ui/core'
-
-import OperationRemoveButton from './OperationRemoveButton'
+import { useClient } from 'cozy-client'
+import React, { useCallback, useState } from 'react'
 
 import categories from '../../assets/classes.json'
+import OperationRemoveButton from './OperationRemoveButton'
 
 const capitalizeFirstLetter = str => {
   return str.charAt(0).toUpperCase() + str.substring(1, str.length)
@@ -47,7 +43,7 @@ export const Operation = ({ operation }) => {
       <AccordionSummary>
         <div className="operation-summary">
           <div className="operation-text">
-            <span>{operation.label}</span>
+            <h3 style={{ fontWeight: 'bold' }}>{operation.label}</h3>
             {operation.amount >= 0 ? (
               <span className="operation-gain">{operation.amount}€</span>
             ) : (

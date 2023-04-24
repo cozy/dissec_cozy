@@ -1,11 +1,9 @@
-import React, { useCallback, useState } from 'react'
-
 import { useClient } from 'cozy-client'
+import Button from 'cozy-ui/react/Button'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
-import Button from 'cozy-ui/react/Button'
-
 import { BANK_DOCTYPE } from 'doctypes'
+import React, { useCallback, useState } from 'react'
 
 export const OperationAdd = () => {
   const client = useClient()
@@ -59,27 +57,33 @@ export const OperationAdd = () => {
   return (
     <div>
       <h2>Add a new Operation:</h2>
-      <form>
-        <Label htmlFor="todo-add-input"> Operation label: </Label>
-        <Input
-          value={operationToAdd}
-          onChange={handleLabelChange}
-          id="todo-add-input"
-        />
-        <Label htmlFor="todo-add-input"> Operation amount: </Label>
-        <Input
-          value={amountToAdd}
-          onChange={handleAmountChange}
-          id="todo-add-input"
-          type="number"
-        />
-        <Button
-          onClick={handleSubmit}
-          busy={isWorking}
-          label="add"
-          size="large"
-          //extension="narrow"
-        />
+      <form className="form-base">
+        <div>
+          <Label htmlFor="todo-add-input"> Operation label: </Label>
+          <Input
+            value={operationToAdd}
+            onChange={handleLabelChange}
+            id="todo-add-input"
+          />
+        </div>
+        <div>
+          <Label htmlFor="todo-add-input"> Operation amount: </Label>
+          <Input
+            value={amountToAdd}
+            onChange={handleAmountChange}
+            id="todo-add-input"
+            type="number"
+          />
+        </div>
+        <div>
+          <Button
+            onClick={handleSubmit}
+            busy={isWorking}
+            label="add"
+            size="large"
+            extension="full"
+          />
+        </div>
       </form>
     </div>
   )
