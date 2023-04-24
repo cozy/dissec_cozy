@@ -1,20 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react'
 import { queryConnect, useClient } from 'cozy-client'
-import { nodesQuery } from 'doctypes'
-
-import SelectBox from 'cozy-ui/transpiled/react/SelectBox'
+import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
 import Label from 'cozy-ui/transpiled/react/Label'
-import Button from 'cozy-ui/react/Button'
+import SelectBox from 'cozy-ui/transpiled/react/SelectBox'
+import { nodesQuery } from 'doctypes'
+import React, { useCallback, useEffect, useState } from 'react'
 
-import Webhook from './Webhook'
-import SingleNodeAggregation from './SingleNodeAggregation'
+import { TRIGGERS_DOCTYPE } from '../../doctypes/triggers'
+import { SERVICE_CATEGORIZE, SERVICE_CONTRIBUTION, SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
 import FullAggregation from './FullAggregation.jsx'
-import {
-  SERVICE_CATEGORIZE,
-  SERVICE_CONTRIBUTION,
-  SERVICE_RECEIVE_SHARES
-} from '../../targets/services/helpers'
+import SingleNodeAggregation from './SingleNodeAggregation'
+import Webhook from './Webhook'
 
 export const Execution = ({ nodes }) => {
   const client = useClient()
@@ -26,10 +22,31 @@ export const Execution = ({ nodes }) => {
   const [webhooks, setWebhooks] = useState([])
   const [singleNode, setSingleNode] = useState(data[0])
 
-  const createWebhooks = useCallback(async () => {
-    const query = async name => {
-      setIsWorking(true)
+  const fetchWebhooks = useCallback(async () => {
+    let { data: webhooks } = await client.collection(TRIGGERS_DOCTYPE).all()
 
+    setWebhooks(
+      webhooks
+        .filter(hook => hook.type === '@webhook')
+        .sort((a, b) => a.id > b.id)
+    )
+  }, [client, setWebhooks])
+
+  useEffect(() => {
+    fetchWebhooks()
+  }, [fetchWebhooks])
+
+  const resetWebhooks = useCallback(async () => {
+    setIsWorking(true)
+
+    const { data: oldWebhooks } = await client
+      .collection(TRIGGERS_DOCTYPE)
+      .find({ type: '@webhook' })
+    await Promise.all(
+      oldWebhooks.map(async webhook => await client.destroy(webhook))
+    )
+
+    const query = async name => {
       await client.create('io.cozy.triggers', {
         type: '@webhook',
         worker: 'service',
@@ -54,20 +71,6 @@ export const Execution = ({ nodes }) => {
       setIsWorking(false)
     }, 3000)
   }, [client, fetchWebhooks])
-
-  const fetchWebhooks = useCallback(async () => {
-    let { data: webhooks } = await client.collection('io.cozy.triggers').all()
-
-    setWebhooks(
-      webhooks
-        .filter(hook => hook.type === '@webhook')
-        .sort((a, b) => a.id > b.id)
-    )
-  }, [client, setWebhooks])
-
-  useEffect(() => {
-    fetchWebhooks()
-  }, [fetchWebhooks])
 
   return (
     <div className="todos">
@@ -111,15 +114,15 @@ export const Execution = ({ nodes }) => {
         <div className="action-group">
           <Button
             className="todo-remove-button"
-            //theme="danger"
+            theme="danger"
             iconOnly
             label="Create webhooks"
             busy={isWorking}
             disabled={isWorking}
-            onClick={createWebhooks}
+            onClick={resetWebhooks}
             extension="narrow"
           >
-            Créer un webhook
+            Reset webhooks
           </Button>
         </div>
       )}
