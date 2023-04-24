@@ -1,7 +1,8 @@
-import React, { useCallback, useState, useEffect } from 'react'
-import Button from 'cozy-ui/react/Button'
 import { useClient } from 'cozy-client'
+import Button from 'cozy-ui/react/Button'
+import React, { useCallback, useEffect, useState } from 'react'
 import { v4 as uuid } from 'uuid'
+
 import { SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
 
 const FullAggregation = ({ nodes, webhooks }) => {
@@ -11,9 +12,9 @@ const FullAggregation = ({ nodes, webhooks }) => {
   const [contributors, setContributors] = useState()
 
   const handleGenerateTree = useCallback(async () => {
-    setIsWorking(true)
-
     if (!webhooks) return
+
+    setIsWorking(true)
 
     let querier = {
       webhook: webhooks.filter(
