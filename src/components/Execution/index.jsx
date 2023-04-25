@@ -22,7 +22,7 @@ export const Execution = () => {
     setWebhooks(
       webhooks
         .filter(hook => hook.type === '@webhook')
-        .sort((a, b) => a.id > b.id)
+        .sort((a, b) => (a.id > b.id ? 1 : -1))
     )
   }, [client, setWebhooks])
 
