@@ -1,4 +1,10 @@
-const { v4: uuid } = require('uuid')
+/**
+ * FIXME: THIS FILE IS A WORKAROUND TO CONFLICTING IMPORT STYLES.
+ * This file is a duplicate but uses the `export` keyword (ECMAScript).
+ * The old file was using `require` (CommonJS) which causes an error either in the frontend or when running scripts
+ */
+
+import { v4 as uuid } from 'uuid'
 
 /**
  * This function is used to create the aggregation tree
@@ -42,11 +48,18 @@ const createTree = (treeStructure, nodesWebhooks, allowReuse = true) => {
     if (level.numberOfNodes) {
       // The level has a valid number of nodes, add exactly that amount
       for (let i = 0; i < level.numberOfNodes; i++) {
+        const {
+          label,
+          contributionWebhook,
+          aggregationWebhook
+        } = remainingNodes.splice(
+          remainingNodes.indexOf(matchingNodes.shift()),
+          1
+        )[0]
         currentLevel.push({
-          ...remainingNodes.splice(
-            remainingNodes.indexOf(matchingNodes.shift()),
-            1
-          )[0],
+          label,
+          contributionWebhook,
+          aggregationWebhook,
           level: j,
           nbChild:
             j < treeStructure.length - 1
@@ -62,11 +75,18 @@ const createTree = (treeStructure, nodesWebhooks, allowReuse = true) => {
     } else {
       // Undefined number of nodes means add all remaining nodes
       while (matchingNodes.length > 0) {
+        const {
+          label,
+          contributionWebhook,
+          aggregationWebhook
+        } = remainingNodes.splice(
+          remainingNodes.indexOf(matchingNodes.shift()),
+          1
+        )[0]
         currentLevel.push({
-          ...remainingNodes.splice(
-            remainingNodes.indexOf(matchingNodes.shift()),
-            1
-          )[0],
+          label,
+          contributionWebhook,
+          aggregationWebhook,
           level: j,
           nbChild:
             j < treeStructure.length - 1
@@ -89,4 +109,4 @@ const createTree = (treeStructure, nodesWebhooks, allowReuse = true) => {
   return lastLevel
 }
 
-module.exports = createTree
+export default createTree

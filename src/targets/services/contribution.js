@@ -14,6 +14,7 @@ export const contribution = async () => {
     nbShares,
     pretrained,
     executionId,
+    aggregatorId,
     useTiny,
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
@@ -71,7 +72,7 @@ export const contribution = async () => {
   for (let i in shares) {
     const { data: file } = await client.create('io.cozy.files', {
       type: 'file',
-      name: `contribution_${i}`,
+      name: `contribution_${i}_${aggregatorId}`,
       dirId: aggregationDirectoryId,
       data: shares[i]
     })

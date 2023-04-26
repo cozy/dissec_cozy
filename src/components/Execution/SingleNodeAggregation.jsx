@@ -7,8 +7,8 @@ import Spinner from 'cozy-ui/react/Spinner'
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
 import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
-
 import { nodesQuery } from '../../doctypes'
+import createTree from '../../lib/createTreeExported.js'
 
 const SingleNodeAggregation = ({ nodes }) => {
   const client = useClient()
@@ -23,37 +23,45 @@ const SingleNodeAggregation = ({ nodes }) => {
 
   const handleLaunchExecution = useCallback(async () => {
     setIsWorking(true)
-    // Create a tree with one contributor, nbShares aggregators and one finalizer
-    const finalAggregatorId = uuid()
-    const parents = Array(nbShares)
-      .fill()
-      .map(() => ({
-        level: 0,
-        aggregatorId: uuid(),
-        nbChild: 1,
-        finalize: false,
-        webhook: node.aggregationWebhook,
-        parent: {
-          level: 1,
-          aggregatorId: finalAggregatorId,
-          nbChild: nbShares,
-          webhook: node.aggregationWebhook,
-          finalize: true
+
+    try {
+      // Create a tree with one contributor, nbShares aggregators and one finalizer
+      const treeStructure = [
+        {
+          numberOfNodes: 1,
+          mustInclude: [node.label]
+        },
+        {
+          numberOfNodes: nbShares
+        },
+        {
+          numberOfNodes: 1
         }
-      }))
-    const contributionBody = {
-      executionId: uuid(),
-      pretrained,
-      nbShares,
-      parents
+      ]
+      const contributors = createTree(treeStructure, [node], true)
+      const executionId = uuid()
+
+      for (const contributor of contributors) {
+        const contributionBody = {
+          ...contributor,
+          executionId,
+          pretrained,
+          nbShares,
+          useTiny: true
+        }
+        await new Promise(resolve => {
+          setTimeout(resolve, 1000)
+        })
+        await client.stackClient.fetchJSON(
+          'POST',
+          contributor.contributionWebhook,
+          contributionBody
+        )
+      }
+    } finally {
+      setIsWorking(false)
     }
-    await client.stackClient.fetchJSON(
-      'POST',
-      node.contributionWebhook,
-      contributionBody
-    )
-    setIsWorking(false)
-  }, [node, client, nbShares, pretrained, setIsWorking])
+  }, [client, node, nbShares, pretrained])
 
   return isLoading ? (
     <Spinner size="xxlarge" middle />
@@ -80,9 +88,6 @@ const SingleNodeAggregation = ({ nodes }) => {
       </div>
       <div className="spacer-sm" />
       <div className="selected-single-node">
-        <div className="single-node-title">
-          {node && (node.label ? node.label : node.id)}
-        </div>
         <div>
           <Label htmlFor="single-node-shares">Number of shares: </Label>
           <Input
