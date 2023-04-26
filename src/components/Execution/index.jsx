@@ -5,7 +5,11 @@ import { nodesQuery } from 'doctypes'
 import React, { useCallback, useEffect, useState } from 'react'
 
 import { TRIGGERS_DOCTYPE } from '../../doctypes/triggers'
-import { SERVICE_CATEGORIZE, SERVICE_CONTRIBUTION, SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
+import {
+  SERVICE_CATEGORIZE,
+  SERVICE_CONTRIBUTION,
+  SERVICE_RECEIVE_SHARES
+} from '../../targets/services/helpers'
 import FullAggregation from './FullAggregation.jsx'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import Webhook from './Webhook'
@@ -68,15 +72,8 @@ export const Execution = () => {
 
   return (
     <div className="todos">
-      <>
-        <div className="card">
-          <div className="card-title">
-            <b>Full aggreation</b>
-          </div>
-          <FullAggregation webhooks={webhooks} />
-        </div>
-        <SingleNodeAggregation />
-      </>
+      <FullAggregation />
+      <SingleNodeAggregation />
       {webhooks &&
         webhooks.map(hook => (
           <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
