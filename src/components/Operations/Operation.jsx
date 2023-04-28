@@ -12,8 +12,8 @@ import {
 import { useClient } from 'cozy-client'
 import React, { useCallback, useState } from 'react'
 
-import categories from '../../assets/classes.json'
-import { capitalizeFirstLetter } from '../../lib/utils'
+import categories from 'assets/classes.json'
+import { capitalizeFirstLetter } from 'lib/utils'
 import OperationRemoveButton from './OperationRemoveButton'
 
 export const Operation = ({ operation }) => {

@@ -3,7 +3,7 @@ import { useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import React, { useCallback, useState } from 'react'
 
-import { JOBS_DOCTYPE } from '../../doctypes/jobs'
+import { JOBS_DOCTYPE } from 'doctypes/jobs'
 
 export const Webhook = ({ hook, onUpdate }) => {
   const client = useClient()

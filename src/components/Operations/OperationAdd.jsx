@@ -1,13 +1,13 @@
+import React, { useCallback, useState } from 'react'
 import { InputLabel, MenuItem, Select } from '@material-ui/core'
 import { useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import { BANK_DOCTYPE } from 'doctypes'
-import React, { useCallback, useState } from 'react'
 
-import categories from '../../assets/classes.json'
-import { capitalizeFirstLetter } from '../../lib/utils'
+import categories from 'assets/classes.json'
+import { capitalizeFirstLetter } from 'lib/utils'
 
 export const OperationAdd = () => {
   const client = useClient()

@@ -3,10 +3,10 @@ import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
 import React, { useCallback, useEffect, useState } from 'react'
 import { v4 as uuid } from 'uuid'
-import createTree from '../../lib/createTreeExported.js'
 import Label from 'cozy-ui/react/Label/index.jsx'
 import Input from 'cozy-ui/react/Input/index.jsx'
-import { nodesQuery } from '../../lib/queries.js'
+import createTree from 'lib/createTreeExported.js'
+import { nodesQuery } from 'lib/queries.js'
 
 const FullAggregation = () => {
   const client = useClient()

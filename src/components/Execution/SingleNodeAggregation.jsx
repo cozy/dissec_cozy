@@ -5,11 +5,10 @@ import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import Spinner from 'cozy-ui/react/Spinner'
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import { v4 as uuid } from 'uuid'
-import createTree from '../../lib/createTreeExported.js'
-import { nodesQuery } from '../../lib/queries'
-import { useEffect } from 'react'
+import createTree from 'lib/createTreeExported.js'
+import { nodesQuery } from 'lib/queries'
 
 const SingleNodeAggregation = () => {
   const client = useClient()

@@ -7,11 +7,11 @@ import {
   SERVICE_CATEGORIZE,
   SERVICE_CONTRIBUTION,
   SERVICE_RECEIVE_SHARES
-} from '../../targets/services/helpers'
+} from 'targets/services/helpers'
+import { webhooksQuery } from 'lib/queries'
 import FullAggregation from './FullAggregation.jsx'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import Webhook from './Webhook'
-import { webhooksQuery } from '../../lib/queries'
 
 export const Execution = () => {
   const client = useClient()

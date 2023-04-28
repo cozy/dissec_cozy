@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
 import { useQuery } from 'cozy-client'
@@ -7,8 +7,6 @@ import { nodesQuery } from 'lib/queries'
 import NodeAdd from './NodeAdd'
 import NodesList from './NodesList'
 import NodeUpload from './NodeUpload'
-import { useState } from 'react'
-import { useEffect } from 'react'
 
 export const Nodes = () => {
   const query = nodesQuery()

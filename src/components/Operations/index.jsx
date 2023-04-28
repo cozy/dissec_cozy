@@ -1,13 +1,11 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
 import { useQuery } from 'cozy-client'
-import { bankQuery } from '../../lib/queries'
+import { bankQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
-import { useState } from 'react'
-import { useEffect } from 'react'
 
 export const Operations = () => {
   const query = bankQuery()

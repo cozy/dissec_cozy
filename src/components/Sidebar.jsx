@@ -3,7 +3,7 @@ import Icon from 'cozy-ui/react/Icon'
 import React from 'react'
 import { NavLink } from 'react-router-dom'
 
-import NavIcon from '../assets/icons/icon-bullet-point.svg'
+import NavIcon from 'assets/icons/icon-bullet-point.svg'
 
 export const Sidebar = ({ t }) => {
   return (
