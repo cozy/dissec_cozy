@@ -8,7 +8,7 @@ export const NodesList = props => {
   if (!nodes || !nodes.length) return null
   return (
     <div>
-      <h2>Nodes list:</h2>
+      <h2>Nodes list</h2>
       {nodes.map(node => (
         <Node key={node._id} node={node} />
       ))}

@@ -1,21 +1,31 @@
-import { queryConnect, useClient } from 'cozy-client'
+import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import createTree from '../../lib/createTreeExported.js'
-import { nodesQuery } from '../../doctypes'
 import Label from 'cozy-ui/react/Label/index.jsx'
 import Input from 'cozy-ui/react/Input/index.jsx'
+import { nodesQuery } from '../../lib/queries.js'
 
-const FullAggregation = ({ nodes }) => {
+const FullAggregation = () => {
   const client = useClient()
-
-  const { isLoading, data } = nodes
-
-  const [isWorking, setIsWorking] = useState(false)
+  const query = nodesQuery()
+  const { isLoading, fetch } = useQuery(query.definition, query.options)
+  const [nodes, setNodes] = useState()
   const [nbShares, setNbShares] = useState(2)
   const [nbContributors, setNbContributors] = useState(2)
+  const [isWorking, setIsWorking] = useState(false)
+
+  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
+  useEffect(() => {
+    ;(async () => {
+      if (!nodes) {
+        const { data } = await fetch()
+        setNodes(data)
+      }
+    })()
+  })
 
   const handleLaunchExecution = useCallback(async () => {
     setIsWorking(true)
@@ -33,7 +43,7 @@ const FullAggregation = ({ nodes }) => {
           numberOfNodes: nbContributors
         }
       ]
-      const contributors = createTree(treeStructure, data)
+      const contributors = createTree(treeStructure, nodes)
 
       for (const contributor of contributors) {
         const contributionBody = {
@@ -55,7 +65,7 @@ const FullAggregation = ({ nodes }) => {
     } finally {
       setIsWorking(false)
     }
-  }, [nbShares, nbContributors, data, client.stackClient])
+  }, [nbShares, nbContributors, nodes, client.stackClient])
 
   return isLoading ? (
     <Spinner size="xxlarge" middle />
@@ -89,13 +99,15 @@ const FullAggregation = ({ nodes }) => {
           iconOnly
           label="Launch execution"
           busy={isWorking}
-          disabled={isWorking || data.length < nbShares + nbContributors + 1}
+          disabled={
+            isWorking || (nodes?.length || 0) < nbShares + nbContributors + 1
+          }
           onClick={handleLaunchExecution}
           extension="narrow"
         >
           Launch execution
         </Button>
-        {data.length < nbShares + nbContributors + 1 ? (
+        {(nodes?.length || 0) < nbShares + nbContributors + 1 ? (
           <div className="full-agg-error">
             There are not enough nodes registered...
           </div>
@@ -105,9 +117,4 @@ const FullAggregation = ({ nodes }) => {
   )
 }
 
-export default queryConnect({
-  nodes: {
-    query: nodesQuery,
-    as: 'nodes'
-  }
-})(FullAggregation)
+export default FullAggregation

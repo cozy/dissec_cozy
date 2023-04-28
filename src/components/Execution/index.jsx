@@ -1,10 +1,8 @@
-import { queryConnect, useClient } from 'cozy-client'
+import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
-import { nodesQuery } from 'doctypes'
 import React, { useCallback, useEffect, useState } from 'react'
 
-import { TRIGGERS_DOCTYPE } from '../../doctypes/triggers'
 import {
   SERVICE_CATEGORIZE,
   SERVICE_CONTRIBUTION,
@@ -13,62 +11,50 @@ import {
 import FullAggregation from './FullAggregation.jsx'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import Webhook from './Webhook'
+import { webhooksQuery } from '../../lib/queries'
 
 export const Execution = () => {
   const client = useClient()
-
+  const query = webhooksQuery()
+  const { fetch } = useQuery(query.definition, query.options)
+  const [webhooks, setWebhooks] = useState()
   const [isWorking, setIsWorking] = useState(false)
-  const [webhooks, setWebhooks] = useState([])
 
-  const fetchWebhooks = useCallback(async () => {
-    let { data: webhooks } = await client.collection(TRIGGERS_DOCTYPE).all()
-
-    setWebhooks(
-      webhooks
-        .filter(hook => hook.type === '@webhook')
-        .sort((a, b) => (a.id > b.id ? 1 : -1))
-    )
-  }, [client, setWebhooks])
-
+  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
   useEffect(() => {
-    fetchWebhooks()
-  }, [fetchWebhooks])
+    ;(async () => {
+      const { data } = await fetch()
+      setWebhooks(data)
+    })()
+  })
 
   const resetWebhooks = useCallback(async () => {
     setIsWorking(true)
 
-    const { data: oldWebhooks } = await client
-      .collection(TRIGGERS_DOCTYPE)
-      .find({ type: '@webhook' })
-    await Promise.all(
-      oldWebhooks.map(async webhook => await client.destroy(webhook))
-    )
-
-    const query = async name => {
-      await client.create('io.cozy.triggers', {
-        type: '@webhook',
-        worker: 'service',
-        message: {
-          slug: 'dissecozy',
-          name: name
-        }
-      })
+    // Deleting old webhooks
+    if (webhooks) {
+      await Promise.all(
+        webhooks.map(async webhook => await client.destroy(webhook))
+      )
     }
 
-    // Register categorization webhook
-    await query(SERVICE_CATEGORIZE)
+    // Creating new ones
+    await Promise.all(
+      [SERVICE_CATEGORIZE, SERVICE_CONTRIBUTION, SERVICE_RECEIVE_SHARES].map(
+        async name =>
+          await client.create('io.cozy.triggers', {
+            type: '@webhook',
+            worker: 'service',
+            message: {
+              slug: 'dissecozy',
+              name
+            }
+          })
+      )
+    )
 
-    // Register contribution webhook
-    await query(SERVICE_CONTRIBUTION)
-
-    // Register aggregation webhook
-    await query(SERVICE_RECEIVE_SHARES)
-
-    setTimeout(async () => {
-      await fetchWebhooks()
-      setIsWorking(false)
-    }, 3000)
-  }, [client, fetchWebhooks])
+    setIsWorking(false)
+  }, [client, webhooks])
 
   return (
     <div className="todos">
@@ -76,7 +62,7 @@ export const Execution = () => {
       <SingleNodeAggregation />
       {webhooks &&
         webhooks.map(hook => (
-          <Webhook key={hook.id} hook={hook} onUpdate={fetchWebhooks} />
+          <Webhook key={hook.id} hook={hook} onUpdate={fetch} />
         ))}
       {isWorking ? (
         <Spinner size="xxlarge" middle />
@@ -101,9 +87,4 @@ export const Execution = () => {
 }
 
 // get data from the client state: data, fetchStatus
-export default queryConnect({
-  nodes: {
-    query: nodesQuery,
-    as: 'nodes'
-  }
-})(Execution)
+export default Execution

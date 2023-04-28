@@ -1,5 +1,5 @@
 import { FormControlLabel, Switch } from '@material-ui/core'
-import { queryConnect, useClient } from 'cozy-client'
+import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
@@ -7,19 +7,30 @@ import Spinner from 'cozy-ui/react/Spinner'
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
 import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
-import { nodesQuery } from '../../doctypes'
 import createTree from '../../lib/createTreeExported.js'
+import { nodesQuery } from '../../lib/queries'
+import { useEffect } from 'react'
 
-const SingleNodeAggregation = ({ nodes }) => {
+const SingleNodeAggregation = () => {
   const client = useClient()
-
-  const { isLoading, data } = nodes
-  const options = data.map(e => ({ value: e, label: e.label || e.id }))
-
-  const [isWorking, setIsWorking] = useState(false)
+  const query = nodesQuery()
+  const { fetch, isLoading } = useQuery(query.definition, query.options)
+  const [nodes, setNodes] = useState()
   const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
-  const [node, setSingleNode] = useState(data[0])
+  const [node, setSingleNode] = useState()
+  const [isWorking, setIsWorking] = useState(false)
+
+  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
+  useEffect(() => {
+    ;(async () => {
+      if (!nodes) {
+        const { data } = await fetch()
+        setNodes(data)
+      }
+    })()
+  })
+  const options = nodes?.map(e => ({ value: e, label: e.label || e.id }))
 
   const handleLaunchExecution = useCallback(async () => {
     setIsWorking(true)
@@ -123,9 +134,4 @@ const SingleNodeAggregation = ({ nodes }) => {
   )
 }
 
-export default queryConnect({
-  nodes: {
-    query: nodesQuery,
-    as: 'nodes'
-  }
-})(SingleNodeAggregation)
+export default SingleNodeAggregation
