@@ -9,9 +9,15 @@ export const NodesList = props => {
   return (
     <div>
       <h2>Nodes list</h2>
-      {nodes.map(node => (
-        <Node key={node._id} node={node} />
-      ))}
+      <span>
+        All the nodes this instance can monitor are listed below. Run populating
+        scripts to register nodes.
+      </span>
+      <div className="nodes-list">
+        {nodes.map(node => (
+          <Node key={node._id} node={node} />
+        ))}
+      </div>
     </div>
   )
 }
