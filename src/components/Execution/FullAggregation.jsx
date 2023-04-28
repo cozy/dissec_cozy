@@ -1,118 +1,118 @@
-import React, { useCallback, useState, useEffect } from 'react'
+import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
-import { useClient } from 'cozy-client'
+import Spinner from 'cozy-ui/react/Spinner'
+import React, { useCallback, useEffect, useState } from 'react'
 import { v4 as uuid } from 'uuid'
-import { SERVICE_RECEIVE_SHARES } from '../../targets/services/helpers'
+import Label from 'cozy-ui/react/Label/index.jsx'
+import Input from 'cozy-ui/react/Input/index.jsx'
+import createTree from 'lib/createTreeExported.js'
+import { nodesQuery } from 'lib/queries.js'
 
-const FullAggregation = ({ nodes, webhooks }) => {
+const FullAggregation = () => {
   const client = useClient()
-
+  const query = nodesQuery()
+  const { isLoading, fetch } = useQuery(query.definition, query.options)
+  const [nodes, setNodes] = useState()
+  const [nbShares, setNbShares] = useState(2)
+  const [nbContributors, setNbContributors] = useState(2)
   const [isWorking, setIsWorking] = useState(false)
-  const [contributors, setContributors] = useState()
 
-  const handleGenerateTree = useCallback(async () => {
-    setIsWorking(true)
-
-    if (!webhooks) return
-
-    let querier = {
-      webhook: webhooks.filter(
-        webhook => webhook.attributes.message.name === SERVICE_RECEIVE_SHARES
-      )[0].links.webhook,
-      level: 0,
-      nbChild: 3,
-      aggregatorId: uuid(),
-      finalize: true
-    }
-
-    let aggregators = [
-      {
-        webhook: nodes[0].aggregationWebhook,
-        level: 1,
-        nbChild: 7,
-        parent: querier,
-        aggregatorId: uuid(),
-        finalize: false
-      },
-      {
-        webhook: nodes[1].aggregationWebhook,
-        level: 1,
-        nbChild: 7,
-        parent: querier,
-        aggregatorId: uuid(),
-        finalize: false
-      },
-      {
-        webhook: nodes[2].aggregationWebhook,
-        level: 1,
-        nbChild: 7,
-        parent: querier,
-        aggregatorId: uuid(),
-        finalize: false
-      }
-    ]
-
-    let contributors = [
-      { ...nodes[3], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[4], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[5], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[6], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[7], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[8], level: 2, nbChild: 0, parents: aggregators },
-      { ...nodes[9], level: 2, nbChild: 0, parents: aggregators }
-    ]
-
-    setContributors(contributors)
-
-    setIsWorking(false)
-  }, [nodes, webhooks, setIsWorking, setContributors])
-
+  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
   useEffect(() => {
-    if (!contributors && webhooks.length !== 0) handleGenerateTree()
-  }, [webhooks, contributors, handleGenerateTree])
+    ;(async () => {
+      if (!nodes) {
+        const { data } = await fetch()
+        setNodes(data)
+      }
+    })()
+  })
 
   const handleLaunchExecution = useCallback(async () => {
-    if (!contributors) return
-
     setIsWorking(true)
 
-    const executionId = uuid()
+    try {
+      const executionId = uuid()
+      const treeStructure = [
+        {
+          numberOfNodes: 1
+        },
+        {
+          numberOfNodes: nbShares
+        },
+        {
+          numberOfNodes: nbContributors
+        }
+      ]
+      const contributors = createTree(treeStructure, nodes)
 
-    for (const contributor of contributors) {
-      const contributionBody = {
-        executionId,
-        pretrained: false,
-        nbShares: 3,
-        parents: contributor.parents
+      for (const contributor of contributors) {
+        const contributionBody = {
+          ...contributor,
+          executionId,
+          pretrained: false,
+          nbShares,
+          useTiny: true
+        }
+        await new Promise(resolve => {
+          setTimeout(resolve, 1000)
+        })
+        await client.stackClient.fetchJSON(
+          'POST',
+          contributor.contributionWebhook,
+          contributionBody
+        )
       }
-      await new Promise(resolve => {
-        setTimeout(resolve, 1000)
-      })
-      await client.stackClient.fetchJSON(
-        'POST',
-        contributor.contributionWebhook,
-        contributionBody
-      )
+    } finally {
+      setIsWorking(false)
     }
+  }, [nbShares, nbContributors, nodes, client.stackClient])
 
-    setIsWorking(false)
-  }, [contributors, client, setIsWorking])
-
-  return (
-    <div className="selected-single-node">
-      <div className="single-node-title">Actions</div>
-      <Button
-        className="button-basic"
-        //theme="danger"
-        iconOnly
-        label="Launch execution"
-        busy={isWorking}
-        disabled={isWorking}
-        onClick={handleLaunchExecution}
-        extension="narrow"
-      >
-        Launch execution
-      </Button>
+  return isLoading ? (
+    <Spinner size="xxlarge" middle />
+  ) : (
+    <div className="card">
+      <div className="card-title">
+        <b>Full aggreation</b>
+      </div>
+      <div className="full-agg-form">
+        <div>
+          <Label htmlFor="full-agg-contributors">
+            Number of contributors:{' '}
+          </Label>
+          <Input
+            value={nbContributors}
+            onChange={e => setNbContributors(Number(e.target.value))}
+            id="full-agg-contributors"
+          />
+        </div>
+        <div>
+          <Label htmlFor="full-agg-shares">Number of shares: </Label>
+          <Input
+            value={nbShares}
+            onChange={e => setNbShares(Number(e.target.value))}
+            id="full-agg-shares"
+          />
+        </div>
+        <Button
+          className="button-basic"
+          //theme="danger"
+          iconOnly
+          label="Launch execution"
+          busy={isWorking}
+          disabled={
+            isWorking || (nodes?.length || 0) < nbShares + nbContributors + 1
+          }
+          onClick={handleLaunchExecution}
+          extension="narrow"
+        >
+          Launch execution
+        </Button>
+        {(nodes?.length || 0) < nbShares + nbContributors + 1 ? (
+          <div className="full-agg-error">
+            There are not enough nodes registered...
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }

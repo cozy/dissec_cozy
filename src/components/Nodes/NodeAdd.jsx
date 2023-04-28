@@ -67,7 +67,8 @@ export const NodeAdd = () => {
 
   return (
     <div>
-      <h2>Add a new Node:</h2>
+      <h2>Add a new Node</h2>
+      <span>Use this section to manually add a node.</span>
       <form className="node-form" onSubmit={e => e.preventDefault()}>
         <Label htmlFor="label-input">Node label (optionnal):</Label>
         <Input value={label} onChange={handleLabelChange} id="label-input" />

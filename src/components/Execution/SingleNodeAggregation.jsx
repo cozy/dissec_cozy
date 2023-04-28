@@ -1,89 +1,134 @@
-import React, { useCallback, useState } from 'react'
-
-import Label from 'cozy-ui/react/Label'
-import Input from 'cozy-ui/react/Input'
-import { Switch, FormControlLabel } from '@material-ui/core'
+import { FormControlLabel, Switch } from '@material-ui/core'
+import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
-
-import { useClient } from 'cozy-client'
+import Input from 'cozy-ui/react/Input'
+import Label from 'cozy-ui/react/Label'
+import Spinner from 'cozy-ui/react/Spinner'
+import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
+import React, { useCallback, useState, useEffect } from 'react'
 import { v4 as uuid } from 'uuid'
+import createTree from 'lib/createTreeExported.js'
+import { nodesQuery } from 'lib/queries'
 
-const SingleNodeAggregation = ({ node }) => {
+const SingleNodeAggregation = () => {
   const client = useClient()
-
-  const [isWorking, setIsWorking] = useState(false)
+  const query = nodesQuery()
+  const { fetch, isLoading } = useQuery(query.definition, query.options)
+  const [nodes, setNodes] = useState()
   const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
+  const [node, setSingleNode] = useState()
+  const [isWorking, setIsWorking] = useState(false)
+
+  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
+  useEffect(() => {
+    ;(async () => {
+      if (!nodes) {
+        const { data } = await fetch()
+        setNodes(data)
+      }
+    })()
+  })
+  const options = nodes?.map(e => ({ value: e, label: e.label || e.id }))
 
   const handleLaunchExecution = useCallback(async () => {
     setIsWorking(true)
-    // Create a tree with one contributor, nbShares aggregators and one finalizer
-    const finalAggregatorId = uuid()
-    const parents = Array(nbShares)
-      .fill()
-      .map(() => ({
-        level: 0,
-        aggregatorId: uuid(),
-        nbChild: 1,
-        finalize: false,
-        webhook: node.aggregationWebhook,
-        parent: {
-          level: 1,
-          aggregatorId: finalAggregatorId,
-          nbChild: nbShares,
-          webhook: node.aggregationWebhook,
-          finalize: true
-        }
-      }))
-    const contributionBody = {
-      executionId: uuid(),
-      pretrained,
-      nbShares,
-      parents
-    }
-    await client.stackClient.fetchJSON(
-      'POST',
-      node.contributionWebhook,
-      contributionBody
-    )
-    setIsWorking(false)
-  }, [node, client, nbShares, pretrained, setIsWorking])
 
-  return (
-    <div className="selected-single-node">
-      <div className="single-node-title">
-        {node && (node.label ? node.label : node.id)}
+    try {
+      // Create a tree with one contributor, nbShares aggregators and one finalizer
+      const treeStructure = [
+        {
+          numberOfNodes: 1,
+          mustInclude: [node.label]
+        },
+        {
+          numberOfNodes: nbShares
+        },
+        {
+          numberOfNodes: 1
+        }
+      ]
+      const contributors = createTree(treeStructure, [node], true)
+      const executionId = uuid()
+
+      for (const contributor of contributors) {
+        const contributionBody = {
+          ...contributor,
+          executionId,
+          pretrained,
+          nbShares,
+          useTiny: true
+        }
+        await new Promise(resolve => {
+          setTimeout(resolve, 1000)
+        })
+        await client.stackClient.fetchJSON(
+          'POST',
+          contributor.contributionWebhook,
+          contributionBody
+        )
+      }
+    } finally {
+      setIsWorking(false)
+    }
+  }, [client, node, nbShares, pretrained])
+
+  return isLoading ? (
+    <Spinner size="xxlarge" middle />
+  ) : (
+    <div className="card">
+      <div className="card-title">
+        <b>Single node aggregation</b>
       </div>
       <div>
-        <Label htmlFor="single-node-shares">Number of shares: </Label>
-        <Input
-          value={nbShares}
-          onChange={e => setNbShares(e.target.value)}
-          id="single-node-shares"
+        Performs the distributed aggregation protocol using different processes
+        of the same instance: the instance compute a local model, sends shares
+        to itself, aggregates them and then does the final aggregation.
+      </div>
+      <div>
+        <Label htmlFor="single-node-selector">
+          Select the node performing the execution:{' '}
+        </Label>
+        <SelectBox
+          id="single-node-selector"
+          options={options}
+          name="Select a node"
+          onChange={e => setSingleNode(e.value)}
         />
       </div>
-      <FormControlLabel
-        label="Use pretrained model?"
-        control={
-          <Switch
-            checked={pretrained}
-            onChange={() => setPretrained(old => !old)}
-            name="Use pretrained model?"
+      <div className="spacer-sm" />
+      <div className="selected-single-node">
+        <div>
+          <Label htmlFor="single-node-shares">Number of shares: </Label>
+          <Input
+            value={nbShares}
+            onChange={e => setNbShares(e.target.value)}
+            id="single-node-shares"
           />
-        }
-      />
-      <Button
-        className="todo-remove-button"
-        //theme="danger"
-        iconOnly
-        label="Launch execution"
-        busy={isWorking}
-        disabled={isWorking}
-        onClick={handleLaunchExecution}
-        extension="narrow"
-      >
-        Launch execution
-      </Button>
+        </div>
+        <FormControlLabel
+          label="Use pretrained model?"
+          control={
+            <Switch
+              checked={pretrained}
+              onChange={() => setPretrained(old => !old)}
+              name="Use pretrained model?"
+            />
+          }
+        />
+        <Button
+          className="todo-remove-button"
+          //theme="danger"
+          iconOnly
+          label="Launch execution"
+          busy={isWorking}
+          disabled={!node || isWorking}
+          onClick={handleLaunchExecution}
+          extension="narrow"
+        >
+          Launch execution
+        </Button>
+      </div>
     </div>
   )
 }

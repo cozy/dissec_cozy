@@ -22,9 +22,12 @@ export const receiveShares = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const { log } = createLogger(client.stackClient.uri.split('/')[2])
+  const domain = client.stackClient.uri.split('/')[2]
+  const { log } = createLogger(domain)
 
-  log('Received share')
+  log(
+    `Node ${domain} (AggID=${aggregatorId}) received a share for execution ${executionId}`
+  )
 
   // Download share using provided informations
   const sharedClient = new CozyClient({
@@ -105,10 +108,13 @@ export const receiveShares = async () => {
       .indexFields(['dir_id'])
   )
   const receivedShares = unfilteredFiles.filter(
-    file => file.attributes.metadata && file.attributes.metadata.level === level
+    file =>
+      file.attributes.metadata &&
+      file.attributes.metadata.level === level &&
+      file.attributes.metadata.aggregatorId === aggregatorId
   )
 
-  log('Already stored shares:', receivedShares.length)
+  log(`Already stored shares ${receivedShares.length}/${nbChild}`)
 
   if (receivedShares.length === nbChild) {
     log('Received the right amount of shares, starting!')

@@ -1,27 +1,20 @@
-import React, { useState, useCallback } from 'react'
-import { useClient } from 'cozy-client'
-
 import {
   Accordion,
+  AccordionDetails,
   AccordionSummary,
-  AccordionDetails
-} from '@material-ui/core'
-import {
   Divider,
   FormControl,
-  Select,
-  MenuItem,
   InputLabel,
+  MenuItem,
+  Select,
   TextField
 } from '@material-ui/core'
+import { useClient } from 'cozy-client'
+import React, { useCallback, useState } from 'react'
 
+import categories from 'assets/classes.json'
+import { capitalizeFirstLetter } from 'lib/utils'
 import OperationRemoveButton from './OperationRemoveButton'
-
-import categories from '../../assets/classes.json'
-
-const capitalizeFirstLetter = str => {
-  return str.charAt(0).toUpperCase() + str.substring(1, str.length)
-}
 
 export const Operation = ({ operation }) => {
   const client = useClient()
@@ -36,7 +29,7 @@ export const Operation = ({ operation }) => {
       setCategory(e.target.value)
       await client.save({
         ...operation,
-        cozyCategoryId: uncategorized ? undefined : e.target.value
+        manualCategoryId: uncategorized ? undefined : e.target.value
       })
     },
     [client, operation, setCategory]
@@ -47,7 +40,7 @@ export const Operation = ({ operation }) => {
       <AccordionSummary>
         <div className="operation-summary">
           <div className="operation-text">
-            <span>{operation.label}</span>
+            <h3 style={{ fontWeight: 'bold' }}>{operation.label}</h3>
             {operation.amount >= 0 ? (
               <span className="operation-gain">{operation.amount}€</span>
             ) : (

@@ -37,7 +37,12 @@ export const NodeUpload = () => {
 
   return (
     <div>
-      <h2>Upload a list of node:</h2>
+      <h2>Upload a list of node</h2>
+      <span>
+        Use this section to upload a list of nodes created by the population
+        scripts to this instance. Useful if this instance was not selected as
+        the supervisor during the population.
+      </span>
       <form className="node-form" onSubmit={e => e.preventDefault()}>
         <Label htmlFor="aggregation-input">JSON File:</Label>
         <FileInput hidden={false} onChange={handleFileChange} />

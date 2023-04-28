@@ -1,15 +1,14 @@
-import React, { useCallback, useState } from 'react'
-import { TextField, Switch, FormControlLabel } from '@material-ui/core'
-import Button from 'cozy-ui/react/Button'
+import { FormControlLabel, Switch } from '@material-ui/core'
 import { useClient } from 'cozy-client'
+import Button from 'cozy-ui/react/Button'
+import React, { useCallback, useState } from 'react'
 
-import { JOBS_DOCTYPE } from '../../doctypes/jobs'
+import { JOBS_DOCTYPE } from 'doctypes/jobs'
 
 export const Webhook = ({ hook, onUpdate }) => {
   const client = useClient()
 
   const [isWorking, setIsWorking] = useState(false)
-  const [input, setInput] = useState('')
   const [pretrained, setPretrained] = useState(true)
 
   let name = ''
@@ -53,13 +52,6 @@ export const Webhook = ({ hook, onUpdate }) => {
     setPretrained(!pretrained)
   }, [pretrained, setPretrained])
 
-  const handleLabelChange = useCallback(
-    async e => {
-      setInput(e.target.value)
-    },
-    [setInput]
-  )
-
   return (
     <div className="webhook">
       <div className="info-category">
@@ -79,18 +71,11 @@ export const Webhook = ({ hook, onUpdate }) => {
             }
           />
         </>
-      ) : name === 'aggregation' ? (
-        <></>
       ) : (
-        <>
-          <TextField
-            className="label"
-            label="Operation label"
-            variant="outlined"
-            value={input}
-            onChange={handleLabelChange}
-          />
-        </>
+        <b>
+          This webhook should not be called from the UI and is only here for
+          debugging purpose.
+        </b>
       )}
       <form>
         <div className="action-group">
