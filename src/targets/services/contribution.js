@@ -16,6 +16,7 @@ export const contribution = async () => {
     executionId,
     aggregatorId,
     useTiny,
+    supervisorWebhook,
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
@@ -25,7 +26,8 @@ export const contribution = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const { log } = createLogger(client.stackClient.uri.split('/')[2])
+  const domain = client.stackClient.uri.split('/')[2]
+  const { log } = createLogger(domain)
 
   const selector = filters.minOperationDate
     ? {
@@ -114,13 +116,22 @@ export const contribution = async () => {
       level: parents[i].level,
       aggregatorId: parents[i].aggregatorId,
       nbChild: parents[i].nbChild,
-      useTiny
+      useTiny,
+      supervisorWebhook
     })
     log(
       `Sent share ${Number(i) + 1} to aggregator ${
         parents[i].aggregationWebhook
       }`
     )
+  }
+
+  if (supervisorWebhook) {
+    // Send an observation to the supervisor
+    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+      executionId,
+      emitterDomain: domain
+    })
   }
 }
 

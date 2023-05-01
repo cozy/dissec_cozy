@@ -11,6 +11,7 @@ import { HashRouter, Redirect, Route, Switch } from 'react-router-dom'
 import Execution from './Execution'
 import Nodes from './Nodes'
 import Operations from './Operations'
+import Supervisor from './Supervisor'
 import Sidebar from './Sidebar'
 
 const App = () => {
@@ -27,6 +28,7 @@ const App = () => {
                 <Route path="/operations" component={Operations} />
                 <Route path="/execution" component={Execution} />
                 <Route path="/nodes" component={Nodes} />
+                <Route path="/supervisor" component={Supervisor} />
                 <Redirect from="/" to="/operations" />
                 <Redirect from="*" to="/operations" />
               </Switch>

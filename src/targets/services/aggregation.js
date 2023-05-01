@@ -10,7 +10,8 @@ global.fetch = require('node-fetch').default
 export const aggregation = async () => {
   const client = CozyClient.fromEnv(process.env, {})
 
-  const { log } = createLogger(client.stackClient.uri.split('/')[2])
+  const domain = client.stackClient.uri.split('/')[2]
+  const { log } = createLogger(domain)
 
   const jobId = process.env['COZY_JOB_ID'].split('/')[2]
 
@@ -27,7 +28,8 @@ export const aggregation = async () => {
     nbShares,
     parents,
     finalize,
-    useTiny
+    useTiny,
+    supervisorWebhook
   } = job.data.attributes.message.metadata
 
   // Aggregators only use one parent
@@ -118,6 +120,14 @@ export const aggregation = async () => {
       level: parent.level,
       aggregatorId: parent.aggregatorId,
       nbChild: parent.nbChild
+    })
+  }
+
+  if (supervisorWebhook) {
+    // Send an observation to the supervisor
+    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+      executionId,
+      emitterDomain: domain
     })
   }
 }

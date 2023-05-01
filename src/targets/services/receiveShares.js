@@ -17,7 +17,8 @@ export const receiveShares = async () => {
     aggregatorId,
     executionId,
     nbChild,
-    useTiny
+    useTiny,
+    supervisorWebhook
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
@@ -132,8 +133,17 @@ export const receiveShares = async () => {
         nbShares,
         parents,
         finalize,
-        useTiny
+        useTiny,
+        supervisorWebhook
       }
+    })
+  }
+
+  if (supervisorWebhook) {
+    // Send an observation to the supervisor
+    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+      executionId,
+      emitterDomain: domain
     })
   }
 }

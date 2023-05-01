@@ -2,6 +2,7 @@
   "Nav": {
     "operations": "Operations",
     "execution": "Execution",
-    "nodes": "Nodes"
+    "nodes": "Nodes",
+    "supervisor": "Supervisor"
   }
 }

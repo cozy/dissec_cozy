@@ -38,6 +38,11 @@
       "file": "services/categorize/dissecozy.js",
       "trigger": "@webhook"
     },
+    "observe": {
+      "type": "node",
+      "file": "services/observe/dissecozy.js",
+      "trigger": "@webhook"
+    },
     "deleteOldShares": {
       "type": "node",
       "file": "services/deleteOldShares/dissecozy.js",
@@ -80,9 +85,9 @@
       "type": "io.cozy.dissec.nodes",
       "verbs": ["ALL"]
     },
-    "dissec.performances": {
-      "description": "performances metrics and metadata",
-      "type": "io.cozy.dissec.performances",
+    "dissec.observations": {
+      "description": "Execution observation",
+      "type": "io.cozy.dissec.observations",
       "verbs": ["ALL"]
     },
     "dissecozy": {

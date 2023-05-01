@@ -5,41 +5,30 @@ import { NavLink } from 'react-router-dom'
 
 import NavIcon from 'assets/icons/icon-bullet-point.svg'
 
+const navItems = [
+  { to: '/operations', translation: 'Nav.operations' },
+  { to: '/execution', translation: 'Nav.execution' },
+  { to: '/nodes', translation: 'Nav.nodes' },
+  { to: '/supervisor', translation: 'Nav.supervisor' }
+]
+
 export const Sidebar = ({ t }) => {
   return (
     <aside className="o-sidebar">
       <nav>
         <ul className="c-nav">
-          <li className="c-nav-item">
-            <NavLink
-              to="/operations"
-              className="c-nav-link"
-              activeClassName="is-active"
-            >
-              <Icon className="c-nav-icon" icon={NavIcon} />
-              {t('Nav.operations')}
-            </NavLink>
-          </li>
-          <li className="c-nav-item">
-            <NavLink
-              to="/execution"
-              className="c-nav-link"
-              activeClassName="is-active"
-            >
-              <Icon className="c-nav-icon" icon={NavIcon} />
-              {t('Nav.execution')}
-            </NavLink>
-          </li>
-          <li className="c-nav-item">
-            <NavLink
-              to="/nodes"
-              className="c-nav-link"
-              activeClassName="is-active"
-            >
-              <Icon className="c-nav-icon" icon={NavIcon} />
-              {t('Nav.nodes')}
-            </NavLink>
-          </li>
+          {navItems.map(item => (
+            <li className="c-nav-item" key={item.to}>
+              <NavLink
+                to={item.to}
+                className="c-nav-link"
+                activeClassName="is-active"
+              >
+                <Icon className="c-nav-icon" icon={NavIcon} />
+                {t(item.translation)}
+              </NavLink>
+            </li>
+          ))}
         </ul>
       </nav>
     </aside>

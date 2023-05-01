@@ -1,7 +1,7 @@
 import { Q, fetchPolicies } from 'cozy-client'
 import {
   TRIGGERS_DOCTYPE,
-  PERFORMANCES_DOCTYPE,
+  OBSERVATIONS_DOCTYPE,
   SHARES_DOCTYPE,
   BANK_DOCTYPE,
   NODES_DOCTYPE,
@@ -47,10 +47,10 @@ export const modelsQuery = () => ({
   }
 })
 
-export const performancesQuery = () => ({
-  definition: Q(PERFORMANCES_DOCTYPE),
+export const observationsQuery = () => ({
+  definition: () => Q(OBSERVATIONS_DOCTYPE),
   options: {
-    as: `${PERFORMANCES_DOCTYPE}/type`
+    as: `${OBSERVATIONS_DOCTYPE}`
   }
 })
 
