@@ -6,7 +6,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import {
   SERVICE_CATEGORIZE,
   SERVICE_CONTRIBUTION,
-  SERVICE_RECEIVE_SHARES
+  SERVICE_RECEIVE_SHARES,
+  SERVICE_OBSERVE
 } from 'targets/services/helpers'
 import { webhooksQuery } from 'lib/queries'
 import FullAggregation from './FullAggregation.jsx'
@@ -40,7 +41,12 @@ export const Execution = () => {
 
     // Creating new ones
     await Promise.all(
-      [SERVICE_CATEGORIZE, SERVICE_CONTRIBUTION, SERVICE_RECEIVE_SHARES].map(
+      [
+        SERVICE_CATEGORIZE,
+        SERVICE_CONTRIBUTION,
+        SERVICE_RECEIVE_SHARES,
+        SERVICE_OBSERVE
+      ].map(
         async name =>
           await client.create('io.cozy.triggers', {
             type: '@webhook',
@@ -53,8 +59,11 @@ export const Execution = () => {
       )
     )
 
+    const { data } = await fetch()
+    setWebhooks(data)
+
     setIsWorking(false)
-  }, [client, webhooks])
+  }, [client, fetch, webhooks])
 
   return (
     <div className="todos">
