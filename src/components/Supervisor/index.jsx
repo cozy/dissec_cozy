@@ -84,7 +84,7 @@ export const Supervisor = () => {
             />
           </>
         ) : (
-          <h1 style={{ textAlign: 'center' }}>There are no observations yet</h1>
+          <h1 style={{ textAlign: 'center' }}>There is no observation yet</h1>
         )
       ) : null}
     </div>

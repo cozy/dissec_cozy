@@ -162,7 +162,7 @@ const populateInstances = async ({
   )
 
   // Upload webhooks on the supervisor instance
-  log('Updating the querier with fresh webhooks...')
+  log('Updating the supervisor with fresh webhooks...')
   const { stdout: token } = await exec(
     `cozy-stack instances token-app ${supervisingInstanceDomain} dissecozy`
   )
