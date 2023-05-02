@@ -2,7 +2,7 @@ global.fetch = require('node-fetch').default
 const fs = require('fs')
 const { default: CozyClient, Q } = require('cozy-client')
 
-const { NODES_DOCTYPE } = require('../src/doctypes/nodes')
+const { NODES_DOCTYPE } = require('../src/doctypes')
 
 const loadWebhooks = async (uri, token, outputFile) => {
   // Connect to the instance

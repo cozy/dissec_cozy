@@ -5,8 +5,8 @@ const { Q } = require('cozy-client')
 
 const createTree = require('../../src/lib/createTree')
 const getCategory = require('../../src/lib/getCategory')
-const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
-const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
+const { BANK_DOCTYPE } = require('../../src/doctypes')
+const { JOBS_DOCTYPE } = require('../../src/doctypes')
 const dissecConfig = require('../../dissec.config.json')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 

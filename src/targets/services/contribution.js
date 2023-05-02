@@ -2,7 +2,7 @@ import CozyClient, { Q } from 'cozy-client'
 import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
-import { BANK_DOCTYPE } from '../../doctypes'
+import { BANK_DOCTYPE } from 'doctypes'
 import { createLogger, getAppDirectory } from './helpers'
 import { Model } from './model'
 

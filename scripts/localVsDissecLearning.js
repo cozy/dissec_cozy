@@ -1,7 +1,7 @@
 global.fetch = require('node-fetch').default
 const { Q } = require('cozy-client')
 const { execSync } = require('child_process')
-const { BANK_DOCTYPE } = require('../src/doctypes/bank')
+const { BANK_DOCTYPE } = require('../src/doctypes')
 const getClient = require('../src/lib/getClient')
 const { createLogger } = require('../src/targets/services/helpers/utils')
 const localLearning = require('./learning/localLearning')

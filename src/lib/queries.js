@@ -5,9 +5,9 @@ import {
   SHARES_DOCTYPE,
   BANK_DOCTYPE,
   NODES_DOCTYPE,
-  MODELS_DOCTYPE
-} from '../doctypes'
-import { JOBS_DOCTYPE } from '../doctypes/jobs'
+  MODELS_DOCTYPE,
+  JOBS_DOCTYPE
+} from 'doctypes'
 
 const defaultFetchPolicy = fetchPolicies.olderThan(86_400_000) // 24 hours
 

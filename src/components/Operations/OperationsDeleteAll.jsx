@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { useClient } from 'cozy-client'
 
 import Button from 'cozy-ui/react/Button'
-import { BANK_DOCTYPE } from 'doctypes/bank'
+import { BANK_DOCTYPE } from 'doctypes'
 
 export const OperationsDeleteAll = props => {
   const client = useClient()

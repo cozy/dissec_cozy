@@ -2,8 +2,8 @@ global.fetch = require('node-fetch').default
 const { Q } = require('cozy-client')
 
 const getCategory = require('../../src/lib/getCategory')
-const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
-const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
+const { BANK_DOCTYPE } = require('../../src/doctypes')
+const { JOBS_DOCTYPE } = require('../../src/doctypes')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 /**
