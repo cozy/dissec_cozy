@@ -14,7 +14,7 @@ export const receiveShares = async () => {
     parents,
     finalize,
     level,
-    aggregatorId,
+    nodeId,
     executionId,
     nbChild,
     useTiny,
@@ -27,7 +27,7 @@ export const receiveShares = async () => {
   const { log } = createLogger(domain)
 
   log(
-    `Node ${domain} (AggID=${aggregatorId}) received a share for execution ${executionId}`
+    `Node ${domain} (NodeID=${nodeId}) received a share for execution ${executionId}`
   )
 
   // Download share using provided informations
@@ -82,11 +82,11 @@ export const receiveShares = async () => {
     type: 'file',
     data: share,
     dirId: aggregationDirectory._id,
-    name: `aggregator_${aggregatorId}_level_${level}_${sharecode}`,
+    name: `aggregator_${nodeId}_level_${level}_${sharecode}`,
     metadata: {
       dissec: true,
       executionId,
-      aggregatorId,
+      nodeId,
       level,
       nbShares,
       parents,
@@ -112,7 +112,7 @@ export const receiveShares = async () => {
     file =>
       file.attributes.metadata &&
       file.attributes.metadata.level === level &&
-      file.attributes.metadata.aggregatorId === aggregatorId
+      file.attributes.metadata.nodeId === nodeId
   )
 
   log(`Already stored shares ${receivedShares.length}/${nbChild}`)
@@ -128,7 +128,7 @@ export const receiveShares = async () => {
         aggregationDirectoryId: aggregationDirectory._id,
         dissec: true,
         executionId,
-        aggregatorId,
+        nodeId,
         level,
         nbShares,
         parents,
@@ -143,8 +143,17 @@ export const receiveShares = async () => {
     // Send an observation to the supervisor
     await client.stackClient.fetchJSON('POST', supervisorWebhook, {
       executionId,
-      emitterDomain: domain
+      action: 'receiveShare',
+      emitterDomain: domain,
+      emitterId: nodeId,
+      receiverDomain: domain,
+      receiverId: nodeId,
+      payload: {
+        continueAggregation: receivedShares.length === nbChild
+      }
     })
+
+    log(`Sent an observation to ${supervisorWebhook}`)
   }
 }
 

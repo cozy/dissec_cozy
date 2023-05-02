@@ -53,7 +53,7 @@ const createTree = (treeStructure, nodesWebhooks, allowReuse = true) => {
               ? treeStructure[j + 1].numberOfNodes
               : 0,
           parents: j > 0 ? lastLevel : undefined,
-          aggregatorId: uuid(),
+          nodeId: uuid(),
           finalize: j === 0
         })
 
@@ -73,7 +73,7 @@ const createTree = (treeStructure, nodesWebhooks, allowReuse = true) => {
               ? treeStructure[j + 1].numberOfNodes
               : 0,
           parents: j > 0 ? lastLevel : undefined,
-          aggregatorId: uuid(),
+          nodeId: uuid(),
           finalize: j === 0
         })
 

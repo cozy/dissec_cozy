@@ -14,7 +14,7 @@ export const contribution = async () => {
     nbShares,
     pretrained,
     executionId,
-    aggregatorId,
+    nodeId,
     useTiny,
     supervisorWebhook,
     filters = {}
@@ -74,7 +74,7 @@ export const contribution = async () => {
   for (let i in shares) {
     const { data: file } = await client.create('io.cozy.files', {
       type: 'file',
-      name: `contribution_${i}_${aggregatorId}`,
+      name: `contribution_${i}_${nodeId}`,
       dirId: aggregationDirectoryId,
       data: shares[i]
     })
@@ -104,8 +104,8 @@ export const contribution = async () => {
     await new Promise(resolve =>
       setTimeout(resolve, 2000 * (1 + Math.random()))
     )
-    // TODO: Launch the webhook without using fetchJSON
-    await client.stackClient.fetchJSON('POST', parents[i].aggregationWebhook, {
+
+    const payload = {
       executionId,
       docId: files[i],
       sharecode: shareCodes[i],
@@ -114,24 +114,41 @@ export const contribution = async () => {
       parents: parents[i].parents,
       finalize: parents[i].finalize,
       level: parents[i].level,
-      aggregatorId: parents[i].aggregatorId,
+      nodeId: parents[i].nodeId,
       nbChild: parents[i].nbChild,
       useTiny,
       supervisorWebhook
-    })
+    }
+
+    // TODO: Launch the webhook without using fetchJSON
+    await client.stackClient.fetchJSON(
+      'POST',
+      parents[i].aggregationWebhook,
+      payload
+    )
+
+    if (supervisorWebhook) {
+      // Send an observation to the supervisor
+      await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+        executionId,
+        action: 'contribution',
+        emitterDomain: domain,
+        emitterId: nodeId,
+        receiverDomain: parents[i].aggregationWebhook
+          .split('/')
+          .find(e => e.includes('localhost:8080')),
+        receiverId: parents[i].nodeId,
+        payload
+      })
+
+      log(`Sent an observation to ${supervisorWebhook}`)
+    }
+
     log(
       `Sent share ${Number(i) + 1} to aggregator ${
         parents[i].aggregationWebhook
       }`
     )
-  }
-
-  if (supervisorWebhook) {
-    // Send an observation to the supervisor
-    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
-      executionId,
-      emitterDomain: domain
-    })
   }
 }
 

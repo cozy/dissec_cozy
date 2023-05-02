@@ -1,7 +1,7 @@
 global.fetch = require('node-fetch').default
 
-import CozyClient, { Q } from 'cozy-client'
-import { OBSERVATIONS_DOCTYPE, JOBS_DOCTYPE } from 'doctypes'
+import CozyClient from 'cozy-client'
+import { OBSERVATIONS_DOCTYPE } from 'doctypes'
 import { createLogger } from './helpers'
 
 export const observe = async () => {
@@ -9,16 +9,12 @@ export const observe = async () => {
 
   const { log } = createLogger(client.stackClient.uri.split('/')[2])
 
-  // Fetching parameters (if any) from the jobs
-  const { data: job } = await client.query(
-    Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2])
+  log(`Received an observation from node`)
+
+  await client.create(
+    OBSERVATIONS_DOCTYPE,
+    JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
   )
-
-  const { executionId, emitterDomain } = job.attributes.message
-
-  log(`Received an observation from node ${emitterDomain}`)
-
-  await client.create(OBSERVATIONS_DOCTYPE, job.attributes.message)
 }
 
 observe().catch(e => {
