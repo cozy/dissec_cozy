@@ -67,7 +67,11 @@ export const Execution = () => {
 
   return (
     <div className="todos">
-      <FullAggregation />
+      <FullAggregation
+        supervisorWebhook={
+          webhooks?.find(e => e.message.name === 'observe')?.links.webhook
+        }
+      />
       <SingleNodeAggregation />
       {webhooks &&
         webhooks.map(hook => (

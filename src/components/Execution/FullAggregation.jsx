@@ -8,7 +8,7 @@ import Input from 'cozy-ui/react/Input/index.jsx'
 import createTree from 'lib/createTreeExported.js'
 import { nodesQuery } from 'lib/queries.js'
 
-const FullAggregation = () => {
+const FullAggregation = ({ supervisorWebhook }) => {
   const client = useClient()
   const query = nodesQuery()
   const { isLoading, fetch } = useQuery(query.definition, query.options)
@@ -51,7 +51,8 @@ const FullAggregation = () => {
           executionId,
           pretrained: false,
           nbShares,
-          useTiny: true
+          useTiny: true,
+          supervisorWebhook
         }
         await new Promise(resolve => {
           setTimeout(resolve, 1000)
@@ -65,7 +66,7 @@ const FullAggregation = () => {
     } finally {
       setIsWorking(false)
     }
-  }, [nbShares, nbContributors, nodes, client.stackClient])
+  }, [nbShares, nbContributors, nodes, supervisorWebhook, client.stackClient])
 
   return isLoading ? (
     <Spinner size="xxlarge" middle />

@@ -30,6 +30,16 @@ export const Webhook = ({ hook, onUpdate }) => {
         name: 'categorize',
         pretrained: pretrained
       })
+    } else if (name === 'observe') {
+      await client.stackClient.fetchJSON('POST', hook.links.webhook, {
+        executionId: 'self-send',
+        action: 'contribution',
+        emitterDomain: 'test_emitter',
+        emitterId: 'test_emitter',
+        receiverDomain: 'test_receiver',
+        receiverId: 'test_receiver',
+        payload: { finished: true }
+      })
     } else {
       try {
         await client.stackClient.fetchJSON('POST', hook.links.webhook, body)
