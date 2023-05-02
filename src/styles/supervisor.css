@@ -1,0 +1,53 @@
+.execution-group-container {
+  display: flex;
+  flex-direction: column;
+  background: #F5F6F7;
+  margin: auto;
+  padding: 10px;
+  max-width: 80%;
+  align-items: center;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.execution-group {
+  display: flex;
+  flex-direction: column;
+  background: #F5F6F7;
+  width: -webkit-fill-available;
+  align-items: center;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 4px;
+}
+
+.execution-group > .MuiCollapse-root {
+  width: inherit;
+}
+
+.execution-summary {
+  width: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.execution-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  width: -webkit-fill-available;
+  gap: 1rem;
+  margin: auto;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 4px;
+}
+
+.observation {
+  width: inherit;
+  padding: 0.2rem;
+  background: #F5F6F7;
+}

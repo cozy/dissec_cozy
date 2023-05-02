@@ -1,15 +1,20 @@
 import React from 'react'
 
 export const Observation = ({ observation }) => {
-  const { id, name } = observation
+  const displayedKeys = ['action', 'emitterDomain', 'receiverDomain']
 
   return (
-    <div className="webhook">
-      <div className="info-category">
-        <b>{id}</b>
+    <>
+      <div className="observation">
+        <ul>
+          {displayedKeys.map(key => (
+            <li key={key}>
+              {key}: {observation[key] || '???'}
+            </li>
+          ))}
+        </ul>
       </div>
-      <div className="webhook-url">{name}</div>
-    </div>
+    </>
   )
 }
 
