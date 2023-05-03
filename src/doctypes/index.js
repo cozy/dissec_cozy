@@ -1,4 +1,4 @@
-export const BANK_DOCTYPE = 'io.cozy.bank.operations'
+export const BANK_OPERATIONS_DOCTYPE = 'io.cozy.bank.operations'
 export const JOBS_DOCTYPE = 'io.cozy.jobs'
 export const MODELS_DOCTYPE = 'io.cozy.dissec.models'
 export const NODES_DOCTYPE = 'io.cozy.dissec.nodes'
@@ -9,7 +9,7 @@ export const TRIGGERS_DOCTYPE = 'io.cozy.triggers'
 // the documents schema, necessary for CozyClient
 export default {
   bank: {
-    doctype: BANK_DOCTYPE,
+    doctype: BANK_OPERATIONS_DOCTYPE,
     attributes: {},
     relationships: {}
   },

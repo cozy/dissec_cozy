@@ -1,35 +1,25 @@
 import { Q, fetchPolicies } from 'cozy-client'
 import {
   TRIGGERS_DOCTYPE,
-  OBSERVATIONS_DOCTYPE,
-  SHARES_DOCTYPE,
-  BANK_DOCTYPE,
+  BANK_OPERATIONS_DOCTYPE,
   NODES_DOCTYPE,
-  MODELS_DOCTYPE,
-  JOBS_DOCTYPE
-} from 'doctypes'
+  OBSERVATIONS_DOCTYPE
+} from '../doctypes'
 
 const defaultFetchPolicy = fetchPolicies.olderThan(86_400_000) // 24 hours
 
 export const webhooksQuery = () => ({
   definition: () => Q(TRIGGERS_DOCTYPE).where({ type: '@webhook' }),
   options: {
-    as: `${TRIGGERS_DOCTYPE}`,
+    as: `${TRIGGERS_DOCTYPE}/webhook`,
     fetchPolicy: defaultFetchPolicy
   }
 })
 
-export const bankQuery = () => ({
-  definition: () => Q(BANK_DOCTYPE),
+export const bankOperationsQuery = () => ({
+  definition: () => Q(BANK_OPERATIONS_DOCTYPE),
   options: {
-    as: `${BANK_DOCTYPE}`
-  }
-})
-
-export const jobsQuery = () => ({
-  definition: Q(JOBS_DOCTYPE),
-  options: {
-    as: `${JOBS_DOCTYPE}/type`
+    as: `${BANK_OPERATIONS_DOCTYPE}`
   }
 })
 
@@ -40,23 +30,9 @@ export const nodesQuery = () => ({
   }
 })
 
-export const modelsQuery = () => ({
-  definition: Q(MODELS_DOCTYPE),
-  options: {
-    as: `${MODELS_DOCTYPE}/type`
-  }
-})
-
 export const observationsQuery = () => ({
   definition: () => Q(OBSERVATIONS_DOCTYPE),
   options: {
     as: `${OBSERVATIONS_DOCTYPE}`
-  }
-})
-
-export const sharesQuery = () => ({
-  definition: Q(SHARES_DOCTYPE),
-  options: {
-    as: `${SHARES_DOCTYPE}/type`
   }
 })
