@@ -1,6 +1,6 @@
 import CozyClient, { Q } from 'cozy-client'
 
-import { createLogger, getAppDirectory } from './helpers'
+import { createLogger, getOrCreateAppDirectory } from './helpers'
 
 global.fetch = require('node-fetch').default
 
@@ -53,7 +53,7 @@ export const receiveShares = async () => {
     .fetchFileContentById(docId)
   const share = await response.text()
 
-  const appDirectory = await getAppDirectory(client)
+  const appDirectory = await getOrCreateAppDirectory(client)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution

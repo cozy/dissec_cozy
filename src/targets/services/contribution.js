@@ -3,7 +3,7 @@ import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
 import { BANK_DOCTYPE } from 'doctypes'
-import { createLogger, getAppDirectory } from './helpers'
+import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
 
 global.fetch = require('node-fetch').default
@@ -57,7 +57,7 @@ export const contribution = async () => {
     model = await Model.fromDocs(operations, { useTiny: true })
   }
 
-  const appDirectory = await getAppDirectory(client)
+  const appDirectory = await getOrCreateAppDirectory(client)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
