@@ -10,7 +10,8 @@ global.fetch = require('node-fetch').default
 export const aggregation = async () => {
   const client = CozyClient.fromEnv(process.env, {})
 
-  const { log } = createLogger(client.stackClient.uri.split('/')[2])
+  const domain = client.stackClient.uri.split('/')[2]
+  const { log } = createLogger(domain)
 
   const jobId = process.env['COZY_JOB_ID'].split('/')[2]
 
@@ -22,12 +23,13 @@ export const aggregation = async () => {
   const {
     aggregationDirectoryId,
     executionId,
-    aggregatorId,
+    nodeId,
     level,
     nbShares,
     parents,
     finalize,
-    useTiny
+    useTiny,
+    supervisorWebhook
   } = job.data.attributes.message.metadata
 
   // Aggregators only use one parent
@@ -75,6 +77,21 @@ export const aggregation = async () => {
       model.getCompressedAggregate()
     )
     log('Model has been written to the disk')
+
+    if (supervisorWebhook) {
+      // Send an observation to the supervisor
+      await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+        executionId,
+        action: 'aggregation',
+        emitterDomain: domain,
+        emitterId: nodeId,
+        receiverDomain: domain,
+        receiverId: nodeId,
+        payload: { finished: true }
+      })
+
+      log(`Sent final observation to ${supervisorWebhook}`)
+    }
   } else {
     // Only using the first parent for aggregators
     const parent = parents[0]
@@ -82,7 +99,7 @@ export const aggregation = async () => {
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {
       type: 'file',
-      name: `aggregator${aggregatorId}_level${level}_aggregate${aggregatorId}`,
+      name: `aggregator${nodeId}_level${level}_aggregate${nodeId}`,
       dirId: aggregationDirectoryId,
       data: model.getCompressedAggregate()
     })
@@ -91,7 +108,7 @@ export const aggregation = async () => {
 
     // Generate share code
     const { data: sharing } = await client.create('io.cozy.permissions', {
-      codes: `parent${aggregatorId}`,
+      codes: `parent${nodeId}`,
       ttl: '1h',
       permissions: {
         shares: {
@@ -101,13 +118,12 @@ export const aggregation = async () => {
         }
       }
     })
-    const shareCode = sharing.attributes.shortcodes[`parent${aggregatorId}`]
+    const shareCode = sharing.attributes.shortcodes[`parent${nodeId}`]
 
     log('Sharing code is', shareCode, 'sent to', parent.aggregationWebhook)
 
     // Call parent's receiving webhook to send the aggregate
-    // TODO: Callwebhook without using fetchJSON
-    await client.stackClient.fetchJSON('POST', parent.aggregationWebhook, {
+    const payload = {
       executionId,
       docId: aggregate.id,
       sharecode: shareCode,
@@ -116,9 +132,33 @@ export const aggregation = async () => {
       parents: parent.parents,
       finalize: parent.finalize,
       level: parent.level,
-      aggregatorId: parent.aggregatorId,
-      nbChild: parent.nbChild
-    })
+      nodeId: parent.nodeId,
+      nbChild: parent.nbChild,
+      supervisorWebhook
+    }
+    // TODO: Callwebhook without using fetchJSON
+    await client.stackClient.fetchJSON(
+      'POST',
+      parent.aggregationWebhook,
+      payload
+    )
+
+    if (supervisorWebhook) {
+      // Send an observation to the supervisor
+      await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+        executionId,
+        action: 'aggregation',
+        emitterDomain: domain,
+        emitterId: nodeId,
+        receiverDomain: parent.aggregationWebhook
+          .split('/')
+          .find(e => e.includes('localhost:8080')),
+        receiverId: parent.nodeId,
+        payload: payload
+      })
+
+      log(`Sent an observation to ${supervisorWebhook}`)
+    }
   }
 }
 

@@ -7,6 +7,7 @@ export const SERVICE_CONTRIBUTION = 'contribution'
 export const SERVICE_CATEGORIZE = 'categorize'
 export const SERVICE_AGGREGATION = 'aggregation'
 export const SERVICE_RECEIVE_SHARES = 'receiveShares'
+export const SERVICE_OBSERVE = 'observe'
 
 export { createLogger } from './utils'
 export * from './files'

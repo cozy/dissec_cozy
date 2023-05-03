@@ -1,13 +1,13 @@
 import { Q, fetchPolicies } from 'cozy-client'
 import {
   TRIGGERS_DOCTYPE,
-  PERFORMANCES_DOCTYPE,
+  OBSERVATIONS_DOCTYPE,
   SHARES_DOCTYPE,
   BANK_DOCTYPE,
   NODES_DOCTYPE,
-  MODELS_DOCTYPE
-} from '../doctypes'
-import { JOBS_DOCTYPE } from '../doctypes/jobs'
+  MODELS_DOCTYPE,
+  JOBS_DOCTYPE
+} from 'doctypes'
 
 const defaultFetchPolicy = fetchPolicies.olderThan(86_400_000) // 24 hours
 
@@ -47,10 +47,10 @@ export const modelsQuery = () => ({
   }
 })
 
-export const performancesQuery = () => ({
-  definition: Q(PERFORMANCES_DOCTYPE),
+export const observationsQuery = () => ({
+  definition: () => Q(OBSERVATIONS_DOCTYPE),
   options: {
-    as: `${PERFORMANCES_DOCTYPE}/type`
+    as: `${OBSERVATIONS_DOCTYPE}`
   }
 })
 

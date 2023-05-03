@@ -1,7 +1,7 @@
 import CozyClient, { Q } from 'cozy-client'
 
 import config from '../../../dissec.config.json'
-import { deleteFilesById, getAppDirectory } from './helpers'
+import { deleteFilesById, getOrCreateAppDirectory } from './helpers'
 
 global.fetch = require('node-fetch').default
 
@@ -10,7 +10,7 @@ global.fetch = require('node-fetch').default
  */
 export const deleteOldShares = async () => {
   const client = CozyClient.fromEnv(process.env, {})
-  const appDirectory = await getAppDirectory(client)
+  const appDirectory = await getOrCreateAppDirectory(client)
 
   const { data: unfilteredFiles } = await client.query(
     Q('io.cozy.files')

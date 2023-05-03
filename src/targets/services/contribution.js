@@ -2,8 +2,8 @@ import CozyClient, { Q } from 'cozy-client'
 import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
-import { BANK_DOCTYPE } from '../../doctypes'
-import { createLogger, getAppDirectory } from './helpers'
+import { BANK_DOCTYPE } from 'doctypes'
+import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
 
 global.fetch = require('node-fetch').default
@@ -14,8 +14,9 @@ export const contribution = async () => {
     nbShares,
     pretrained,
     executionId,
-    aggregatorId,
+    nodeId,
     useTiny,
+    supervisorWebhook,
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
@@ -25,7 +26,8 @@ export const contribution = async () => {
 
   const client = CozyClient.fromEnv(process.env, {})
 
-  const { log } = createLogger(client.stackClient.uri.split('/')[2])
+  const domain = client.stackClient.uri.split('/')[2]
+  const { log } = createLogger(domain)
 
   const selector = filters.minOperationDate
     ? {
@@ -55,7 +57,7 @@ export const contribution = async () => {
     model = await Model.fromDocs(operations, { useTiny: true })
   }
 
-  const appDirectory = await getAppDirectory(client)
+  const appDirectory = await getOrCreateAppDirectory(client)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
@@ -72,7 +74,7 @@ export const contribution = async () => {
   for (let i in shares) {
     const { data: file } = await client.create('io.cozy.files', {
       type: 'file',
-      name: `contribution_${i}_${aggregatorId}`,
+      name: `contribution_${i}_${nodeId}`,
       dirId: aggregationDirectoryId,
       data: shares[i]
     })
@@ -102,8 +104,8 @@ export const contribution = async () => {
     await new Promise(resolve =>
       setTimeout(resolve, 2000 * (1 + Math.random()))
     )
-    // TODO: Launch the webhook without using fetchJSON
-    await client.stackClient.fetchJSON('POST', parents[i].aggregationWebhook, {
+
+    const payload = {
       executionId,
       docId: files[i],
       sharecode: shareCodes[i],
@@ -112,10 +114,36 @@ export const contribution = async () => {
       parents: parents[i].parents,
       finalize: parents[i].finalize,
       level: parents[i].level,
-      aggregatorId: parents[i].aggregatorId,
+      nodeId: parents[i].nodeId,
       nbChild: parents[i].nbChild,
-      useTiny
-    })
+      useTiny,
+      supervisorWebhook
+    }
+
+    // TODO: Launch the webhook without using fetchJSON
+    await client.stackClient.fetchJSON(
+      'POST',
+      parents[i].aggregationWebhook,
+      payload
+    )
+
+    if (supervisorWebhook) {
+      // Send an observation to the supervisor
+      await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+        executionId,
+        action: 'contribution',
+        emitterDomain: domain,
+        emitterId: nodeId,
+        receiverDomain: parents[i].aggregationWebhook
+          .split('/')
+          .find(e => e.includes('localhost:8080')),
+        receiverId: parents[i].nodeId,
+        payload
+      })
+
+      log(`Sent an observation to ${supervisorWebhook}`)
+    }
+
     log(
       `Sent share ${Number(i) + 1} to aggregator ${
         parents[i].aggregationWebhook

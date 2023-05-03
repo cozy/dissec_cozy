@@ -3,7 +3,7 @@ import { useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import React, { useCallback, useState } from 'react'
 
-import { JOBS_DOCTYPE } from 'doctypes/jobs'
+import { JOBS_DOCTYPE } from 'doctypes'
 
 export const Webhook = ({ hook, onUpdate }) => {
   const client = useClient()
@@ -29,6 +29,16 @@ export const Webhook = ({ hook, onUpdate }) => {
         slug: 'dissecozy',
         name: 'categorize',
         pretrained: pretrained
+      })
+    } else if (name === 'observe') {
+      await client.stackClient.fetchJSON('POST', hook.links.webhook, {
+        executionId: 'self-send',
+        action: 'contribution',
+        emitterDomain: 'test_emitter',
+        emitterId: 'test_emitter',
+        receiverDomain: 'test_receiver',
+        receiverId: 'test_receiver',
+        payload: { finished: true }
       })
     } else {
       try {

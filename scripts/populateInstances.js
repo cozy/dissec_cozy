@@ -140,10 +140,36 @@ const populateInstances = async ({
   )
 
   // Write fetched webhooks to the disk
+  // TODO: Handle non existing folder
+  const parts = outputWebhooksPath.split('/')
+  parts.pop()
+  const dir = parts.join('/')
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
   fs.writeFileSync(outputWebhooksPath, JSON.stringify(webhooks, null, 2))
 
-  // Upload webhooks on the coordinating instance
-  log('Updating the querier with fresh webhooks...')
+  // Create the supervisor instance
+  log('Destroying instance', supervisingInstanceDomain)
+  try {
+    await exec(
+      `cozy-stack instances destroy ${supervisingInstanceDomain} --force`
+    )
+  } catch (err) {
+    log('Instance does not exist')
+  }
+  await exec(
+    `cozy-stack instances add --apps drive,photos ${supervisingInstanceDomain} --passphrase cozy`
+  )
+  await exec(
+    `cozy-stack instances modify ${supervisingInstanceDomain} --onboarding-finished`
+  )
+  await exec(
+    `cozy-stack apps install --domain ${supervisingInstanceDomain} dissecozy file://${process.cwd()}/build/`
+  )
+
+  // Upload webhooks on the supervisor instance
+  log('Updating the supervisor with fresh webhooks...')
   const { stdout: token } = await exec(
     `cozy-stack instances token-app ${supervisingInstanceDomain} dissecozy`
   )

@@ -5,10 +5,12 @@ const { Q } = require('cozy-client')
 
 const createTree = require('../../src/lib/createTree')
 const getCategory = require('../../src/lib/getCategory')
-const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
-const { JOBS_DOCTYPE } = require('../../src/doctypes/jobs')
 const dissecConfig = require('../../dissec.config.json')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
+
+// FIXME: export doc type for CommonJS
+const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const JOBS_DOCTYPE = 'io.cozy.jobs'
 
 /**
  * @typedef TreeLevelDescriptor

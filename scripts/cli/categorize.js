@@ -1,10 +1,12 @@
 const { program } = require('commander')
 const { Q } = require('cozy-client')
 const { execSync } = require('child_process')
-const { BANK_DOCTYPE } = require('../../src/doctypes/bank')
 const getClient = require('../../src/lib/getClient')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 const localLearning = require('../learning/localLearning')
+
+// FIXME: export doc type for CommonJS
+const BANK_DOCTYPE = 'io.cozy.bank.operations'
 
 program
   .option(

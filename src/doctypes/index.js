@@ -1,7 +1,10 @@
-import { BANK_DOCTYPE } from './bank'
-import { NODES_DOCTYPE } from './nodes'
-import { SHARES_DOCTYPE } from './shares'
-import { MODELS_DOCTYPE } from './models'
+export const BANK_DOCTYPE = 'io.cozy.bank.operations'
+export const JOBS_DOCTYPE = 'io.cozy.jobs'
+export const MODELS_DOCTYPE = 'io.cozy.dissec.models'
+export const NODES_DOCTYPE = 'io.cozy.dissec.nodes'
+export const OBSERVATIONS_DOCTYPE = 'io.cozy.dissec.observations'
+export const SHARES_DOCTYPE = 'io.cozy.dissec.shares'
+export const TRIGGERS_DOCTYPE = 'io.cozy.triggers'
 
 // the documents schema, necessary for CozyClient
 export default {
@@ -26,10 +29,3 @@ export default {
     relationships: {}
   }
 }
-
-// export all doctypes for the application
-export * from './bank'
-export * from './nodes'
-export * from './shares'
-export * from './models'
-export * from './triggers'

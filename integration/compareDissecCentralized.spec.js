@@ -6,7 +6,7 @@ const populateInstances = require('../scripts/populateInstances')
 const dissecLearning = require('../scripts/learning/dissecLearning')
 const localLearning = require('../scripts/learning/localLearning')
 const getClient = require('../src/lib/getClient')
-const { BANK_DOCTYPE } = require('../src/doctypes/bank')
+const { BANK_DOCTYPE } = require('../src/doctypes')
 const { createLogger } = require('../src/targets/services/helpers')
 
 // NOTE: This assumes that the current classes and vocabulary

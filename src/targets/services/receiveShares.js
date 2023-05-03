@@ -1,6 +1,6 @@
 import CozyClient, { Q } from 'cozy-client'
 
-import { createLogger, getAppDirectory } from './helpers'
+import { createLogger, getOrCreateAppDirectory } from './helpers'
 
 global.fetch = require('node-fetch').default
 
@@ -14,10 +14,11 @@ export const receiveShares = async () => {
     parents,
     finalize,
     level,
-    aggregatorId,
+    nodeId,
     executionId,
     nbChild,
-    useTiny
+    useTiny,
+    supervisorWebhook
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
   const client = CozyClient.fromEnv(process.env, {})
@@ -26,7 +27,7 @@ export const receiveShares = async () => {
   const { log } = createLogger(domain)
 
   log(
-    `Node ${domain} (AggID=${aggregatorId}) received a share for execution ${executionId}`
+    `Node ${domain} (NodeID=${nodeId}) received a share for execution ${executionId}`
   )
 
   // Download share using provided informations
@@ -52,7 +53,7 @@ export const receiveShares = async () => {
     .fetchFileContentById(docId)
   const share = await response.text()
 
-  const appDirectory = await getAppDirectory(client)
+  const appDirectory = await getOrCreateAppDirectory(client)
 
   // Create a directory specifically for this aggregation
   // This prevents mixing shares from different execution
@@ -81,11 +82,11 @@ export const receiveShares = async () => {
     type: 'file',
     data: share,
     dirId: aggregationDirectory._id,
-    name: `aggregator_${aggregatorId}_level_${level}_${sharecode}`,
+    name: `aggregator_${nodeId}_level_${level}_${sharecode}`,
     metadata: {
       dissec: true,
       executionId,
-      aggregatorId,
+      nodeId,
       level,
       nbShares,
       parents,
@@ -111,7 +112,7 @@ export const receiveShares = async () => {
     file =>
       file.attributes.metadata &&
       file.attributes.metadata.level === level &&
-      file.attributes.metadata.aggregatorId === aggregatorId
+      file.attributes.metadata.nodeId === nodeId
   )
 
   log(`Already stored shares ${receivedShares.length}/${nbChild}`)
@@ -127,14 +128,32 @@ export const receiveShares = async () => {
         aggregationDirectoryId: aggregationDirectory._id,
         dissec: true,
         executionId,
-        aggregatorId,
+        nodeId,
         level,
         nbShares,
         parents,
         finalize,
-        useTiny
+        useTiny,
+        supervisorWebhook
       }
     })
+  }
+
+  if (supervisorWebhook) {
+    // Send an observation to the supervisor
+    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+      executionId,
+      action: 'receiveShare',
+      emitterDomain: domain,
+      emitterId: nodeId,
+      receiverDomain: domain,
+      receiverId: nodeId,
+      payload: {
+        continueAggregation: receivedShares.length === nbChild
+      }
+    })
+
+    log(`Sent an observation to ${supervisorWebhook}`)
   }
 }
 
