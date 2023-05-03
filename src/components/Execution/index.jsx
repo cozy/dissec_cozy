@@ -1,4 +1,4 @@
-import { useClient, useQuery } from 'cozy-client'
+import { useClient, useQueryAll } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
 import React, { useCallback, useState } from 'react'
@@ -17,7 +17,7 @@ import Webhook from './Webhook'
 export const Execution = () => {
   const client = useClient()
   const query = webhooksQuery()
-  const { data: webhooks } = useQuery(query.definition, query.options)
+  const { data: webhooks } = useQueryAll(query.definition, query.options)
   const [isWorking, setIsWorking] = useState(false)
 
   const resetWebhooks = useCallback(async () => {

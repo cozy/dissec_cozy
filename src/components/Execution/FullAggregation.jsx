@@ -1,4 +1,4 @@
-import { useClient, useQuery } from 'cozy-client'
+import { useClient, useQueryAll } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
 import React, { useCallback, useState } from 'react'
@@ -11,7 +11,10 @@ import { nodesQuery } from 'lib/queries.js'
 const FullAggregation = ({ supervisorWebhook }) => {
   const client = useClient()
   const query = nodesQuery()
-  const { isLoading, data: nodes } = useQuery(query.definition, query.options)
+  const { isLoading, data: nodes } = useQueryAll(
+    query.definition,
+    query.options
+  )
   const [nbShares, setNbShares] = useState(2)
   const [nbContributors, setNbContributors] = useState(2)
   const [isWorking, setIsWorking] = useState(false)

@@ -1,5 +1,5 @@
 import { FormControlLabel, Switch } from '@material-ui/core'
-import { useClient, useQuery } from 'cozy-client'
+import { useClient, useQueryAll } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
@@ -13,7 +13,10 @@ import { nodesQuery } from 'lib/queries'
 const SingleNodeAggregation = () => {
   const client = useClient()
   const query = nodesQuery()
-  const { data: nodes, isLoading } = useQuery(query.definition, query.options)
+  const { data: nodes, isLoading } = useQueryAll(
+    query.definition,
+    query.options
+  )
   const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
   const [node, setSingleNode] = useState()

@@ -1,7 +1,7 @@
 import React from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
-import { useQuery } from 'cozy-client'
+import { useQueryAll } from 'cozy-client'
 import { bankOperationsQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
@@ -9,7 +9,7 @@ import OperationDeleteAll from './OperationsDeleteAll'
 
 export const Operations = () => {
   const query = bankOperationsQuery()
-  const { isLoading, data: operations } = useQuery(
+  const { isLoading, data: operations } = useQueryAll(
     query.definition,
     query.options
   )
