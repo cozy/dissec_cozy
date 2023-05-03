@@ -1,7 +1,7 @@
 import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 
 import {
   SERVICE_CATEGORIZE,
@@ -17,17 +17,8 @@ import Webhook from './Webhook'
 export const Execution = () => {
   const client = useClient()
   const query = webhooksQuery()
-  const { fetch } = useQuery(query.definition, query.options)
-  const [webhooks, setWebhooks] = useState()
+  const { data: webhooks } = useQuery(query.definition, query.options)
   const [isWorking, setIsWorking] = useState(false)
-
-  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
-  useEffect(() => {
-    ;(async () => {
-      const { data } = await fetch()
-      setWebhooks(data)
-    })()
-  })
 
   const resetWebhooks = useCallback(async () => {
     setIsWorking(true)
@@ -58,12 +49,8 @@ export const Execution = () => {
           })
       )
     )
-
-    const { data } = await fetch()
-    setWebhooks(data)
-
     setIsWorking(false)
-  }, [client, fetch, webhooks])
+  }, [client, webhooks])
 
   return (
     <div className="todos">

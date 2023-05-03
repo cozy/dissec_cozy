@@ -1,7 +1,7 @@
 import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Spinner from 'cozy-ui/react/Spinner'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import Label from 'cozy-ui/react/Label/index.jsx'
 import Input from 'cozy-ui/react/Input/index.jsx'
@@ -11,21 +11,10 @@ import { nodesQuery } from 'lib/queries.js'
 const FullAggregation = ({ supervisorWebhook }) => {
   const client = useClient()
   const query = nodesQuery()
-  const { isLoading, fetch } = useQuery(query.definition, query.options)
-  const [nodes, setNodes] = useState()
+  const { isLoading, data: nodes } = useQuery(query.definition, query.options)
   const [nbShares, setNbShares] = useState(2)
   const [nbContributors, setNbContributors] = useState(2)
   const [isWorking, setIsWorking] = useState(false)
-
-  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
-  useEffect(() => {
-    ;(async () => {
-      if (!nodes) {
-        const { data } = await fetch()
-        setNodes(data)
-      }
-    })()
-  })
 
   const handleLaunchExecution = useCallback(async () => {
     setIsWorking(true)

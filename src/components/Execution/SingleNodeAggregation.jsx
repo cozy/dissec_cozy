@@ -5,7 +5,7 @@ import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import Spinner from 'cozy-ui/react/Spinner'
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
-import React, { useCallback, useState, useEffect } from 'react'
+import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import createTree from 'lib/createTreeExported.js'
 import { nodesQuery } from 'lib/queries'
@@ -13,22 +13,12 @@ import { nodesQuery } from 'lib/queries'
 const SingleNodeAggregation = () => {
   const client = useClient()
   const query = nodesQuery()
-  const { fetch, isLoading } = useQuery(query.definition, query.options)
-  const [nodes, setNodes] = useState()
+  const { data: nodes, isLoading } = useQuery(query.definition, query.options)
   const [nbShares, setNbShares] = useState(3)
   const [pretrained, setPretrained] = useState(true)
   const [node, setSingleNode] = useState()
   const [isWorking, setIsWorking] = useState(false)
 
-  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
-  useEffect(() => {
-    ;(async () => {
-      if (!nodes) {
-        const { data } = await fetch()
-        setNodes(data)
-      }
-    })()
-  })
   const options = nodes?.map(e => ({ value: e, label: e.label || e.id }))
 
   const handleLaunchExecution = useCallback(async () => {
