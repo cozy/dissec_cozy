@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
-import { useQuery } from 'cozy-client'
+import { useQueryAll } from 'cozy-client'
 import { nodesQuery } from 'lib/queries'
 
 import NodeAdd from './NodeAdd'
@@ -10,18 +10,10 @@ import NodeUpload from './NodeUpload'
 
 export const Nodes = () => {
   const query = nodesQuery()
-  const { isLoading, fetch } = useQuery(query.definition, query.options)
-  const [nodes, setNodes] = useState()
-
-  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
-  useEffect(() => {
-    ;(async () => {
-      if (!nodes) {
-        const { data } = await fetch()
-        setNodes(data)
-      }
-    })()
-  })
+  const { data: nodes, isLoading } = useQueryAll(
+    query.definition,
+    query.options
+  )
 
   return (
     <div className="todos">

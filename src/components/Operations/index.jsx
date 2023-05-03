@@ -1,26 +1,18 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
-import { useQuery } from 'cozy-client'
-import { bankQuery } from 'lib/queries'
+import { useQueryAll } from 'cozy-client'
+import { bankOperationsQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
 
 export const Operations = () => {
-  const query = bankQuery()
-  const { isLoading, fetch } = useQuery(query.definition, query.options)
-  const [banks, setBanks] = useState()
-
-  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
-  useEffect(() => {
-    ;(async () => {
-      if (!banks) {
-        const { data } = await fetch()
-        setBanks(data)
-      }
-    })()
-  })
+  const query = bankOperationsQuery()
+  const { isLoading, data: operations } = useQueryAll(
+    query.definition,
+    query.options
+  )
 
   return (
     <div className="todos">
@@ -28,9 +20,9 @@ export const Operations = () => {
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
-          <OperationsList operations={banks} />
+          <OperationsList operations={operations} />
           <OperationAdd />
-          <OperationDeleteAll operations={banks} />
+          <OperationDeleteAll operations={operations} />
         </div>
       )}
     </div>

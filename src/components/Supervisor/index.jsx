@@ -1,6 +1,6 @@
 import { useClient, useQueryAll } from 'cozy-client'
 import Spinner from 'cozy-ui/react/Spinner'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import { observationsQuery } from 'lib/queries'
 import { ExecutionGroup } from './ExecutionGroup'
@@ -10,8 +10,10 @@ import { OBSERVATIONS_DOCTYPE } from 'doctypes'
 export const Supervisor = () => {
   const client = useClient()
   const query = observationsQuery()
-  const { fetch, isFetching } = useQueryAll(query.definition, query.options)
-  const [observations, setObservations] = useState()
+  const { data: observations, isFetching } = useQueryAll(
+    query.definition,
+    query.options
+  )
   const [isWorking, setIsWorking] = useState(false)
   const executions = useMemo(() => {
     const res = {}
@@ -33,29 +35,13 @@ export const Supervisor = () => {
     return res
   }, [observations])
 
-  // FIXME: Using useEffect should not be necessary if useQuery correctly refreshed
-  useEffect(() => {
-    const fetchObservations = async () => {
-      const { data } = await fetch()
-      setObservations(data)
-    }
-    if (!observations) {
-      fetchObservations()
-    }
-
-    const interval = setInterval(fetchObservations, 10000)
-    return () => clearInterval(interval)
-  }, [fetch, observations])
-
   const handleDelete = useCallback(async () => {
     setIsWorking(true)
 
     await client.collection(OBSERVATIONS_DOCTYPE).destroyAll(observations)
-    const { data } = await fetch()
-    setObservations(data)
 
     setIsWorking(false)
-  }, [client, fetch, observations])
+  }, [client, observations])
 
   return (
     <div>

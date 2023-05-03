@@ -15,7 +15,7 @@ export const Webhook = ({ hook, onUpdate }) => {
   if (hook && hook.attributes) {
     if (hook.attributes.arguments.length !== 0) {
       name = hook.attributes.arguments
-    } else if (hook.attributes.message) {
+    } else if (hook.attributes?.message.name) {
       name = hook.attributes.message.name
     }
   }
