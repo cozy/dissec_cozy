@@ -12,6 +12,7 @@ import Execution from './Execution'
 import Nodes from './Nodes'
 import Operations from './Operations'
 import Supervisor from './Supervisor'
+import Demonstration from './Demonstration'
 import Sidebar from './Sidebar'
 
 const App = () => {
@@ -29,6 +30,7 @@ const App = () => {
                 <Route path="/execution" component={Execution} />
                 <Route path="/nodes" component={Nodes} />
                 <Route path="/supervisor" component={Supervisor} />
+                <Route path="/demonstration" component={Demonstration} />
                 <Redirect from="/" to="/operations" />
                 <Redirect from="*" to="/operations" />
               </Switch>
