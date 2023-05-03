@@ -73,7 +73,7 @@ const FullAggregation = ({ supervisorWebhook }) => {
   ) : (
     <div className="card">
       <div className="card-title">
-        <b>Full aggreation</b>
+        <b>Full aggregation</b>
       </div>
       <div className="full-agg-form">
         <div>
