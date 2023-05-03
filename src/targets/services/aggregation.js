@@ -133,7 +133,8 @@ export const aggregation = async () => {
       finalize: parent.finalize,
       level: parent.level,
       nodeId: parent.nodeId,
-      nbChild: parent.nbChild
+      nbChild: parent.nbChild,
+      supervisorWebhook
     }
     // TODO: Callwebhook without using fetchJSON
     await client.stackClient.fetchJSON(
