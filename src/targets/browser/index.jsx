@@ -62,7 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const client = new CozyClient({
     uri: `${protocol}//${data.cozyDomain}`,
     token: data.cozyToken,
-    schema
+    schema,
+    store: false
   })
 
   // initialize the bar, common of all applications, it allows
@@ -72,7 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
     appNamePrefix: appNamePrefix,
     iconPath: appIcon,
     lang: appLocale,
-    replaceTitleOnMobile: true
+    replaceTitleOnMobile: true,
+    cozyClient: client
   })
 
   renderApp(client)
