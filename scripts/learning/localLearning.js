@@ -1,10 +1,11 @@
 global.fetch = require('node-fetch').default
 const { Q } = require('cozy-client')
-
 const getCategory = require('../../src/lib/getCategory')
-const { BANK_DOCTYPE } = require('../../src/doctypes')
-const { JOBS_DOCTYPE } = require('../../src/doctypes')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
+
+// FIXME: export doc type for CommonJS
+const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const JOBS_DOCTYPE = 'io.cozy.jobs'
 
 /**
  * @typedef LocalLearningOptions

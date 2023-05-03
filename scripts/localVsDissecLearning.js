@@ -1,11 +1,13 @@
 global.fetch = require('node-fetch').default
 const { Q } = require('cozy-client')
 const { execSync } = require('child_process')
-const { BANK_DOCTYPE } = require('../src/doctypes')
 const getClient = require('../src/lib/getClient')
 const { createLogger } = require('../src/targets/services/helpers/utils')
 const localLearning = require('./learning/localLearning')
 const dissecLearning = require('./learning/dissecLearning')
+
+// FIXME: export doc type for CommonJS
+const BANK_DOCTYPE = 'io.cozy.bank.operations'
 
 /**
  * This script measures performances of DISSEC vs local learning.
