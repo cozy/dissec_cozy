@@ -140,6 +140,13 @@ const populateInstances = async ({
   )
 
   // Write fetched webhooks to the disk
+  // TODO: Handle non existing folder
+  const parts = outputWebhooksPath.split('/')
+  parts.pop()
+  const dir = parts.join('/')
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
   fs.writeFileSync(outputWebhooksPath, JSON.stringify(webhooks, null, 2))
 
   // Create the supervisor instance
