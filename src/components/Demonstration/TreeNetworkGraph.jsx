@@ -58,6 +58,7 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
 
     const link = svg
       .append('g')
+      .call(d3.zoom().transform, d3.zoomIdentity)
       .selectAll('line')
       .data(edges)
       .join('line')
@@ -78,6 +79,19 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
       .append('text')
       .text(d => `${d.label}`)
       .style('font-size', 'xx-small')
+
+    function zoomed({ transform }) {
+      node.attr('transform', () => `scale(${transform.k})`)
+      link.attr('transform', () => `scale(${transform.k})`)
+    }
+
+    svg.call(
+      d3
+        .zoom()
+        .extent([[0, 0], [width, height]])
+        .scaleExtent([0, 10])
+        .on('zoom', zoomed)
+    )
 
     simulation.on('tick', () => {
       link
