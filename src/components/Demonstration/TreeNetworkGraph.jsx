@@ -35,16 +35,18 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
 
     const simulation = d3
       .forceSimulation(nodes)
-      .force(
-        'link',
-        d3
-          .forceLink(edges)
-          .id(d => `${d.nodeId}`)
-          .distance(100)
-      )
-      .force('charge', d3.forceManyBody().strength(-10))
+      .force('link', d3.forceLink(edges).id(d => `${d.nodeId}`))
+      .force('charge', d3.forceManyBody())
       .force('x', d3.forceX())
-      .force('y', d3.forceY())
+      .force(
+        'y',
+        d3
+          .forceY()
+          .y(d => {
+            return d.level * 30
+          })
+          .strength(1)
+      )
 
     const svg = d3
       .select(ref.current)

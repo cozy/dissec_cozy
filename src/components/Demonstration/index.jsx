@@ -38,30 +38,49 @@ const Demonstration = () => {
       return omit(node, ['parents'])
     }
 
+    function onlyUnique(value, index, array) {
+      return array.indexOf(value) === index
+    }
+
     const nodesMap = {}
-    const edgesList = []
+    const edgesMap = {}
     const transformNode = node => {
       if (!nodesMap[node.nodeId]) {
         nodesMap[node.nodeId] = { parents: [], children: [] }
+        edgesMap[node.nodeId] = []
       }
 
       for (const parent of node.parents || []) {
-        nodesMap[node.nodeId].parents.push(parent.nodeId)
-        edgesList.push({ source: node.nodeId, target: parent.nodeId })
+        nodesMap[node.nodeId].parents = [
+          ...nodesMap[node.nodeId].parents,
+          parent.nodeId
+        ].filter(onlyUnique)
+        edgesMap[node.nodeId] = [
+          ...edgesMap[node.nodeId],
+          parent.nodeId
+        ].filter(onlyUnique)
+
         transformNode(parent)
         nodesMap[parent.nodeId] = {
           ...nodesMap[parent.nodeId],
-          children: [...nodesMap[parent.nodeId].children, node.nodeId]
+          children: [...nodesMap[parent.nodeId].children, node.nodeId].filter(
+            onlyUnique
+          )
         }
       }
       nodesMap[node.nodeId] = {
-        ...usedProperties(node),
-        ...nodesMap[node.nodeId]
+        ...nodesMap[node.nodeId],
+        ...usedProperties(node)
       }
     }
     tree.forEach(transformNode)
 
-    return { nodes: Object.values(nodesMap), edges: edgesList }
+    return {
+      nodes: Object.values(nodesMap),
+      edges: Object.entries(edgesMap).flatMap(([source, targets]) =>
+        targets.map(target => ({ source, target }))
+      )
+    }
   }, [tree])
 
   return !nodes || isLoading ? (
