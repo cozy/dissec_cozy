@@ -9,7 +9,7 @@ const dissecConfig = require('../../dissec.config.json')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 // FIXME: export doc type for CommonJS
-const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const BANK_OPERATIONS_DOCTYPE = 'io.cozy.bank.operations'
 const JOBS_DOCTYPE = 'io.cozy.jobs'
 
 /**
@@ -131,7 +131,7 @@ const dissecLearning = async ({
       // Measure performance
       const validationIds = validationSet.map(e => e.id)
       const dissecTrainedValidationSet = await client.queryAll(
-        Q(BANK_DOCTYPE)
+        Q(BANK_OPERATIONS_DOCTYPE)
           .getByIds(validationIds)
           .sortBy([{ date: 'asc' }])
       )

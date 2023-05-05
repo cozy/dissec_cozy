@@ -2,7 +2,7 @@ import CozyClient, { Q } from 'cozy-client'
 import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
-import { BANK_DOCTYPE } from 'doctypes'
+import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
 
@@ -37,7 +37,7 @@ export const contribution = async () => {
 
   // Fetch training data
   const { data: operations } = await client.query(
-    Q(BANK_DOCTYPE)
+    Q(BANK_OPERATIONS_DOCTYPE)
       .where(selector)
       .sortBy([{ date: 'asc' }])
   )
