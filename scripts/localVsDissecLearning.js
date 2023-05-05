@@ -98,7 +98,6 @@ const runExperiment = async (
     client,
     cutoffDate,
     validationSet,
-    uri,
     useTiny: true
   })
 

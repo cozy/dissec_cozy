@@ -1,92 +1,83 @@
 const { v4: uuid } = require('uuid')
 
 /**
+ * @typedef TreeDescription
+ * @property {number} depth Depth of the tree
+ * @property {number} fanout Number of children per node
+ * @property {number} groupSize  Nodes per group
+ */
+
+/**
  * This function is used to create the aggregation tree
  *
- * @param {TreeLevelDescriptor[]} treeStructure The structure defining the tree
+ * @param {TreeDescription} treeStructure The structure defining the tree
  * @param {Webhooks[]} nodesWebhooks The list of webhooks used by nodes
- * @param {boolean} allowReuse Reuse nodes in the tree
  * @returns
  */
-const createTree = (treeStructure, nodesWebhooks, allowReuse = true) => {
-  let remainingNodes = [...nodesWebhooks]
-  let nodesCopy = [...nodesWebhooks]
-  let matchingNodes = [...remainingNodes]
-  let lastLevel = []
+const createTree = (treeStructure, nodesWebhooks) => {
+  let remainingWebhooks = [...nodesWebhooks]
 
-  const refillNodes = () => {
-    if (allowReuse && remainingNodes.length === 0) {
-      remainingNodes = [...nodesCopy]
-    }
-  }
+  const createLevel = (parentGroup, depth) => {
+    const childrenToCreate = parentGroup.length === 0 ? 1 : treeStructure.fanout
+    const groupSize =
+      parentGroup.length === 0
+        ? 1
+        : depth === treeStructure.depth - 1
+        ? treeStructure.fanout
+        : treeStructure.groupSize
+    const currentGroup = []
+    const groupId = uuid()
 
-  for (let j = 0; j < treeStructure.length; j++) {
-    const level = treeStructure[j]
-    const currentLevel = []
-    matchingNodes = [...remainingNodes]
+    // Create group
+    for (let i = 0; i < groupSize; i++) {
+      const webhooks = remainingWebhooks.shift()
+      remainingWebhooks.push(webhooks) // Cycle the elements
 
-    // Apply filters if there are any
-    if (level.mustInclude) {
-      if (level.mustInclude.length < level.numberOfNodes) {
-        throw new Error(
-          'Invalid tree structure: the "mustInclude" parameter must match the number of nodes'
-        )
-      } else {
-        matchingNodes = remainingNodes.filter(node =>
-          level.mustInclude.includes(node.label)
-        )
+      const { label, contributionWebhook, aggregationWebhook } = webhooks
+      let node = {
+        label,
+        contributionWebhook,
+        aggregationWebhook,
+        level: depth,
+        nbChild: treeStructure.fanout,
+        parents: undefined,
+        nodeId: uuid(),
+        groupId,
+        finalize: depth === 0
       }
+      if (parentGroup.length > 0 && depth < treeStructure.depth - 2) {
+        // Intermediate group
+        node.parents = [parentGroup[i]]
+      } else if (parentGroup.length > 0) {
+        // Contributors
+        node.parents = parentGroup
+      }
+
+      currentGroup.push(node)
     }
 
-    // Move nodes to the current level
-    if (level.numberOfNodes) {
-      // The level has a valid number of nodes, add exactly that amount
-      for (let i = 0; i < level.numberOfNodes; i++) {
-        currentLevel.push({
-          ...remainingNodes.splice(
-            remainingNodes.indexOf(matchingNodes.shift()),
-            1
-          )[0],
-          level: j,
-          nbChild:
-            j < treeStructure.length - 1
-              ? treeStructure[j + 1].numberOfNodes
-              : 0,
-          parents: j > 0 ? lastLevel : undefined,
-          nodeId: uuid(),
-          finalize: j === 0
-        })
+    // The querier contains the same node multiple times
+    if (parentGroup.length === 0) {
+      currentGroup.push(
+        ...Array(treeStructure.groupSize - 1).fill(currentGroup[0])
+      )
+    }
 
-        refillNodes()
+    // Create aggregators
+    if (depth < treeStructure.depth - 2) {
+      const children = []
+      for (let i = 0; i < childrenToCreate; i++) {
+        children.push(createLevel(currentGroup, depth + 1))
       }
+      return children.flat()
+    } else if (depth < treeStructure.depth - 1) {
+      return createLevel(currentGroup, depth + 1)
     } else {
-      // Undefined number of nodes means add all remaining nodes
-      while (matchingNodes.length > 0) {
-        currentLevel.push({
-          ...remainingNodes.splice(
-            remainingNodes.indexOf(matchingNodes.shift()),
-            1
-          )[0],
-          level: j,
-          nbChild:
-            j < treeStructure.length - 1
-              ? treeStructure[j + 1].numberOfNodes
-              : 0,
-          parents: j > 0 ? lastLevel : undefined,
-          nodeId: uuid(),
-          finalize: j === 0
-        })
-
-        refillNodes()
-      }
-      lastLevel = currentLevel
-      break
+      return currentGroup
     }
-
-    lastLevel = [...currentLevel]
   }
 
-  return lastLevel
+  return createLevel([], 0)
 }
 
 module.exports = createTree

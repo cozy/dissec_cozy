@@ -42,20 +42,8 @@ const dissecLearning = async ({
   client,
   cutoffDate,
   validationSet,
-  uri = 'http://test1.localhost:8080',
   pretrained = false,
-  treeStructure = [
-    {
-      numberOfNodes: 1,
-      mustInclude: [uri]
-    },
-    {
-      numberOfNodes: 2
-    },
-    {
-      numberOfNodes: 2
-    }
-  ],
+  treeStructure = { depth: 3, fanout: 2, groupSize: 2 },
   useTiny = true
 }) => {
   const { log } = createLogger('learning/dissec')

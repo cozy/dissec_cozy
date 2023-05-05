@@ -14,22 +14,15 @@ const Demonstration = () => {
     query.definition,
     query.options
   )
-  const [nbShares, setNbShares] = useState(2)
-  const [nbContributors, setNbContributors] = useState(2)
+  const [depth, setDepth] = useState(3)
+  const [fanout, setFanout] = useState(3)
+  const [groupSize, setGroupSize] = useState(2)
   const tree = useMemo(
     () =>
       nodes && nodes.length > 0
-        ? createTree(
-            [
-              { numberOfNodes: 1 },
-              { numberOfNodes: nbShares },
-              { numberOfNodes: nbContributors }
-            ],
-            nodes,
-            true
-          )
+        ? createTree({ depth, fanout, groupSize }, nodes)
         : [],
-    [nbContributors, nbShares, nodes]
+    [depth, fanout, groupSize, nodes]
   )
   const d3TreeData = useMemo(() => {
     if (!tree) return
@@ -89,21 +82,27 @@ const Demonstration = () => {
     <div>
       <div className="full-agg-form">
         <div>
-          <Label htmlFor="full-agg-contributors">
-            Number of contributors:{' '}
-          </Label>
+          <Label htmlFor="full-agg-contributors">Depth: </Label>
           <Input
-            value={nbContributors}
-            onChange={e => setNbContributors(Number(e.target.value))}
+            value={depth}
+            onChange={e => setDepth(Number(e.target.value))}
             id="full-agg-contributors"
           />
         </div>
         <div>
-          <Label htmlFor="full-agg-shares">Number of shares: </Label>
+          <Label htmlFor="full-agg-contributors">Fanout: </Label>
           <Input
-            value={nbShares}
-            onChange={e => setNbShares(Number(e.target.value))}
-            id="full-agg-shares"
+            value={fanout}
+            onChange={e => setFanout(Number(e.target.value))}
+            id="full-agg-contributors"
+          />
+        </div>
+        <div>
+          <Label htmlFor="full-agg-contributors">Group Size: </Label>
+          <Input
+            value={groupSize}
+            onChange={e => setGroupSize(Number(e.target.value))}
+            id="full-agg-contributors"
           />
         </div>
       </div>

@@ -29,19 +29,11 @@ const SingleNodeAggregation = () => {
 
     try {
       // Create a tree with one contributor, nbShares aggregators and one finalizer
-      const treeStructure = [
-        {
-          numberOfNodes: 1,
-          mustInclude: [node.label]
-        },
-        {
-          numberOfNodes: nbShares
-        },
-        {
-          numberOfNodes: 1
-        }
-      ]
-      const contributors = createTree(treeStructure, [node], true)
+      const contributors = createTree(
+        { depth: 3, fanout: 1, groupSize: nbShares },
+        [node],
+        true
+      )
       const executionId = uuid()
 
       for (const contributor of contributors) {

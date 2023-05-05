@@ -24,18 +24,10 @@ const FullAggregation = ({ supervisorWebhook }) => {
 
     try {
       const executionId = uuid()
-      const treeStructure = [
-        {
-          numberOfNodes: 1
-        },
-        {
-          numberOfNodes: nbShares
-        },
-        {
-          numberOfNodes: nbContributors
-        }
-      ]
-      const contributors = createTree(treeStructure, nodes)
+      const contributors = createTree(
+        { depth: 3, fanout: nbContributors, groupSize: nbShares },
+        nodes
+      )
 
       for (const contributor of contributors) {
         const contributionBody = {
