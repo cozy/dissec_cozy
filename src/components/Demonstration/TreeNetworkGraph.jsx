@@ -1,33 +1,34 @@
 import React, { useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 
+const drag = simulation => {
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart()
+    d.fx = d.x
+    d.fy = d.y
+  }
+
+  function dragged(event, d) {
+    d.fx = event.x
+    d.fy = event.y
+  }
+
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0)
+    d.fx = null
+    d.fy = null
+  }
+
+  return d3
+    .drag()
+    .on('start', dragstarted)
+    .on('drag', dragged)
+    .on('end', dragended)
+}
+
 function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
   const ref = useRef()
-
-  const drag = simulation => {
-    function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart()
-      d.fx = d.x
-      d.fy = d.y
-    }
-
-    function dragged(event, d) {
-      d.fx = event.x
-      d.fy = event.y
-    }
-
-    function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0)
-      d.fx = null
-      d.fy = null
-    }
-
-    return d3
-      .drag()
-      .on('start', dragstarted)
-      .on('drag', dragged)
-      .on('end', dragended)
-  }
+  const depth = Math.max(...data.nodes.map(e => e.level))
 
   useEffect(() => {
     const nodes = data.nodes.map(e => ({ ...e, id: e.nodeId }))
@@ -35,17 +36,23 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
 
     const simulation = d3
       .forceSimulation(nodes)
-      .force('link', d3.forceLink(edges).id(d => `${d.nodeId}`))
-      .force('charge', d3.forceManyBody())
+      .force(
+        'link',
+        d3
+          .forceLink(edges)
+          .id(d => `${d.nodeId}`)
+          .strength(0.5)
+      )
+      .force('charge', d3.forceManyBody().strength(-400))
       .force('x', d3.forceX())
       .force(
         'y',
         d3
           .forceY()
           .y(d => {
-            return d.level * 30
+            return (d.level / depth - 0.5) * 0.8 * height
           })
-          .strength(1)
+          .strength(0.8)
       )
 
     const svg = d3
@@ -103,9 +110,9 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
       circles.attr('cx', d => d.x).attr('cy', d => d.y)
       label.attr('dx', d => d.x).attr('dy', d => d.y)
     })
-  }, [data, height, onNodeClick, width, ref])
+  }, [data, depth, height, onNodeClick, ref, width])
 
-  return <svg ref={ref} />
+  return <svg ref={ref} className="demonstration-frame" />
 }
 
 export default TreeNetworkGraph

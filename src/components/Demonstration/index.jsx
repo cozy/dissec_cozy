@@ -17,12 +17,10 @@ const Demonstration = () => {
   const [depth, setDepth] = useState(3)
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
+  const treeStructure = { depth, fanout, groupSize }
   const tree = useMemo(
-    () =>
-      nodes && nodes.length > 0
-        ? createTree({ depth, fanout, groupSize }, nodes)
-        : [],
-    [depth, fanout, groupSize, nodes]
+    () => (nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : []),
+    [nodes, treeStructure]
   )
   const d3TreeData = useMemo(() => {
     if (!tree) return
@@ -80,6 +78,9 @@ const Demonstration = () => {
     <Spinner size="xxlarge" middle />
   ) : (
     <div>
+      {d3TreeData ? (
+        <TreeNetworkGraph data={d3TreeData} width={400} height={400} />
+      ) : null}
       <div className="full-agg-form">
         <div>
           <Label htmlFor="full-agg-contributors">Depth: </Label>
@@ -106,9 +107,6 @@ const Demonstration = () => {
           />
         </div>
       </div>
-      {d3TreeData ? (
-        <TreeNetworkGraph data={d3TreeData} width={400} height={400} />
-      ) : null}
     </div>
   )
 }

@@ -11,7 +11,7 @@ global.fetch = require('node-fetch').default
 export const contribution = async () => {
   const {
     parents,
-    nbShares,
+    treeStructure,
     pretrained,
     executionId,
     nodeId,
@@ -20,7 +20,7 @@ export const contribution = async () => {
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
-  if (parents.length !== nbShares) {
+  if (parents.length !== treeStructure.groupSize) {
     return
   }
 
@@ -67,7 +67,7 @@ export const contribution = async () => {
   const aggregationDirectoryId = aggregationDirectoryDoc._id
 
   // Split model in shares
-  let shares = model.getCompressedShares(nbShares)
+  let shares = model.getCompressedShares(treeStructure.groupSize)
 
   // Create a file for each share
   const files = []
@@ -110,7 +110,7 @@ export const contribution = async () => {
       docId: files[i],
       sharecode: shareCodes[i],
       uri: client.stackClient.uri,
-      nbShares,
+      treeStructure,
       parents: parents[i].parents,
       finalize: parents[i].finalize,
       level: parents[i].level,

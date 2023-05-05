@@ -65,7 +65,7 @@ const dissecLearning = async ({
     const contributionBody = {
       executionId,
       pretrained,
-      nbShares: contributor.parents.length,
+      treeStructure,
       parents: contributor.parents,
       useTiny
     }

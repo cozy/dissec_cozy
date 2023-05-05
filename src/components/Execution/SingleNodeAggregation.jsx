@@ -21,7 +21,7 @@ const SingleNodeAggregation = () => {
   const [pretrained, setPretrained] = useState(true)
   const [node, setSingleNode] = useState()
   const [isWorking, setIsWorking] = useState(false)
-
+  const treeStructure = { depth: 3, fanout: 1, groupSize: nbShares }
   const options = nodes?.map(e => ({ value: e, label: e.label || e.id }))
 
   const handleLaunchExecution = useCallback(async () => {
@@ -29,11 +29,7 @@ const SingleNodeAggregation = () => {
 
     try {
       // Create a tree with one contributor, nbShares aggregators and one finalizer
-      const contributors = createTree(
-        { depth: 3, fanout: 1, groupSize: nbShares },
-        [node],
-        true
-      )
+      const contributors = createTree(treeStructure, [node], true)
       const executionId = uuid()
 
       for (const contributor of contributors) {
@@ -41,7 +37,7 @@ const SingleNodeAggregation = () => {
           ...contributor,
           executionId,
           pretrained,
-          nbShares,
+          treeStructure,
           useTiny: true
         }
         await new Promise(resolve => {
@@ -56,7 +52,7 @@ const SingleNodeAggregation = () => {
     } finally {
       setIsWorking(false)
     }
-  }, [client, node, nbShares, pretrained])
+  }, [treeStructure, node, pretrained, client.stackClient])
 
   return isLoading ? (
     <Spinner size="xxlarge" middle />
