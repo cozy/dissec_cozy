@@ -73,29 +73,12 @@
     "files": {
       "description": "Required to store intermediate results",
       "type": "io.cozy.files",
-      "verbs": ["GET", "POST", "PATCH"]
-    },
-    "dissec.shares": {
-      "description": "Intermediate results used for privately aggregating data",
-      "type": "io.cozy.dissec.shares",
       "verbs": ["ALL"]
     },
-    "dissec.nodes": {
-      "description": "Nodes used for aggregation",
-      "type": "io.cozy.dissec.nodes",
+    "dissec": {
+      "description": "Required for Dissec execution",
+      "type": "io.cozy.dissec.*",
       "verbs": ["ALL"]
-    },
-    "dissec.observations": {
-      "description": "Execution observation",
-      "type": "io.cozy.dissec.observations",
-      "verbs": ["ALL"]
-    },
-    "dissecozy": {
-      "description": "Required to enable asynchronous computations",
-      "type": "io.cozy.triggers",
-      "verbs": ["POST"],
-      "selector": "worker",
-      "values": ["service"]
     },
     "bank.operations": {
       "description": "Used to manage your bank operations",
