@@ -69,6 +69,7 @@
     "cozy-flags": "^2.7.2",
     "cozy-konnector-libs": "5.2.1",
     "cozy-logger": "^1.7.0",
+    "cozy-realtime": "^4.4.1",
     "cozy-ui": "37.8.0",
     "d3": "^7.8.4",
     "d3-drag": "^3.0.0",

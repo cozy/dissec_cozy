@@ -4,6 +4,7 @@ import 'cozy-ui/transpiled/react/stylesheet.css'
 import 'styles'
 
 import CozyClient, { CozyProvider } from 'cozy-client'
+import { RealtimePlugin } from 'cozy-realtime'
 import { BreakpointsProvider } from 'cozy-ui/react/hooks/useBreakpoints'
 import { I18n } from 'cozy-ui/react/I18n'
 import schema from 'doctypes'
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     schema,
     store: false
   })
+  client.registerPlugin(RealtimePlugin)
 
   // initialize the bar, common of all applications, it allows
   // platform features like apps navigation without doing anything
