@@ -4,7 +4,7 @@ const getCategory = require('../../src/lib/getCategory')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 // FIXME: export doc type for CommonJS
-const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const BANK_OPERATIONS_DOCTYPE = 'io.cozy.bank.operations'
 const JOBS_DOCTYPE = 'io.cozy.jobs'
 
 /**
@@ -57,7 +57,7 @@ const localLearning = async ({
   // Measure performance
   const validationIds = validationSet.map(e => e.id)
   const locallyTrainedValidationSet = await client.queryAll(
-    Q(BANK_DOCTYPE)
+    Q(BANK_OPERATIONS_DOCTYPE)
       .getByIds(validationIds)
       .sortBy([{ date: 'asc' }])
       .indexFields(['date'])

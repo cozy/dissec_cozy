@@ -2,7 +2,7 @@ import CozyClient, { Q } from 'cozy-client'
 import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
-import { BANK_DOCTYPE } from 'doctypes'
+import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
 
@@ -11,7 +11,7 @@ global.fetch = require('node-fetch').default
 export const contribution = async () => {
   const {
     parents,
-    nbShares,
+    treeStructure,
     pretrained,
     executionId,
     nodeId,
@@ -20,7 +20,7 @@ export const contribution = async () => {
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
-  if (parents.length !== nbShares) {
+  if (parents.length !== treeStructure.groupSize) {
     return
   }
 
@@ -37,7 +37,7 @@ export const contribution = async () => {
 
   // Fetch training data
   const { data: operations } = await client.query(
-    Q(BANK_DOCTYPE)
+    Q(BANK_OPERATIONS_DOCTYPE)
       .where(selector)
       .sortBy([{ date: 'asc' }])
   )
@@ -67,7 +67,7 @@ export const contribution = async () => {
   const aggregationDirectoryId = aggregationDirectoryDoc._id
 
   // Split model in shares
-  let shares = model.getCompressedShares(nbShares)
+  let shares = model.getCompressedShares(treeStructure.groupSize)
 
   // Create a file for each share
   const files = []
@@ -110,7 +110,7 @@ export const contribution = async () => {
       docId: files[i],
       sharecode: shareCodes[i],
       uri: client.stackClient.uri,
-      nbShares,
+      treeStructure,
       parents: parents[i].parents,
       finalize: parents[i].finalize,
       level: parents[i].level,

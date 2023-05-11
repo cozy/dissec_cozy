@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react'
 import { useClient } from 'cozy-client'
 
 import Button from 'cozy-ui/react/Button'
-import { BANK_DOCTYPE } from 'doctypes'
+import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 
 export const OperationsDeleteAll = props => {
   const client = useClient()
@@ -12,7 +12,7 @@ export const OperationsDeleteAll = props => {
   const handleDelete = useCallback(async () => {
     setIsWorking(true)
 
-    await client.collection(BANK_DOCTYPE).destroyAll(operations)
+    await client.collection(BANK_OPERATIONS_DOCTYPE).destroyAll(operations)
 
     setIsWorking(false)
   }, [client, operations, setIsWorking])

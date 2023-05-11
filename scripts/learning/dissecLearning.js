@@ -9,7 +9,7 @@ const dissecConfig = require('../../dissec.config.json')
 const { createLogger } = require('../../src/targets/services/helpers/utils')
 
 // FIXME: export doc type for CommonJS
-const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const BANK_OPERATIONS_DOCTYPE = 'io.cozy.bank.operations'
 const JOBS_DOCTYPE = 'io.cozy.jobs'
 
 /**
@@ -42,20 +42,8 @@ const dissecLearning = async ({
   client,
   cutoffDate,
   validationSet,
-  uri = 'http://test1.localhost:8080',
   pretrained = false,
-  treeStructure = [
-    {
-      numberOfNodes: 1,
-      mustInclude: [uri]
-    },
-    {
-      numberOfNodes: 2
-    },
-    {
-      numberOfNodes: 2
-    }
-  ],
+  treeStructure = { depth: 3, fanout: 2, groupSize: 2 },
   useTiny = true
 }) => {
   const { log } = createLogger('learning/dissec')
@@ -77,7 +65,7 @@ const dissecLearning = async ({
     const contributionBody = {
       executionId,
       pretrained,
-      nbShares: contributor.parents.length,
+      treeStructure,
       parents: contributor.parents,
       useTiny
     }
@@ -131,7 +119,7 @@ const dissecLearning = async ({
       // Measure performance
       const validationIds = validationSet.map(e => e.id)
       const dissecTrainedValidationSet = await client.queryAll(
-        Q(BANK_DOCTYPE)
+        Q(BANK_OPERATIONS_DOCTYPE)
           .getByIds(validationIds)
           .sortBy([{ date: 'asc' }])
       )

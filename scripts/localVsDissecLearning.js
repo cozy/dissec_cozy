@@ -7,7 +7,7 @@ const localLearning = require('./learning/localLearning')
 const dissecLearning = require('./learning/dissecLearning')
 
 // FIXME: export doc type for CommonJS
-const BANK_DOCTYPE = 'io.cozy.bank.operations'
+const BANK_OPERATIONS_DOCTYPE = 'io.cozy.bank.operations'
 
 /**
  * This script measures performances of DISSEC vs local learning.
@@ -46,7 +46,7 @@ const runExperiment = async (
   // Connect to the instance
   const schema = {
     operations: {
-      doctype: BANK_DOCTYPE,
+      doctype: BANK_OPERATIONS_DOCTYPE,
       attributes: {},
       relationships: {}
     }
@@ -55,7 +55,7 @@ const runExperiment = async (
 
   // Download all bank operations
   const sortedOperations = await client.queryAll(
-    Q(BANK_DOCTYPE)
+    Q(BANK_OPERATIONS_DOCTYPE)
       .where({ date: { $gt: null } })
       .sortBy([{ date: 'asc' }])
       .indexFields(['date'])
@@ -98,7 +98,6 @@ const runExperiment = async (
     client,
     cutoffDate,
     validationSet,
-    uri,
     useTiny: true
   })
 

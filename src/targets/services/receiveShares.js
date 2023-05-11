@@ -10,13 +10,12 @@ export const receiveShares = async () => {
     docId,
     sharecode,
     uri,
-    nbShares,
+    treeStructure,
     parents,
     finalize,
     level,
     nodeId,
     executionId,
-    nbChild,
     useTiny,
     supervisorWebhook
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
@@ -88,10 +87,9 @@ export const receiveShares = async () => {
       executionId,
       nodeId,
       level,
-      nbShares,
+      treeStructure,
       parents,
       finalize,
-      nbChild,
       useTiny
     }
   })
@@ -115,9 +113,13 @@ export const receiveShares = async () => {
       file.attributes.metadata.nodeId === nodeId
   )
 
-  log(`Already stored shares ${receivedShares.length}/${nbChild}`)
+  const expectedShares = finalize
+    ? treeStructure.groupSize
+    : treeStructure.fanout
 
-  if (receivedShares.length === nbChild) {
+  log(`Already stored shares ${receivedShares.length}/${expectedShares}`)
+
+  if (receivedShares.length === expectedShares) {
     log('Received the right amount of shares, starting!')
     client.collection('io.cozy.jobs').create('service', {
       message: {
@@ -130,7 +132,7 @@ export const receiveShares = async () => {
         executionId,
         nodeId,
         level,
-        nbShares,
+        treeStructure,
         parents,
         finalize,
         useTiny,
@@ -149,7 +151,7 @@ export const receiveShares = async () => {
       receiverDomain: domain,
       receiverId: nodeId,
       payload: {
-        continueAggregation: receivedShares.length === nbChild
+        continueAggregation: receivedShares.length === expectedShares
       }
     })
 

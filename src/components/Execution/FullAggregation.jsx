@@ -17,6 +17,11 @@ const FullAggregation = ({ supervisorWebhook }) => {
   )
   const [nbShares, setNbShares] = useState(2)
   const [nbContributors, setNbContributors] = useState(2)
+  const treeStructure = {
+    depth: 3,
+    fanout: nbContributors,
+    groupSize: nbShares
+  }
   const [isWorking, setIsWorking] = useState(false)
 
   const handleLaunchExecution = useCallback(async () => {
@@ -24,17 +29,6 @@ const FullAggregation = ({ supervisorWebhook }) => {
 
     try {
       const executionId = uuid()
-      const treeStructure = [
-        {
-          numberOfNodes: 1
-        },
-        {
-          numberOfNodes: nbShares
-        },
-        {
-          numberOfNodes: nbContributors
-        }
-      ]
       const contributors = createTree(treeStructure, nodes)
 
       for (const contributor of contributors) {
@@ -42,7 +36,7 @@ const FullAggregation = ({ supervisorWebhook }) => {
           ...contributor,
           executionId,
           pretrained: false,
-          nbShares,
+          treeStructure,
           useTiny: true,
           supervisorWebhook
         }
@@ -58,7 +52,7 @@ const FullAggregation = ({ supervisorWebhook }) => {
     } finally {
       setIsWorking(false)
     }
-  }, [nbShares, nbContributors, nodes, supervisorWebhook, client.stackClient])
+  }, [treeStructure, nodes, supervisorWebhook, client.stackClient])
 
   return isLoading ? (
     <Spinner size="xxlarge" middle />

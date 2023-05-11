@@ -70,6 +70,8 @@
     "cozy-konnector-libs": "5.2.1",
     "cozy-logger": "^1.7.0",
     "cozy-ui": "37.8.0",
+    "d3": "^7.8.4",
+    "d3-drag": "^3.0.0",
     "lzutf8": "^0.6.0",
     "node-fetch": "^2.6.1",
     "react": "16.13.1",

@@ -25,7 +25,7 @@ export const aggregation = async () => {
     executionId,
     nodeId,
     level,
-    nbShares,
+    treeStructure,
     parents,
     finalize,
     useTiny,
@@ -128,12 +128,11 @@ export const aggregation = async () => {
       docId: aggregate.id,
       sharecode: shareCode,
       uri: client.stackClient.uri,
-      nbShares,
+      treeStructure,
       parents: parent.parents,
       finalize: parent.finalize,
       level: parent.level,
       nodeId: parent.nodeId,
-      nbChild: parent.nbChild,
       supervisorWebhook
     }
     // TODO: Callwebhook without using fetchJSON

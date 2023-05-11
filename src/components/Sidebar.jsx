@@ -9,7 +9,8 @@ const navItems = [
   { to: '/operations', translation: 'Nav.operations' },
   { to: '/execution', translation: 'Nav.execution' },
   { to: '/nodes', translation: 'Nav.nodes' },
-  { to: '/supervisor', translation: 'Nav.supervisor' }
+  { to: '/supervisor', translation: 'Nav.supervisor' },
+  { to: '/demonstration', translation: 'Nav.demonstration' }
 ]
 
 export const Sidebar = ({ t }) => {
@@ -35,5 +36,4 @@ export const Sidebar = ({ t }) => {
   )
 }
 
-// translate() provide t() to use translations (ex: locales/en.json)
 export default translate()(Sidebar)

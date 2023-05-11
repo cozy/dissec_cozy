@@ -2,7 +2,7 @@ import CozyClient, { Q } from 'cozy-client'
 import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
-import { BANK_DOCTYPE, JOBS_DOCTYPE } from 'doctypes'
+import { BANK_OPERATIONS_DOCTYPE, JOBS_DOCTYPE } from 'doctypes'
 import { createLogger } from './helpers'
 import { Model } from './model'
 
@@ -21,7 +21,7 @@ export const categorize = async () => {
   const { pretrained, useTiny, filters = {} } = job.attributes.message
 
   // Fetch data
-  const { data: operations } = await client.query(Q(BANK_DOCTYPE))
+  const { data: operations } = await client.query(Q(BANK_OPERATIONS_DOCTYPE))
 
   // Fetch model or initialize it
   let model

@@ -4,7 +4,7 @@ import { useClient } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
-import { BANK_DOCTYPE } from 'doctypes'
+import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 
 import categories from 'assets/classes.json'
 import { capitalizeFirstLetter } from 'lib/utils'
@@ -46,7 +46,7 @@ export const OperationAdd = () => {
       // reset the input and display a spinner during the process
       setIsWorking(true)
 
-      await client.create(BANK_DOCTYPE, {
+      await client.create(BANK_OPERATIONS_DOCTYPE, {
         label: operationToAdd,
         amount: Number(amountToAdd),
         manualCategoryId: category || '0'
