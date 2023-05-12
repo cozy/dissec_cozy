@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { v4 as uuid } from 'uuid'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
-import { useClient, useQueryAll } from 'cozy-client'
-import { nodesQuery, webhooksQuery } from 'lib/queries'
+import { useClient, useQuery, useQueryAll } from 'cozy-client'
+import { nodesQuery, webhooksQuery, recentObservationsQuery } from 'lib/queries'
 import createTree from 'lib/createTreeExported'
 import TreeNetworkGraph from './TreeNetworkGraph'
 import Spinner from 'cozy-ui/react/Spinner'
 import { omit } from 'lodash'
 import { Button } from 'cozy-ui/react/Button'
+import NodesTable from './NodesTable'
 
 const Demonstration = () => {
   const client = useClient()
@@ -26,21 +27,29 @@ const Demonstration = () => {
   const [depth, setDepth] = useState(3)
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
-  // const [d3Tree, setD3Tree] = useState()
   const executionId = useMemo(() => uuid(), [])
+  const observationsQuery = recentObservationsQuery(executionId)
+  const { data: rawObservations } = useQuery(
+    observationsQuery.definition,
+    observationsQuery.options
+  )
+  const observations = useMemo(
+    () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
+    [rawObservations]
+  )
+  // const [d3Tree, setD3Tree] = useState()
   const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
     depth,
     fanout,
     groupSize
   ])
   const [tree, setTree] = useState()
-
   useEffect(() => {
     if (!tree || tree[0]?.treeStructure !== treeStructure)
       setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
   }, [nodes, tree, treeStructure])
-  const d3Tree = useMemo(() => {
-    if (!tree) return
+  const [treeNodes, treeEdges] = useMemo(() => {
+    if (!tree) return []
 
     const usedProperties = node => {
       return omit(node, ['parents'])
@@ -83,13 +92,48 @@ const Demonstration = () => {
     }
     tree.forEach(transformNode)
 
-    return {
-      nodes: Object.values(nodesMap),
-      edges: Object.entries(edgesMap).flatMap(([source, targets]) =>
-        targets.map(target => ({ source, target }))
-      )
-    }
-  }, [tree])
+    return [
+      Object.values(nodesMap).map(n => {
+        const role =
+          n.level === 0
+            ? 'Querier'
+            : n.level === n.treeStructure.depth - 2
+            ? 'Leaf'
+            : n.level === n.treeStructure.depth - 1
+            ? 'Contributor'
+            : 'Aggregator'
+        const relatedObservations = observations.filter(
+          o => o.emitterId === n.nodeId || o.receiverId === n.nodeId
+        )
+        const expectedMessages = {
+          Contributor: n.treeStructure.groupSize,
+          Leaf: n.treeStructure.fanout + 1,
+          Aggregator: n.treeStructure.fanout + 1,
+          Querier: n.treeStructure.groupSize + 1
+        }
+
+        return {
+          ...n,
+          id: n.nodeId,
+          role,
+          startedWorking: relatedObservations.length > 0,
+          finishedWorking: relatedObservations.length === expectedMessages[role]
+        }
+      }),
+      Object.entries(edgesMap)
+        .flatMap(([source, targets]) =>
+          targets.map(target => ({ source, target }))
+        )
+        .map(e => {
+          return {
+            ...e,
+            activeEdge: !!observations
+              ?.filter(o => o.action !== 'receiveShare')
+              ?.find(o => o.receiverId === e.target && o.emitterId === e.source)
+          }
+        })
+    ]
+  }, [observations, tree])
 
   const handleLaunchExecution = useCallback(async () => {
     for (const contributor of tree) {
@@ -113,10 +157,10 @@ const Demonstration = () => {
   }, [tree, executionId, treeStructure, supervisorWebhook, client.stackClient])
 
   const handleTestObservation = useCallback(async () => {
-    const node = d3Tree.nodes[0]
-    const edge = d3Tree.edges[0]
-    const emitter = d3Tree.nodes.find(e => e.nodeId === edge.source)
-    const receiver = d3Tree.nodes.find(e => e.nodeId === edge.target)
+    const node = treeNodes[0]
+    const edge = treeEdges[0]
+    const emitter = treeNodes.find(e => e.nodeId === edge.source)
+    const receiver = treeNodes.find(e => e.nodeId === edge.target)
 
     await client.stackClient.fetchJSON('POST', supervisorWebhook, {
       executionId: node.executionId,
@@ -127,14 +171,19 @@ const Demonstration = () => {
       receiverId: receiver.nodeId,
       payload: {}
     })
-  }, [client.stackClient, d3Tree, supervisorWebhook])
+  }, [client.stackClient, supervisorWebhook, treeEdges, treeNodes])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
   ) : (
     <div>
-      {d3Tree ? (
-        <TreeNetworkGraph data={d3Tree} width={400} height={400} />
+      {treeNodes && treeEdges ? (
+        <TreeNetworkGraph
+          nodes={treeNodes}
+          edges={treeEdges}
+          width={400}
+          height={400}
+        />
       ) : null}
       <div className="full-agg-form">
         <div>
@@ -182,6 +231,7 @@ const Demonstration = () => {
           Test observation
         </Button>
       </div>
+      <NodesTable nodes={treeNodes} />
     </div>
   )
 }

@@ -1,7 +1,5 @@
 import React, { useRef, useEffect, useMemo } from 'react'
 import * as d3 from 'd3'
-import { useQueryAll } from 'cozy-client'
-import { recentObservationsQuery } from 'lib/queries'
 
 const drag = simulation => {
   function dragstarted(event, d) {
@@ -28,7 +26,13 @@ const drag = simulation => {
     .on('end', dragended)
 }
 
-function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
+function TreeNetworkGraph({
+  nodes,
+  edges,
+  width,
+  height,
+  onNodeClick = () => {}
+}) {
   const nodeRadius = 4
   const ref = useRef()
   const simulationRef = useRef(
@@ -53,53 +57,7 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
           .strength(0.8)
       )
   ).current
-  const depth = useMemo(() => Math.max(...data.nodes.map(e => e.level)), [
-    data.nodes
-  ])
-  const executionId = useMemo(() => data?.nodes[0]?.executionId, [data])
-  const query = recentObservationsQuery(executionId)
-  const { data: rawObservations } = useQueryAll(query.definition, query.options)
-  const observations = useMemo(
-    () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
-    [rawObservations]
-  )
-  const [nodes, edges] = useMemo(() => {
-    return [
-      data.nodes.map(n => {
-        const role =
-          n.level === 0
-            ? 'Querier'
-            : n.level === n.treeStructure.depth - 2
-            ? 'Leaf'
-            : n.level === n.treeStructure.depth - 1
-            ? 'Contributor'
-            : 'Aggregator'
-        const relatedObservations = observations.filter(
-          o => o.emitterId === n.nodeId || o.receiverId === n.nodeId
-        )
-        const expectedMessages = {
-          Contributor: n.treeStructure.groupSize,
-          Leaf: n.treeStructure.fanout + 1,
-          Aggregator: n.treeStructure.fanout + 1,
-          Querier: n.treeStructure.groupSize + 1
-        }
-
-        return {
-          ...n,
-          id: n.nodeId,
-          role,
-          startedWorking: relatedObservations.length > 0,
-          finishedWorking: relatedObservations.length === expectedMessages[role]
-        }
-      }),
-      data.edges.map(e => ({
-        ...e,
-        activeEdge: !!observations
-          ?.filter(o => o.action !== 'receiveShare')
-          ?.find(o => o.receiverId === e.target && o.emitterId === e.source)
-      }))
-    ]
-  }, [data.edges, data.nodes, observations])
+  const depth = useMemo(() => Math.max(...nodes.map(e => e.level)), [nodes])
 
   useEffect(() => {
     const svg = d3

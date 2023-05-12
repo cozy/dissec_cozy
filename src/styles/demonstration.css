@@ -1,6 +1,6 @@
 .demonstration-frame {
   width: 100%;
-  min-height: 80%;
+  height: 80vh;
 	padding-right: 1rem;
   border-radius: 10px;
   border-color: black;
