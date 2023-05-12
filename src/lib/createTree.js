@@ -15,6 +15,7 @@ const { v4: uuid } = require('uuid')
  * @returns
  */
 const createTree = (treeStructure, nodesWebhooks) => {
+  const executionId = uuid()
   let remainingWebhooks = [...nodesWebhooks]
 
   const createLevel = (parentGroup, depth) => {
@@ -42,6 +43,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
         nbChild: treeStructure.fanout,
         parents: undefined,
         nodeId: uuid(),
+        executionId,
         groupId,
         finalize: depth === 0
       }

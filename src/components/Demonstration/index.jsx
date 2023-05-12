@@ -26,22 +26,21 @@ const Demonstration = () => {
   const [depth, setDepth] = useState(3)
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
-  const [tree, setTree] = useState()
-  const [d3Tree, setD3Tree] = useState()
+  // const [d3Tree, setD3Tree] = useState()
   const executionId = useMemo(() => uuid(), [])
   const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
     depth,
     fanout,
     groupSize
   ])
+  const [tree, setTree] = useState()
 
   useEffect(() => {
-    if (!tree || tree.length === 0) {
+    if (!tree || tree[0]?.treeStructure !== treeStructure)
       setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
-    }
   }, [nodes, tree, treeStructure])
-  useEffect(() => {
-    if (!tree && !d3Tree) return
+  const d3Tree = useMemo(() => {
+    if (!tree) return
 
     const usedProperties = node => {
       return omit(node, ['parents'])
@@ -79,23 +78,18 @@ const Demonstration = () => {
       }
       nodesMap[node.nodeId] = {
         ...nodesMap[node.nodeId],
-        ...usedProperties(node),
-        executionId
+        ...usedProperties(node)
       }
     }
     tree.forEach(transformNode)
 
-    setD3Tree(old => {
-      if (!old) {
-        old = {}
-      }
-      old.nodes = Object.values(nodesMap)
-      old.edges = Object.entries(edgesMap).flatMap(([source, targets]) =>
+    return {
+      nodes: Object.values(nodesMap),
+      edges: Object.entries(edgesMap).flatMap(([source, targets]) =>
         targets.map(target => ({ source, target }))
       )
-      return old
-    })
-  }, [tree, executionId, d3Tree])
+    }
+  }, [tree])
 
   const handleLaunchExecution = useCallback(async () => {
     for (const contributor of tree) {

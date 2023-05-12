@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo } from 'react'
 import * as d3 from 'd3'
-import { useQuery } from 'cozy-client'
+import { useQueryAll } from 'cozy-client'
 import { recentObservationsQuery } from 'lib/queries'
 
 const drag = simulation => {
@@ -29,6 +29,7 @@ const drag = simulation => {
 }
 
 function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
+  const nodeRadius = 4
   const ref = useRef()
   const simulationRef = useRef(
     d3
@@ -57,10 +58,40 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
   ])
   const executionId = useMemo(() => data?.nodes[0]?.executionId, [data])
   const query = recentObservationsQuery(executionId)
-  const { data: observations } = useQuery(query.definition, query.options)
+  const { data: rawObservations } = useQueryAll(query.definition, query.options)
+  const observations = useMemo(
+    () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
+    [rawObservations]
+  )
   const [nodes, edges] = useMemo(() => {
     return [
-      data.nodes.map(e => ({ ...e, id: e.nodeId })),
+      data.nodes.map(n => {
+        const role =
+          n.level === 0
+            ? 'Querier'
+            : n.level === n.treeStructure.depth - 2
+            ? 'Leaf'
+            : n.level === n.treeStructure.depth - 1
+            ? 'Contributor'
+            : 'Aggregator'
+        const relatedObservations = observations.filter(
+          o => o.emitterId === n.nodeId || o.receiverId === n.nodeId
+        )
+        const expectedMessages = {
+          Contributor: n.treeStructure.groupSize,
+          Leaf: n.treeStructure.fanout + 1,
+          Aggregator: n.treeStructure.fanout + 1,
+          Querier: n.treeStructure.groupSize + 1
+        }
+
+        return {
+          ...n,
+          id: n.nodeId,
+          role,
+          startedWorking: relatedObservations.length > 0,
+          finishedWorking: relatedObservations.length === expectedMessages[role]
+        }
+      }),
       data.edges.map(e => ({
         ...e,
         activeEdge: !!observations
@@ -69,7 +100,6 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
       }))
     ]
   }, [data.edges, data.nodes, observations])
-  console.log('TreeNet', observations, nodes.map(e => e.nodeId), edges)
 
   useEffect(() => {
     const svg = d3
@@ -84,87 +114,89 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
     if (svg.selectAll('.nodes').empty()) {
       svg.append('g').classed('nodes', true)
     }
-
-    let link = svg.selectAll('.edges').selectAll('line')
-    if (link.empty()) {
-      link = svg
-        .selectAll('.edges')
-        .selectAll('line')
-        .call(d3.zoom().transform, d3.zoomIdentity)
-        .data(edges)
-        .enter()
-        .append('line')
+    if (svg.selectAll('.labels').empty()) {
+      svg.append('g').classed('labels', true)
     }
-    link
+
+    svg
+      .selectAll('.edges')
+      .selectAll('line')
       .data(edges)
+      .enter()
+      .append('line')
+    svg
+      .selectAll('.edges')
+      .selectAll('line')
+      .data(edges)
+      .exit()
+      .remove('line')
+    let link = svg.selectAll('.edges').selectAll('line')
+    link
       .call(d3.zoom().transform, d3.zoomIdentity)
       .attr('stroke', '#999')
       .attr('stroke-opacity', e => (e.activeEdge ? 1 : 0.6))
-      .attr('stroke-width', e => (e.activeEdge ? 5 : 1))
+      .attr('stroke-width', e => (e.activeEdge ? 3 : 1))
 
-    let node = svg.selectAll('.nodes').selectAll('.node')
-    if (node.empty()) {
-      node = svg
-        .selectAll('.nodes')
-        .selectAll('.node')
-        .data(nodes)
-        .enter()
-        .append('g')
-        .classed('node', true)
-
-      node
-        .append('circle')
-        .call(drag(simulationRef))
-        .on('click', onNodeClick)
-        .attr('r', 3.5)
-        .attr('fill', node =>
-          node.children.length !== 0
-            ? node.parents.length > 0
-              ? 'green'
-              : 'blue'
-            : 'red'
-        )
-        .attr('stroke', node =>
-          node.children.length !== 0
-            ? node.parents.length > 0
-              ? 'darkgreen'
-              : 'darkblue'
-            : 'darkred'
-        )
-
-      node
-        .append('text')
-        .text(d => `${d.label}`)
-        .style('font-size', 'xx-small')
-    }
-
-    const circle = node
+    svg
+      .selectAll('.nodes')
       .selectAll('circle')
+      .data(nodes)
+      .enter()
+      .append('circle')
+    svg
+      .selectAll('.nodes')
+      .selectAll('circle')
+      .data(nodes)
+      .exit()
+      .remove('circle')
+    let node = svg.selectAll('.nodes').selectAll('circle')
+
+    node
       .call(drag(simulationRef))
       .on('click', onNodeClick)
-      .attr('r', 3.5)
-      .attr('fill', node =>
-        node.children.length !== 0
-          ? node.parents.length > 0
-            ? 'green'
-            : 'blue'
-          : 'red'
-      )
-      .attr('stroke', node =>
-        node.children.length !== 0
-          ? node.parents.length > 0
+      .attr('r', nodeRadius)
+      .attr('fill', n => {
+        switch (n.role) {
+          case 'Contributor':
+            return 'red'
+          case 'Leaf':
+            return 'green'
+          case 'Aggregator':
+            return 'magenta'
+          case 'Querier':
+            return 'blue'
+        }
+      })
+      .attr('stroke', n => {
+        return n.startedWorking
+          ? n.finishedWorking
             ? 'darkgreen'
-            : 'darkblue'
-          : 'darkred'
+            : 'darkred'
+          : 'black'
+      })
+      .attr('mask', n =>
+        n.startedWorking && !n.finishedWorking ? 'url(#workMask)' : undefined
       )
-    const label = node
+
+    svg
+      .selectAll('.labels')
       .selectAll('text')
-      .text(d => `${d.label}`)
-      .style('font-size', 'xx-small')
+      .data(nodes)
+      .enter()
+      .append('text')
+    svg
+      .selectAll('.labels')
+      .selectAll('text')
+      .data(nodes)
+      .exit()
+      .remove('text')
+    let label = svg.selectAll('.labels').selectAll('text')
+    label.text(d => `${d.label}`).style('font-size', 'xx-small')
 
     function zoomed({ transform }) {
-      node.attr('transform', () => `scale(${transform.k})`)
       link.attr('transform', () => `scale(${transform.k})`)
+      node.attr('transform', () => `scale(${transform.k})`)
+      label.attr('transform', () => `scale(${transform.k})`)
     }
 
     svg.call(
@@ -181,21 +213,10 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
         .attr('y1', d => d.source.y)
         .attr('x2', d => d.target.x)
         .attr('y2', d => d.target.y)
-
-      circle.attr('cx', d => d.x).attr('cy', d => d.y)
+      node.attr('cx', d => d.x).attr('cy', d => d.y)
       label.attr('dx', d => d.x).attr('dy', d => d.y)
     })
-  }, [
-    depth,
-    edges,
-    height,
-    nodes,
-    observations,
-    onNodeClick,
-    ref,
-    simulationRef,
-    width
-  ])
+  }, [depth, edges, height, nodes, onNodeClick, ref, simulationRef, width])
 
   useEffect(() => {
     simulationRef.nodes(nodes)
@@ -210,9 +231,21 @@ function TreeNetworkGraph({ data, width, height, onNodeClick = () => {} }) {
         .strength(0.8)
     )
     simulationRef.alpha(1).restart()
-  }, [depth, edges, height, nodes, observations, simulationRef])
+  }, [depth, edges, height, nodes, simulationRef])
 
-  return <svg ref={ref} className="demonstration-frame" />
+  return (
+    <svg ref={ref} className="demonstration-frame">
+      <mask id="workMask" maskContentUnits="objectBoundingBox">
+        <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" />
+        <polygon
+          fill="black"
+          width="100%"
+          height="100%"
+          points="0.5,0.2 0.68,0.74 0.21,0.41 0.79,0.41 0.32,0.74"
+        />
+      </mask>
+    </svg>
+  )
 }
 
 export default TreeNetworkGraph

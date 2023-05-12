@@ -37,18 +37,24 @@ export const observationsQuery = () => ({
   }
 })
 
+// FIXME: Effectively filter messages
 export const recentObservationsQuery = executionId => ({
   definition: () =>
     Q(OBSERVATIONS_DOCTYPE)
-      .indexFields(['updatedAt', 'executionId'])
-      .where({
-        executionId,
-        action: {
-          $ne: 'receiveShare'
-        }
-      })
-      .sortBy([{ updatedAt: 'desc' }])
-      .limitBy(3),
+      // .where({
+      //   executionId: executionId,
+      //   updatedAt: {
+      //     $gt: null
+      //   }
+      // })
+      // .partialIndex({
+      //   action: {
+      //     $ne: 'receiveShare'
+      //   }
+      // })
+      .indexFields(['executionId', 'updatedAt'])
+      .sortBy([{ executionId: 'desc' }, { updatedAt: 'desc' }]),
+  // .limitBy(3),
   options: {
     as: `${OBSERVATIONS_DOCTYPE}/${executionId}`
   }

@@ -21,6 +21,7 @@ import { v4 as uuid } from 'uuid'
  * @returns
  */
 const createTree = (treeStructure, nodesWebhooks) => {
+  const executionId = uuid()
   let remainingWebhooks = [...nodesWebhooks]
 
   const createLevel = (parentGroup, depth) => {
@@ -45,9 +46,11 @@ const createTree = (treeStructure, nodesWebhooks) => {
         contributionWebhook,
         aggregationWebhook,
         level: depth,
+        treeStructure,
         nbChild: treeStructure.fanout,
         parents: undefined,
         nodeId: uuid(),
+        executionId,
         groupId,
         finalize: depth === 0
       }
