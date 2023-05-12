@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useEffect, useState, useMemo } from 'react'
 import * as d3 from 'd3'
 
 const drag = simulation => {
@@ -35,6 +35,8 @@ function TreeNetworkGraph({
 }) {
   const nodeRadius = 4
   const ref = useRef()
+  const [hoveredNode, setHoveredNode] = useState()
+  const [hoveredEdge, setHoveredEdge] = useState()
   const simulationRef = useRef(
     d3
       .forceSimulation()
@@ -90,6 +92,12 @@ function TreeNetworkGraph({
       .remove('line')
     let link = svg.selectAll('.edges').selectAll('line')
     link
+      .on('mouseover', function(_, edge) {
+        setHoveredEdge(edge)
+      })
+      .on('mouseout', function() {
+        setHoveredEdge()
+      })
       .call(d3.zoom().transform, d3.zoomIdentity)
       .attr('stroke', '#999')
       .attr('stroke-opacity', e => (e.activeEdge ? 1 : 0.6))
@@ -112,6 +120,12 @@ function TreeNetworkGraph({
     node
       .call(drag(simulationRef))
       .on('click', onNodeClick)
+      .on('mouseover', function(_, node) {
+        setHoveredNode(node)
+      })
+      .on('mouseout', function() {
+        setHoveredNode()
+      })
       .attr('r', nodeRadius)
       .attr('fill', n => {
         switch (n.role) {
@@ -193,6 +207,32 @@ function TreeNetworkGraph({
 
   return (
     <svg ref={ref} className="demonstration-frame">
+      {hoveredNode ? (
+        <text x={-width / 2} y={-height / 2 + 2} fontSize="12" dy="0">
+          <tspan x={-width / 2} dy=".6em">
+            {hoveredNode.nodeId}
+          </tspan>
+          <tspan x={-width / 2} dy="1.2em">
+            Started working: {String(hoveredNode.startedWorking)}
+          </tspan>
+          <tspan x={-width / 2} dy="1.2em">
+            Finished working: {String(hoveredNode.finishedWorking)}
+          </tspan>
+        </text>
+      ) : null}
+      {hoveredEdge ? (
+        <text x={-width / 2} y={-height / 2 + 2} fontSize="12" dy="0">
+          <tspan x={-width / 2} dy=".6em">
+            Source: {hoveredEdge.source.label}
+          </tspan>
+          <tspan x={-width / 2} dy="1.2em">
+            Target: {hoveredEdge.target.label}
+          </tspan>
+          <tspan x={-width / 2} dy="1.2em">
+            Active: {String(hoveredEdge.activeEdge)}
+          </tspan>
+        </text>
+      ) : null}
       <mask id="workMask" maskContentUnits="objectBoundingBox">
         <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" />
         <polygon
