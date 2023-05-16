@@ -33,7 +33,7 @@ function TreeNetworkGraph({
   height,
   onNodeClick = () => {}
 }) {
-  const nodeRadius = 4
+  const nodeRadius = 12
   const ref = useRef()
   const [hoveredNode, setHoveredNode] = useState()
   const [hoveredEdge, setHoveredEdge] = useState()
@@ -45,7 +45,7 @@ function TreeNetworkGraph({
         d3
           .forceLink()
           .id(d => `${d.nodeId}`)
-          .strength(0.5)
+          .strength(0.4)
       )
       .force('charge', d3.forceManyBody().strength(-400))
       .force('x', d3.forceX())
@@ -163,7 +163,13 @@ function TreeNetworkGraph({
       .exit()
       .remove('text')
     let label = svg.selectAll('.labels').selectAll('text')
-    label.text(d => `${d.label}`).style('font-size', 'xx-small')
+    label
+      .text(d => `${d.label}`)
+      .style('font-size', 'xx-small')
+      .style('font-weight', 'bold')
+      .style('display', d =>
+        d.nodeId === hoveredNode?.nodeId ? 'block' : 'none'
+      )
 
     function zoomed({ transform }) {
       link.attr('transform', () => `scale(${transform.k})`)
@@ -186,9 +192,19 @@ function TreeNetworkGraph({
         .attr('x2', d => d.target.x)
         .attr('y2', d => d.target.y)
       node.attr('cx', d => d.x).attr('cy', d => d.y)
-      label.attr('dx', d => d.x).attr('dy', d => d.y)
+      label.attr('dx', d => d.x + nodeRadius).attr('dy', d => d.y)
     })
-  }, [depth, edges, height, nodes, onNodeClick, ref, simulationRef, width])
+  }, [
+    depth,
+    edges,
+    height,
+    hoveredNode,
+    nodes,
+    onNodeClick,
+    ref,
+    simulationRef,
+    width
+  ])
 
   useEffect(() => {
     simulationRef.nodes(nodes)
