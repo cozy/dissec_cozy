@@ -13,7 +13,7 @@ import { classes, tinyClasses, tinyVocabulary, vocabulary } from './helpers'
 const NOISE_CEILING = 300000
 
 export class Model {
-  constructor({ useTiny = true }) {
+  constructor({ useTiny = true } = {}) {
     this.vocabulary = useTiny ? tinyVocabulary : vocabulary
     this.uniqueY = Object.keys(useTiny ? tinyClasses : classes)
     this.classifiers = []
@@ -101,15 +101,16 @@ export class Model {
    * @param {CreateModelFromAggregateOptions} options Use the global model as well
    * @return {Promise<Model>} The new model
    */
-  static async fromAggregate(doc, options = {}) {
-    options = Object.assign({ useGlobalModel: false, useTiny: true }, options)
-
-    let model = new Model({ useTiny: options.useTiny })
+  static async fromAggregate(
+    doc,
+    { useGlobalModel = false, useTiny = true } = {}
+  ) {
+    let model = new Model({ useTiny })
     model.occurences = doc.occurences
     model.contributions = doc.contributions
     model.initializeClassifier()
     const { categorize } = await createCategorizer({
-      useGlobalModel: options.useGlobalModel,
+      useGlobalModel,
       pretrainedClassifier: model.classifiers[0]
     })
     model.categorize = categorize
@@ -123,11 +124,12 @@ export class Model {
    * @param {CreateModelFromAggregateOptions} options
    * @return {Promise<Model>} The new model
    */
-  static async fromCompressedAggregate(compressedAggregate, options = {}) {
-    options = Object.assign({ useGlobalModel: false, useTiny: true }, options)
-
+  static async fromCompressedAggregate(
+    compressedAggregate,
+    { useGlobalModel = false, useTiny = true } = {}
+  ) {
     const doc = Model.compressedBinaryToShare(compressedAggregate)
-    return await Model.fromAggregate(doc, options)
+    return await Model.fromAggregate(doc, { useTiny, useGlobalModel })
   }
 
   /**
@@ -144,11 +146,9 @@ export class Model {
    * @param {ModelCreationOptions} options Reconstruction options
    * @return {Model} The new model
    */
-  static fromShares(shares, options = {}) {
-    options = Object.assign({ useTiny: true, shouldFinalize: false }, options)
-
+  static fromShares(shares, { shouldFinalize = false, useTiny = true } = {}) {
     // TODO: Do not write an occurences matrix, only the wordFrequencyCount
-    let model = new Model({ useTiny: options.useTiny })
+    let model = new Model({ useTiny })
     model.contributions = 0
     shares.forEach(share => (model.contributions += share.contributions))
 
@@ -162,7 +162,7 @@ export class Model {
       }
     }
 
-    if (options.shouldFinalize) {
+    if (shouldFinalize) {
       for (let j = 0; j < model.uniqueY.length; j++) {
         for (let i = 0; i < model.vocabulary.length; i++) {
           model.occurences[j][i] /= shares.length
@@ -182,13 +182,14 @@ export class Model {
    * @param {ModelCreationOptions} options Reconstruction options
    * @return {Model} The new model
    */
-  static fromCompressedShares(compressedShares, options = {}) {
-    options = Object.assign({ shouldFinalize: false, useTiny: true }, options)
-
+  static fromCompressedShares(
+    compressedShares,
+    { shouldFinalize = false, useTiny = true } = {}
+  ) {
     const shares = compressedShares.map(cshare => {
       return Model.compressedBinaryToShare(String(cshare))
     })
-    return Model.fromShares(shares, options)
+    return Model.fromShares(shares, { shouldFinalize, useTiny })
   }
 
   /**
@@ -205,12 +206,10 @@ export class Model {
    * @param {CreateModelFromDocsOptions} options Use the global model as well
    * @return {Promise<Model>} The new model
    */
-  static async fromDocs(docs, options = {}) {
-    options = Object.assign({ useGlobalModel: false, useTiny: true }, options)
-
-    const model = new Model({ useTiny: options.useTiny })
+  static async fromDocs(docs, { useGlobalModel = false, useTiny = true } = {}) {
+    const model = new Model({ useTiny })
     const { categorize, classifiers } = await createCategorizer({
-      useGlobalModel: options.useGlobalModel,
+      useGlobalModel,
       customTransactionFetcher: () => docs.filter(tx => tx.manualCategoryId)
     })
     model.classifiers = classifiers
@@ -331,11 +330,9 @@ export class Model {
    * @param {Object} share A share object to compress
    * @return {string} the string representing the compressed share
    */
-  static shareToCompressedBinary(share, options = {}) {
-    options = Object.assign({ useTiny: true }, options)
-
-    const vocab = options.useTiny ? tinyVocabulary : vocabulary
-    const uniqueY = Object.keys(options.useTiny ? tinyClasses : classes)
+  static shareToCompressedBinary(share, { useTiny = true } = {}) {
+    const vocab = useTiny ? tinyVocabulary : vocabulary
+    const uniqueY = Object.keys(useTiny ? tinyClasses : classes)
     const rows = uniqueY.length
     const cols = vocab.length
     const numberSize = 4
@@ -362,11 +359,9 @@ export class Model {
    * @param {string} compressed The compressed share
    * @return {Object} The share object
    */
-  static compressedBinaryToShare(compressed, options = {}) {
-    options = Object.assign({ useTiny: true }, options)
-
-    const vocab = options.useTiny ? tinyVocabulary : vocabulary
-    const uniqueY = Object.keys(options.useTiny ? tinyClasses : classes)
+  static compressedBinaryToShare(compressed, { useTiny = true } = {}) {
+    const vocab = useTiny ? tinyVocabulary : vocabulary
+    const uniqueY = Object.keys(useTiny ? tinyClasses : classes)
     const decompressed = LZUTF8.decompress(compressed, {
       inputEncoding: 'StorageBinaryString'
     })
