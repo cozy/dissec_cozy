@@ -1,6 +1,7 @@
 import CozyClient, { Q } from 'cozy-client'
 
 import { createLogger, getOrCreateAppDirectory } from './helpers'
+import { sendObservation } from '../../lib/sendObservation'
 
 global.fetch = require('node-fetch').default
 
@@ -14,8 +15,10 @@ export const receiveShares = async () => {
     parents,
     finalize,
     level,
+    sourceId,
     nodeId,
     executionId,
+    group,
     useTiny,
     supervisorWebhook
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
@@ -77,23 +80,33 @@ export const receiveShares = async () => {
   }
 
   // Save the received share
-  await client.create('io.cozy.files', {
-    type: 'file',
-    data: share,
-    dirId: aggregationDirectory._id,
-    name: `aggregator_${nodeId}_level_${level}_${sharecode}`,
-    metadata: {
-      dissec: true,
-      executionId,
-      nodeId,
-      level,
-      treeStructure,
-      parents,
-      finalize,
-      useTiny
+  try {
+    await client.create('io.cozy.files', {
+      type: 'file',
+      data: share,
+      dirId: aggregationDirectory._id,
+      name: `aggregator${nodeId}_source${sourceId}_${sharecode}`,
+      metadata: {
+        dissec: true,
+        executionId,
+        nodeId,
+        level,
+        treeStructure,
+        parents,
+        finalize,
+        useTiny
+      }
+    })
+    log('Stored share!')
+  } catch (err) {
+    if (err.status === 409) {
+      log('Error: conflict when trying to create the received share.')
+    } else {
+      throw new Error(
+        `Error while creating the share (aggregator${nodeId}_source${sourceId}_${sharecode})`
+      )
     }
-  })
-  log('Stored share!')
+  }
 
   // Aggregations are triggered after writing the share
   // It prevents synchronicity issues
@@ -130,9 +143,11 @@ export const receiveShares = async () => {
         aggregationDirectoryId: aggregationDirectory._id,
         dissec: true,
         executionId,
+        sourceId: nodeId,
         nodeId,
         level,
         treeStructure,
+        group,
         parents,
         finalize,
         useTiny,
@@ -141,9 +156,10 @@ export const receiveShares = async () => {
     })
   }
 
-  if (supervisorWebhook) {
-    // Send an observation to the supervisor
-    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+  await sendObservation({
+    client,
+    supervisorWebhook,
+    payload: {
       executionId,
       action: 'receiveShare',
       emitterDomain: domain,
@@ -153,10 +169,8 @@ export const receiveShares = async () => {
       payload: {
         continueAggregation: receivedShares.length === expectedShares
       }
-    })
-
-    log(`Sent an observation to ${supervisorWebhook}`)
-  }
+    }
+  })
 }
 
 receiveShares().catch(e => {

@@ -58,6 +58,8 @@ const createTree = (treeStructure, nodesWebhooks) => {
       currentGroup.push(node)
     }
 
+    currentGroup.forEach(node => (node.group = currentGroup.map(e => e.nodeId)))
+
     // The querier contains the same node multiple times
     if (parentGroup.length === 0) {
       currentGroup.push(
