@@ -51,6 +51,7 @@ function NodesTable({ nodes }) {
       <TableHead>
         <TableRow>
           <TableHeader style={cellStyles}>Domain</TableHeader>
+          <TableHeader style={cellStyles}>Role</TableHeader>
           <TableHeader style={cellStyles}>Node ID</TableHeader>
           <TableHeader style={cellStyles}>Started working</TableHeader>
           <TableHeader style={cellStyles}>Finished working</TableHeader>
@@ -60,6 +61,7 @@ function NodesTable({ nodes }) {
         {nodes.map(node => (
           <TableRow key={node.nodeId}>
             <TableCell style={cellStyles}>{node.label}</TableCell>
+            <TableCell style={cellStyles}>{node.role}</TableCell>
             <TableCell style={cellStyles}>
               {node.nodeId.slice(0, 7) + '...'}
             </TableCell>

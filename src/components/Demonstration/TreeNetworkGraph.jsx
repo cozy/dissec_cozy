@@ -218,7 +218,7 @@ function TreeNetworkGraph({
         })
         .strength(0.8)
     )
-    simulationRef.alpha(1).restart()
+    // simulationRef.alpha(1).restart()
   }, [depth, edges, height, nodes, simulationRef])
 
   return (

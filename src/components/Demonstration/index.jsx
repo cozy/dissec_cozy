@@ -27,6 +27,7 @@ const Demonstration = () => {
   const [depth, setDepth] = useState(3)
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
+  const [lastExecutionId, setLastExecutionId] = useState()
   const executionId = useMemo(() => uuid(), [])
   const observationsQuery = recentObservationsQuery(executionId)
   const { data: rawObservations } = useQuery(
@@ -37,7 +38,6 @@ const Demonstration = () => {
     () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
     [rawObservations]
   )
-  // const [d3Tree, setD3Tree] = useState()
   const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
     depth,
     fanout,
@@ -129,7 +129,11 @@ const Demonstration = () => {
             ...e,
             activeEdge: !!observations
               ?.filter(o => o.action !== 'receiveShare')
-              ?.find(o => o.receiverId === e.target && o.emitterId === e.source)
+              ?.find(
+                o =>
+                  (o.receiverId === e.target && o.emitterId === e.source) ||
+                  (o.receiverId === e.source && o.emitterId === e.target)
+              )
           }
         })
     ]
@@ -154,37 +158,13 @@ const Demonstration = () => {
         contributionBody
       )
     }
+    setLastExecutionId(tree[0]?.executionId)
   }, [tree, executionId, treeStructure, supervisorWebhook, client.stackClient])
-
-  const handleTestObservation = useCallback(async () => {
-    const node = treeNodes[0]
-    const edge = treeEdges[0]
-    const emitter = treeNodes.find(e => e.nodeId === edge.source)
-    const receiver = treeNodes.find(e => e.nodeId === edge.target)
-
-    await client.stackClient.fetchJSON('POST', supervisorWebhook, {
-      executionId: node.executionId,
-      action: 'contribution',
-      emitterDomain: emitter.label,
-      emitterId: emitter.nodeId,
-      receiverDomain: receiver.label,
-      receiverId: receiver.nodeId,
-      payload: {}
-    })
-  }, [client.stackClient, supervisorWebhook, treeEdges, treeNodes])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
   ) : (
     <div>
-      {treeNodes && treeEdges ? (
-        <TreeNetworkGraph
-          nodes={treeNodes}
-          edges={treeEdges}
-          width={400}
-          height={400}
-        />
-      ) : null}
       <div className="full-agg-form">
         <div>
           <Label htmlFor="full-agg-contributors">Depth: </Label>
@@ -210,27 +190,30 @@ const Demonstration = () => {
             id="full-agg-contributors"
           />
         </div>
+        {lastExecutionId === tree[0]?.executionId ? (
+          <span className="full-agg-error">
+            Regenerate the tree by changing a parameter to relaunch an execution
+          </span>
+        ) : null}
         <Button
           className="button-basic"
-          //theme="danger"
           iconOnly
           label="Launch execution"
           onClick={handleLaunchExecution}
           extension="narrow"
+          disabled={lastExecutionId === tree[0]?.executionId}
         >
           Launch execution
         </Button>
-        <Button
-          className="button-basic"
-          //theme="danger"
-          iconOnly
-          label="Launch execution"
-          onClick={handleTestObservation}
-          extension="narrow"
-        >
-          Test observation
-        </Button>
       </div>
+      {treeNodes && treeEdges ? (
+        <TreeNetworkGraph
+          nodes={treeNodes}
+          edges={treeEdges}
+          width={400}
+          height={400}
+        />
+      ) : null}
       <NodesTable nodes={treeNodes} />
     </div>
   )
