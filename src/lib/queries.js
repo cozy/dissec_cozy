@@ -41,20 +41,11 @@ export const observationsQuery = () => ({
 export const recentObservationsQuery = executionId => ({
   definition: () =>
     Q(OBSERVATIONS_DOCTYPE)
-      // .where({
-      //   executionId: executionId,
-      //   updatedAt: {
-      //     $gt: null
-      //   }
-      // })
-      // .partialIndex({
-      //   action: {
-      //     $ne: 'receiveShare'
-      //   }
-      // })
+      .where({
+        executionId: executionId
+      })
       .indexFields(['executionId', 'updatedAt'])
       .sortBy([{ executionId: 'desc' }, { updatedAt: 'desc' }]),
-  // .limitBy(3),
   options: {
     as: `${OBSERVATIONS_DOCTYPE}/${executionId}`
   }
