@@ -21,6 +21,7 @@ import { v4 as uuid } from 'uuid'
  * @returns
  */
 const createTree = (treeStructure, nodesWebhooks) => {
+  const executionId = uuid()
   let remainingWebhooks = [...nodesWebhooks]
 
   const createLevel = (parentGroup, depth) => {
@@ -45,9 +46,11 @@ const createTree = (treeStructure, nodesWebhooks) => {
         contributionWebhook,
         aggregationWebhook,
         level: depth,
+        treeStructure,
         nbChild: treeStructure.fanout,
         parents: undefined,
         nodeId: uuid(),
+        executionId,
         groupId,
         finalize: depth === 0
       }
@@ -61,6 +64,8 @@ const createTree = (treeStructure, nodesWebhooks) => {
 
       currentGroup.push(node)
     }
+
+    currentGroup.forEach(node => (node.group = currentGroup.map(e => e.nodeId)))
 
     // The querier contains the same node multiple times
     if (parentGroup.length === 0) {

@@ -5,6 +5,7 @@ import dissecConfig from '../../../dissec.config.json'
 import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
+import { sendObservation } from '../../lib/sendObservation'
 
 global.fetch = require('node-fetch').default
 
@@ -84,8 +85,9 @@ export const contribution = async () => {
   // Create sharing permissions for shares
   const shareCodes = []
   for (let i in files) {
+    const code = `aggregator${parents[i].nodeId}`
     const { data: sharing } = await client.create('io.cozy.permissions', {
-      codes: `aggregator${i}`,
+      codes: code,
       ttl: '1h',
       permissions: {
         shares: {
@@ -95,7 +97,7 @@ export const contribution = async () => {
         }
       }
     })
-    shareCodes.push(sharing.attributes.shortcodes[`aggregator${i}`])
+    shareCodes.push(sharing.attributes.shortcodes[code])
   }
 
   // Call webhooks of parents with the share
@@ -106,16 +108,11 @@ export const contribution = async () => {
     )
 
     const payload = {
-      executionId,
+      ...parents[i],
       docId: files[i],
       sharecode: shareCodes[i],
       uri: client.stackClient.uri,
-      treeStructure,
-      parents: parents[i].parents,
-      finalize: parents[i].finalize,
-      level: parents[i].level,
-      nodeId: parents[i].nodeId,
-      nbChild: parents[i].nbChild,
+      sourceId: nodeId,
       useTiny,
       supervisorWebhook
     }
@@ -127,22 +124,29 @@ export const contribution = async () => {
       payload
     )
 
-    if (supervisorWebhook) {
-      // Send an observation to the supervisor
-      await client.stackClient.fetchJSON('POST', supervisorWebhook, {
+    await sendObservation({
+      client,
+      supervisorWebhook,
+      payload: {
         executionId,
         action: 'contribution',
         emitterDomain: domain,
         emitterId: nodeId,
-        receiverDomain: parents[i].aggregationWebhook
-          .split('/')
-          .find(e => e.includes('localhost:8080')),
-        receiverId: parents[i].nodeId,
-        payload
-      })
-
-      log(`Sent an observation to ${supervisorWebhook}`)
-    }
+        receiverDomain: domain,
+        receiverId: nodeId,
+        payload: {
+          executionId,
+          action: 'contribution',
+          emitterDomain: domain,
+          emitterId: nodeId,
+          receiverDomain: parents[i].aggregationWebhook
+            .split('/')
+            .find(e => e.includes('localhost:8080')),
+          receiverId: parents[i].nodeId,
+          payload
+        }
+      }
+    })
 
     log(
       `Sent share ${Number(i) + 1} to aggregator ${

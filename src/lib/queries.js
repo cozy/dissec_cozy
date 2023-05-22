@@ -36,3 +36,17 @@ export const observationsQuery = () => ({
     as: `${OBSERVATIONS_DOCTYPE}`
   }
 })
+
+// FIXME: Effectively filter messages
+export const recentObservationsQuery = executionId => ({
+  definition: () =>
+    Q(OBSERVATIONS_DOCTYPE)
+      .where({
+        executionId: executionId
+      })
+      .indexFields(['executionId', 'updatedAt'])
+      .sortBy([{ executionId: 'desc' }, { updatedAt: 'desc' }]),
+  options: {
+    as: `${OBSERVATIONS_DOCTYPE}/${executionId}`
+  }
+})

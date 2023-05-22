@@ -1,6 +1,7 @@
 import 'cozy-ui/dist/cozy-ui.utils.min.css'
 import 'cozy-ui/transpiled/react/stylesheet.css'
 
+import { RealTimeQueries } from 'cozy-client'
 import { Sprite as IconSprite } from 'cozy-ui/react/Icon'
 import { Content, Layout, Main } from 'cozy-ui/react/Layout'
 import React from 'react'
@@ -13,11 +14,13 @@ import Operations from './Operations'
 import Supervisor from './Supervisor'
 import Demonstration from './Demonstration'
 import Sidebar from './Sidebar'
+import { OBSERVATIONS_DOCTYPE } from 'doctypes'
 
 const App = () => {
   return (
     <HashRouter>
       <Layout>
+        <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
         <Sidebar />
         <Main>
           <Content className="app-content">
