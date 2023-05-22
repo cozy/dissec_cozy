@@ -44,8 +44,8 @@ export const recentObservationsQuery = executionId => ({
       .where({
         executionId: executionId
       })
-      .indexFields(['executionId', 'updatedAt'])
-      .sortBy([{ executionId: 'desc' }, { updatedAt: 'desc' }]),
+      .indexFields(['executionId', 'cozyMetadata.updatedAt'])
+      .sortBy([{ executionId: 'desc' }, { 'cozyMetadata.updatedAt': 'desc' }]),
   options: {
     as: `${OBSERVATIONS_DOCTYPE}/${executionId}`
   }
