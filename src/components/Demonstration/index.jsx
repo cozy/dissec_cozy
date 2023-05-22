@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { v4 as uuid } from 'uuid'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
-import { useClient, useQuery, useQueryAll } from 'cozy-client'
-import { nodesQuery, webhooksQuery, recentObservationsQuery } from 'lib/queries'
+import { useClient, useQueryAll } from 'cozy-client'
+import {
+  nodesQuery,
+  webhooksQuery,
+  observationsByExecutionQuery
+} from 'lib/queries'
 import createTree from 'lib/createTreeExported'
 import TreeNetworkGraph from './TreeNetworkGraph'
 import Spinner from 'cozy-ui/react/Spinner'
@@ -28,9 +31,16 @@ const Demonstration = () => {
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
   const [lastExecutionId, setLastExecutionId] = useState()
-  const executionId = useMemo(() => uuid(), [])
-  const observationsQuery = recentObservationsQuery(executionId)
-  const { data: rawObservations } = useQuery(
+  const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
+    depth,
+    fanout,
+    groupSize
+  ])
+  const [tree, setTree] = useState()
+  const observationsQuery = observationsByExecutionQuery(
+    tree ? tree[0]?.executionId : undefined
+  )
+  const { data: rawObservations } = useQueryAll(
     observationsQuery.definition,
     observationsQuery.options
   )
@@ -38,12 +48,6 @@ const Demonstration = () => {
     () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
     [rawObservations]
   )
-  const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
-    depth,
-    fanout,
-    groupSize
-  ])
-  const [tree, setTree] = useState()
   useEffect(() => {
     if (!tree || tree[0]?.treeStructure !== treeStructure)
       setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
@@ -143,7 +147,6 @@ const Demonstration = () => {
     for (const contributor of tree) {
       const contributionBody = {
         ...contributor,
-        executionId,
         pretrained: false,
         treeStructure,
         useTiny: true,
@@ -159,7 +162,7 @@ const Demonstration = () => {
       )
     }
     setLastExecutionId(tree[0]?.executionId)
-  }, [tree, executionId, treeStructure, supervisorWebhook, client.stackClient])
+  }, [tree, treeStructure, supervisorWebhook, client.stackClient])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
