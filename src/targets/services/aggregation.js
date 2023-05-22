@@ -96,7 +96,8 @@ export const aggregation = async () => {
   } else {
     // Only using the corresponding parent
     const index = group.indexOf(nodeId)
-    const parent = parents[index]
+    // Use the first parent when it is the final aggregator
+    const parent = parents[0]?.finalize ? parents[0] : parents[index]
 
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {
