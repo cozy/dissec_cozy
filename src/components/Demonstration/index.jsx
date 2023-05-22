@@ -140,6 +140,7 @@ const Demonstration = () => {
   }, [observations, tree])
 
   const handleLaunchExecution = useCallback(async () => {
+    setLastExecutionId(tree[0]?.executionId)
     for (const contributor of tree) {
       const contributionBody = {
         ...contributor,
@@ -157,8 +158,11 @@ const Demonstration = () => {
         contributionBody
       )
     }
-    setLastExecutionId(tree[0]?.executionId)
   }, [tree, treeStructure, supervisorWebhook, client.stackClient])
+
+  const handleRegenerateTree = useCallback(() => {
+    setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
+  }, [nodes, treeStructure])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
@@ -190,20 +194,34 @@ const Demonstration = () => {
           />
         </div>
         {lastExecutionId === tree[0]?.executionId ? (
-          <span className="full-agg-error">
-            Regenerate the tree by changing a parameter to relaunch an execution
-          </span>
-        ) : null}
-        <Button
-          className="button-basic"
-          iconOnly
-          label="Launch execution"
-          onClick={handleLaunchExecution}
-          extension="narrow"
-          disabled={lastExecutionId === tree[0]?.executionId}
-        >
-          Launch execution
-        </Button>
+          <>
+            <Button
+              className="button-basic"
+              iconOnly
+              label="Regenerate tree"
+              onClick={handleRegenerateTree}
+              extension="narrow"
+              disabled={lastExecutionId !== tree[0]?.executionId}
+            >
+              Regenerate tree
+            </Button>
+            <span className="full-agg-error">
+              Regenerate the tree by changing a parameter to relaunch an
+              execution
+            </span>
+          </>
+        ) : (
+          <Button
+            className="button-basic"
+            iconOnly
+            label="Launch execution"
+            onClick={handleLaunchExecution}
+            extension="narrow"
+            disabled={lastExecutionId === tree[0]?.executionId}
+          >
+            Launch execution
+          </Button>
+        )}
       </div>
       {treeNodes && treeEdges ? (
         <TreeNetworkGraph
