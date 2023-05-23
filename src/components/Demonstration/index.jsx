@@ -27,6 +27,7 @@ const Demonstration = () => {
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
   const [lastExecutionId, setLastExecutionId] = useState()
+  const [isRunning, setIsRunning] = useState(false)
   const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
     depth,
     fanout,
@@ -44,10 +45,6 @@ const Demonstration = () => {
     () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
     [rawObservations]
   )
-  useEffect(() => {
-    if (!tree || tree[0]?.treeStructure !== treeStructure)
-      setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
-  }, [nodes, tree, treeStructure])
   const [treeNodes, treeEdges] = useMemo(() => {
     if (!tree) return []
 
@@ -139,6 +136,7 @@ const Demonstration = () => {
   }, [observations, tree])
 
   const handleLaunchExecution = useCallback(async () => {
+    setIsRunning(true)
     setLastExecutionId(tree[0]?.executionId)
     for (const contributor of tree) {
       const contributionBody = {
@@ -162,6 +160,24 @@ const Demonstration = () => {
   const handleRegenerateTree = useCallback(() => {
     setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
   }, [nodes, treeStructure])
+
+  // Waiting for the execution to finish
+  useEffect(() => {
+    if (
+      observations.filter(
+        observation =>
+          observation.action === 'aggregation' && observation.payload.finished
+      ).length > 0
+    ) {
+      setIsRunning(false)
+    }
+  }, [observations])
+
+  // Recompute tree
+  useEffect(() => {
+    if (!tree || tree[0]?.treeStructure !== treeStructure)
+      setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
+  }, [nodes, tree, treeStructure])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
@@ -200,7 +216,8 @@ const Demonstration = () => {
               label="Regenerate tree"
               onClick={handleRegenerateTree}
               extension="narrow"
-              disabled={lastExecutionId !== tree[0]?.executionId}
+              busy={isRunning}
+              disabled={lastExecutionId !== tree[0]?.executionId || isRunning}
             >
               Regenerate tree
             </Button>
@@ -216,6 +233,7 @@ const Demonstration = () => {
             label="Launch execution"
             onClick={handleLaunchExecution}
             extension="narrow"
+            busy={isRunning}
             disabled={lastExecutionId === tree[0]?.executionId}
           >
             Launch execution
