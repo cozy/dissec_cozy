@@ -35,6 +35,7 @@ function TreeNetworkGraph({
 }) {
   const nodeRadius = 12
   const ref = useRef()
+  const executionId = useMemo(() => nodes[0]?.executionId, [nodes])
   const [hoveredNode, setHoveredNode] = useState()
   const [hoveredEdge, setHoveredEdge] = useState()
   const simulationRef = useRef(
@@ -127,24 +128,14 @@ function TreeNetworkGraph({
         setHoveredNode()
       })
       .attr('r', nodeRadius)
+      .attr('stroke', 'black')
+      .attr('stroke-width', nodeRadius / 3)
       .attr('fill', n => {
-        switch (n.role) {
-          case 'Contributor':
-            return 'red'
-          case 'Leaf':
-            return 'green'
-          case 'Aggregator':
-            return 'magenta'
-          case 'Querier':
-            return 'blue'
-        }
-      })
-      .attr('stroke', n => {
         return n.startedWorking
           ? n.finishedWorking
-            ? 'darkgreen'
-            : 'darkred'
-          : 'black'
+            ? 'green'
+            : 'red'
+          : 'white'
       })
       .attr('mask', n =>
         n.startedWorking && !n.finishedWorking ? 'url(#workMask)' : undefined
@@ -218,8 +209,14 @@ function TreeNetworkGraph({
         })
         .strength(0.8)
     )
-    // simulationRef.alpha(1).restart()
   }, [depth, edges, height, nodes, simulationRef])
+
+  useEffect(() => {
+    simulationRef
+      .alpha(1)
+      .alphaTarget(0)
+      .restart()
+  }, [simulationRef, executionId])
 
   return (
     <svg ref={ref} className="demonstration-frame">
@@ -249,6 +246,80 @@ function TreeNetworkGraph({
           </tspan>
         </text>
       ) : null}
+      <g id="legend" dx={-width / 2} dy={-height / 2 + 2}>
+        <rect
+          x={width / 2 - 100}
+          y={-height / 2 + 10}
+          width="100"
+          height="120"
+          fill="none"
+          stroke="black"
+          strokeWidth="2"
+          rx="5"
+          ry="5"
+        />
+        <text
+          x={width / 2 - 53}
+          y={-height / 2 + 25}
+          textAnchor="middle"
+          fontFamily="Arial"
+          fontSize="16"
+        >
+          Legend
+        </text>
+
+        <circle
+          cx={width / 2 - 80}
+          cy={-height / 2 + 45}
+          r={nodeRadius}
+          stroke="black"
+          strokeWidth={nodeRadius / 3}
+          fill="white"
+        />
+        <text
+          x={width / 2 - 80 + nodeRadius + 5}
+          y={-height / 2 + 45 + nodeRadius / 2}
+          fontFamily="Arial"
+          fontSize="14"
+        >
+          Inactive
+        </text>
+
+        <circle
+          cx={width / 2 - 80}
+          cy={-height / 2 + 75}
+          r={nodeRadius}
+          stroke="black"
+          strokeWidth={nodeRadius / 3}
+          fill="red"
+          mask="url(#workMask)"
+        />
+        <text
+          x={width / 2 - 80 + nodeRadius + 5}
+          y={-height / 2 + 75 + nodeRadius / 2}
+          fontFamily="Arial"
+          fontSize="14"
+        >
+          Working
+        </text>
+
+        <circle
+          cx={width / 2 - 80}
+          cy={-height / 2 + 105}
+          r={nodeRadius}
+          stroke="black"
+          strokeWidth={nodeRadius / 3}
+          fill="green"
+        />
+        <text
+          x={width / 2 - 80 + nodeRadius + 5}
+          y={-height / 2 + 105 + nodeRadius / 2}
+          fontFamily="Arial"
+          fontSize="14"
+        >
+          Done
+        </text>
+      </g>
       <mask id="workMask" maskContentUnits="objectBoundingBox">
         <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" />
         <polygon

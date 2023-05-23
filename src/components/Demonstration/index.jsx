@@ -2,7 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import { useClient, useQueryAll } from 'cozy-client'
-import { nodesQuery, webhooksQuery, recentObservationsQuery } from 'lib/queries'
+import {
+  nodesQuery,
+  webhooksQuery,
+  observationsByExecutionQuery
+} from 'lib/queries'
 import createTree from 'lib/createTreeExported'
 import TreeNetworkGraph from './TreeNetworkGraph'
 import Spinner from 'cozy-ui/react/Spinner'
@@ -27,13 +31,14 @@ const Demonstration = () => {
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
   const [lastExecutionId, setLastExecutionId] = useState()
+  const [isRunning, setIsRunning] = useState(false)
   const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
     depth,
     fanout,
     groupSize
   ])
   const [tree, setTree] = useState()
-  const observationsQuery = recentObservationsQuery(
+  const observationsQuery = observationsByExecutionQuery(
     tree ? tree[0]?.executionId : undefined
   )
   const { data: rawObservations } = useQueryAll(
@@ -44,10 +49,6 @@ const Demonstration = () => {
     () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
     [rawObservations]
   )
-  useEffect(() => {
-    if (!tree || tree[0]?.treeStructure !== treeStructure)
-      setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
-  }, [nodes, tree, treeStructure])
   const [treeNodes, treeEdges] = useMemo(() => {
     if (!tree) return []
 
@@ -61,13 +62,20 @@ const Demonstration = () => {
 
     const nodesMap = {}
     const edgesMap = {}
+    // Converting the tree used for the execution (starting from its leaves) to D3 compatible data
     const transformNode = node => {
+      // Initialize the current node
       if (!nodesMap[node.nodeId]) {
         nodesMap[node.nodeId] = { parents: [], children: [] }
         edgesMap[node.nodeId] = []
       }
 
-      for (const parent of node.parents || []) {
+      // Converting parent(s)
+      const index = node.group.indexOf(node.nodeId)
+      // Select the appropriate parents
+      const parents =
+        (node.role === 'Leaf' ? [node.parents[index]] : node.parents) || []
+      for (const parent of parents) {
         nodesMap[node.nodeId].parents = [
           ...nodesMap[node.nodeId].parents,
           parent.nodeId
@@ -94,14 +102,6 @@ const Demonstration = () => {
 
     return [
       Object.values(nodesMap).map(n => {
-        const role =
-          n.level === 0
-            ? 'Querier'
-            : n.level === n.treeStructure.depth - 2
-            ? 'Leaf'
-            : n.level === n.treeStructure.depth - 1
-            ? 'Contributor'
-            : 'Aggregator'
         const relatedObservations = observations.filter(
           o => o.emitterId === n.nodeId || o.receiverId === n.nodeId
         )
@@ -115,9 +115,9 @@ const Demonstration = () => {
         return {
           ...n,
           id: n.nodeId,
-          role,
           startedWorking: relatedObservations.length > 0,
-          finishedWorking: relatedObservations.length === expectedMessages[role]
+          finishedWorking:
+            relatedObservations.length === expectedMessages[n.role]
         }
       }),
       Object.entries(edgesMap)
@@ -140,6 +140,8 @@ const Demonstration = () => {
   }, [observations, tree])
 
   const handleLaunchExecution = useCallback(async () => {
+    setIsRunning(true)
+    setLastExecutionId(tree[0]?.executionId)
     for (const contributor of tree) {
       const contributionBody = {
         ...contributor,
@@ -157,8 +159,29 @@ const Demonstration = () => {
         contributionBody
       )
     }
-    setLastExecutionId(tree[0]?.executionId)
   }, [tree, treeStructure, supervisorWebhook, client.stackClient])
+
+  const handleRegenerateTree = useCallback(() => {
+    setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
+  }, [nodes, treeStructure])
+
+  // Waiting for the execution to finish
+  useEffect(() => {
+    if (
+      observations.filter(
+        observation =>
+          observation.action === 'aggregation' && observation.payload.finished
+      ).length > 0
+    ) {
+      setIsRunning(false)
+    }
+  }, [observations])
+
+  // Recompute tree
+  useEffect(() => {
+    if (!tree || tree[0]?.treeStructure !== treeStructure)
+      setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
+  }, [nodes, tree, treeStructure])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
@@ -190,20 +213,36 @@ const Demonstration = () => {
           />
         </div>
         {lastExecutionId === tree[0]?.executionId ? (
-          <span className="full-agg-error">
-            Regenerate the tree by changing a parameter to relaunch an execution
-          </span>
-        ) : null}
-        <Button
-          className="button-basic"
-          iconOnly
-          label="Launch execution"
-          onClick={handleLaunchExecution}
-          extension="narrow"
-          disabled={lastExecutionId === tree[0]?.executionId}
-        >
-          Launch execution
-        </Button>
+          <>
+            <Button
+              className="button-basic"
+              iconOnly
+              label="Regenerate tree"
+              onClick={handleRegenerateTree}
+              extension="narrow"
+              busy={isRunning}
+              disabled={lastExecutionId !== tree[0]?.executionId || isRunning}
+            >
+              Regenerate tree
+            </Button>
+            <span className="full-agg-error">
+              Regenerate the tree by changing a parameter to relaunch an
+              execution
+            </span>
+          </>
+        ) : (
+          <Button
+            className="button-basic"
+            iconOnly
+            label="Launch execution"
+            onClick={handleLaunchExecution}
+            extension="narrow"
+            busy={isRunning}
+            disabled={lastExecutionId === tree[0]?.executionId}
+          >
+            Launch execution
+          </Button>
+        )}
       </div>
       {treeNodes && treeEdges ? (
         <TreeNetworkGraph

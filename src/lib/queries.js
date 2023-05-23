@@ -37,7 +37,7 @@ export const observationsQuery = () => ({
   }
 })
 
-export const recentObservationsQuery = executionId => ({
+export const observationsByExecutionQuery = executionId => ({
   definition: () =>
     Q(OBSERVATIONS_DOCTYPE)
       .where({

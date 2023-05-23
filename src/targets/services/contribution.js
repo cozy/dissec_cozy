@@ -132,7 +132,7 @@ export const contribution = async () => {
     await sendObservation({
       client,
       supervisorWebhook,
-      payload: {
+      observationPayload: {
         executionId,
         action: 'contribution',
         emitterDomain: domain,
@@ -140,8 +140,7 @@ export const contribution = async () => {
         receiverDomain: parents[i].aggregationWebhook
           .split('/')
           .find(e => e.includes('localhost:8080')),
-        receiverId: parents[i].nodeId,
-        payload
+        receiverId: parents[i].nodeId
       }
     })
 

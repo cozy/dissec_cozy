@@ -46,6 +46,14 @@ const createTree = (treeStructure, nodesWebhooks) => {
         contributionWebhook,
         aggregationWebhook,
         level: depth,
+        role:
+          depth === 0
+            ? 'Querier'
+            : depth === treeStructure.depth - 2
+            ? 'Leaf'
+            : depth === treeStructure.depth - 1
+            ? 'Contributor'
+            : 'Aggregator',
         treeStructure,
         nbChild: treeStructure.fanout,
         parents: undefined,
