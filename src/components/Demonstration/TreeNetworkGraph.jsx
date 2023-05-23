@@ -35,6 +35,7 @@ function TreeNetworkGraph({
 }) {
   const nodeRadius = 12
   const ref = useRef()
+  const executionId = useMemo(() => nodes[0]?.executionId, [nodes])
   const [hoveredNode, setHoveredNode] = useState()
   const [hoveredEdge, setHoveredEdge] = useState()
   const simulationRef = useRef(
@@ -218,8 +219,14 @@ function TreeNetworkGraph({
         })
         .strength(0.8)
     )
-    // simulationRef.alpha(1).restart()
   }, [depth, edges, height, nodes, simulationRef])
+
+  useEffect(() => {
+    simulationRef
+      .alpha(1)
+      .alphaTarget(0)
+      .restart()
+  }, [simulationRef, executionId])
 
   return (
     <svg ref={ref} className="demonstration-frame">
