@@ -9,7 +9,7 @@ export const observe = async () => {
 
   const { log } = createLogger(client.stackClient.uri.split('/')[2])
 
-  log(`Received an observation from node`)
+  log(`Received an observation`)
 
   await client.create(
     OBSERVATIONS_DOCTYPE,

@@ -107,8 +107,13 @@ export const contribution = async () => {
       setTimeout(resolve, 2000 * (1 + Math.random()))
     )
 
+    log(
+      `Sending share to parent ${parents[i].nodeId} for execution ${executionId}`
+    )
+
     const payload = {
       ...parents[i],
+      executionId,
       docId: files[i],
       sharecode: shareCodes[i],
       uri: client.stackClient.uri,
@@ -132,26 +137,18 @@ export const contribution = async () => {
         action: 'contribution',
         emitterDomain: domain,
         emitterId: nodeId,
-        receiverDomain: domain,
-        receiverId: nodeId,
-        payload: {
-          executionId,
-          action: 'contribution',
-          emitterDomain: domain,
-          emitterId: nodeId,
-          receiverDomain: parents[i].aggregationWebhook
-            .split('/')
-            .find(e => e.includes('localhost:8080')),
-          receiverId: parents[i].nodeId,
-          payload
-        }
+        receiverDomain: parents[i].aggregationWebhook
+          .split('/')
+          .find(e => e.includes('localhost:8080')),
+        receiverId: parents[i].nodeId,
+        payload
       }
     })
 
     log(
       `Sent share ${Number(i) + 1} to aggregator ${
         parents[i].aggregationWebhook
-      }`
+      } for execution ${executionId}`
     )
   }
 }
