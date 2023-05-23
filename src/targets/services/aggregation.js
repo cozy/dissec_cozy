@@ -83,7 +83,7 @@ export const aggregation = async () => {
     await sendObservation({
       client,
       supervisorWebhook,
-      payload: {
+      observationPayload: {
         executionId,
         action: 'aggregation',
         emitterDomain: domain,
@@ -144,7 +144,7 @@ export const aggregation = async () => {
     await sendObservation({
       client,
       supervisorWebhook,
-      payload: {
+      observationPayload: {
         executionId,
         action: 'aggregation',
         emitterDomain: domain,
@@ -153,7 +153,7 @@ export const aggregation = async () => {
           .split('/')
           .find(e => e.includes('localhost:8080')),
         receiverId: parent.nodeId,
-        payload: payload
+        payload: { finished: false }
       }
     })
   }

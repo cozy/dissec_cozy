@@ -159,7 +159,7 @@ export const receiveShares = async () => {
   await sendObservation({
     client,
     supervisorWebhook,
-    payload: {
+    observationPayload: {
       executionId,
       action: 'receiveShare',
       emitterDomain: domain,

@@ -2,7 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
 import { useClient, useQueryAll } from 'cozy-client'
-import { nodesQuery, webhooksQuery, recentObservationsQuery } from 'lib/queries'
+import {
+  nodesQuery,
+  webhooksQuery,
+  observationsByExecutionQuery
+} from 'lib/queries'
 import createTree from 'lib/createTreeExported'
 import TreeNetworkGraph from './TreeNetworkGraph'
 import Spinner from 'cozy-ui/react/Spinner'
@@ -34,7 +38,7 @@ const Demonstration = () => {
     groupSize
   ])
   const [tree, setTree] = useState()
-  const observationsQuery = recentObservationsQuery(
+  const observationsQuery = observationsByExecutionQuery(
     tree ? tree[0]?.executionId : undefined
   )
   const { data: rawObservations } = useQueryAll(

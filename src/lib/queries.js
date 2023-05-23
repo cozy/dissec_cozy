@@ -37,8 +37,7 @@ export const observationsQuery = () => ({
   }
 })
 
-// FIXME: Effectively filter messages
-export const recentObservationsQuery = executionId => ({
+export const observationsByExecutionQuery = executionId => ({
   definition: () =>
     Q(OBSERVATIONS_DOCTYPE)
       .where({
