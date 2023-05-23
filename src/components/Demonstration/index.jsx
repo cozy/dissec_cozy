@@ -61,13 +61,20 @@ const Demonstration = () => {
 
     const nodesMap = {}
     const edgesMap = {}
+    // Converting the tree used for the execution (starting from its leaves) to D3 compatible data
     const transformNode = node => {
+      // Initialize the current node
       if (!nodesMap[node.nodeId]) {
         nodesMap[node.nodeId] = { parents: [], children: [] }
         edgesMap[node.nodeId] = []
       }
 
-      for (const parent of node.parents || []) {
+      // Converting parent(s)
+      const index = node.group.indexOf(node.nodeId)
+      // Select the appropriate parents
+      const parents =
+        (node.role === 'Leaf' ? [node.parents[index]] : node.parents) || []
+      for (const parent of parents) {
         nodesMap[node.nodeId].parents = [
           ...nodesMap[node.nodeId].parents,
           parent.nodeId
@@ -94,14 +101,6 @@ const Demonstration = () => {
 
     return [
       Object.values(nodesMap).map(n => {
-        const role =
-          n.level === 0
-            ? 'Querier'
-            : n.level === n.treeStructure.depth - 2
-            ? 'Leaf'
-            : n.level === n.treeStructure.depth - 1
-            ? 'Contributor'
-            : 'Aggregator'
         const relatedObservations = observations.filter(
           o => o.emitterId === n.nodeId || o.receiverId === n.nodeId
         )
@@ -115,9 +114,9 @@ const Demonstration = () => {
         return {
           ...n,
           id: n.nodeId,
-          role,
           startedWorking: relatedObservations.length > 0,
-          finishedWorking: relatedObservations.length === expectedMessages[role]
+          finishedWorking:
+            relatedObservations.length === expectedMessages[n.role]
         }
       }),
       Object.entries(edgesMap)
