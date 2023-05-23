@@ -127,7 +127,8 @@ function TreeNetworkGraph({
         setHoveredNode()
       })
       .attr('r', nodeRadius)
-      .attr('fill', n => {
+      .attr('stroke-width', nodeRadius / 3)
+      .attr('stroke', n => {
         switch (n.role) {
           case 'Contributor':
             return 'red'
@@ -139,12 +140,12 @@ function TreeNetworkGraph({
             return 'blue'
         }
       })
-      .attr('stroke', n => {
+      .attr('fill', n => {
         return n.startedWorking
           ? n.finishedWorking
             ? 'darkgreen'
             : 'darkred'
-          : 'black'
+          : 'white'
       })
       .attr('mask', n =>
         n.startedWorking && !n.finishedWorking ? 'url(#workMask)' : undefined
