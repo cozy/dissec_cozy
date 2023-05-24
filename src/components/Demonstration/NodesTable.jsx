@@ -45,7 +45,22 @@ const NoSymbol = () => (
   </svg>
 )
 
-function NodesTable({ nodes }) {
+function NodesTable({ nodes, hoveredNode }) {
+  const sortedNodes = nodes.sort((a, b) => {
+    const weight = node => {
+      switch (node.role) {
+        case 'Querier':
+          return 0
+        case 'Contributor':
+          return 1
+        default:
+          return 2
+      }
+    }
+
+    return weight(a) - weight(b)
+  })
+
   return (
     <Table>
       <TableHead>
@@ -58,10 +73,27 @@ function NodesTable({ nodes }) {
         </TableRow>
       </TableHead>
       <TableBody>
-        {nodes.map(node => (
-          <TableRow key={node.nodeId}>
+        {sortedNodes.map(node => (
+          <TableRow
+            key={node.nodeId}
+            style={{
+              backgroundColor:
+                node?.nodeId === hoveredNode?.nodeId ? '#7F7F7F' : '#FFFFFF'
+            }}
+          >
             <TableCell style={cellStyles}>{node.label}</TableCell>
-            <TableCell style={cellStyles}>{node.role}</TableCell>
+            <TableCell style={cellStyles}>
+              {(role => {
+                switch (role) {
+                  case 'Querier':
+                    return 'Final Aggregator'
+                  case 'Leaf':
+                    return 'Aggregator'
+                  default:
+                    return role
+                }
+              })(node.role)}
+            </TableCell>
             <TableCell style={cellStyles}>
               {node.nodeId.slice(0, 7) + '...'}
             </TableCell>
