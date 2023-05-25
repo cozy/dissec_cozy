@@ -38,6 +38,7 @@ function TreeNetworkGraph({
   const executionId = useMemo(() => nodes[0]?.executionId, [nodes])
   const [hoveredNode, setHoveredNode] = useState()
   const [hoveredEdge, setHoveredEdge] = useState()
+  const [simulationRunning, setSimulationRunning] = useState()
   const simulationRef = useRef(
     d3
       .forceSimulation()
@@ -59,6 +60,7 @@ function TreeNetworkGraph({
           })
           .strength(0.8)
       )
+      .on('end', () => setSimulationRunning(false))
   ).current
   const depth = useMemo(() => Math.max(...nodes.map(e => e.level)), [nodes])
 
@@ -177,6 +179,7 @@ function TreeNetworkGraph({
     )
 
     simulationRef.on('tick', () => {
+      setSimulationRunning(true)
       link
         .attr('x1', d => d.source.x)
         .attr('y1', d => d.source.y)
@@ -246,6 +249,9 @@ function TreeNetworkGraph({
           </tspan>
         </text>
       ) : null}
+      <text x={-width / 2} y={height / 2 - 14} fontFamily="Arial" fontSize="10">
+        Tree status: {simulationRunning ? 'Building' : 'Idle'}
+      </text>
       <g id="legend" dx={-width / 2} dy={-height / 2 + 2}>
         <rect
           x={width / 2 - 100}

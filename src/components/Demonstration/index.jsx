@@ -212,37 +212,27 @@ const Demonstration = () => {
             id="full-agg-contributors"
           />
         </div>
-        {lastExecutionId === tree[0]?.executionId ? (
-          <>
-            <Button
-              className="button-basic"
-              iconOnly
-              label="Regenerate tree"
-              onClick={handleRegenerateTree}
-              extension="narrow"
-              busy={isRunning}
-              disabled={lastExecutionId !== tree[0]?.executionId || isRunning}
-            >
-              Regenerate tree
-            </Button>
-            <span className="full-agg-error">
-              Regenerate the tree by changing a parameter to relaunch an
-              execution
-            </span>
-          </>
-        ) : (
-          <Button
-            className="button-basic"
-            iconOnly
-            label="Launch execution"
-            onClick={handleLaunchExecution}
-            extension="narrow"
-            busy={isRunning}
-            disabled={lastExecutionId === tree[0]?.executionId}
-          >
-            Launch execution
-          </Button>
-        )}
+        <Button
+          className="button-basic"
+          iconOnly
+          label="Regenerate tree"
+          onClick={handleRegenerateTree}
+          extension="narrow"
+          disabled={lastExecutionId !== tree[0]?.executionId || isRunning}
+        >
+          Regenerate tree
+        </Button>
+        <Button
+          className="button-basic"
+          iconOnly
+          label="Launch execution"
+          onClick={handleLaunchExecution}
+          extension="narrow"
+          busy={isRunning}
+          disabled={lastExecutionId === tree[0]?.executionId}
+        >
+          Launch execution
+        </Button>
       </div>
       {treeNodes && treeEdges ? (
         <TreeNetworkGraph
