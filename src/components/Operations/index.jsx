@@ -7,6 +7,7 @@ import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
 import ClassifyOperations from './ClassifyOperations'
+import ClassificationStatistics from './ClassificationStatistics'
 
 export const Operations = () => {
   const query = bankOperationsQuery()
@@ -22,6 +23,7 @@ export const Operations = () => {
       ) : (
         <div>
           <ClassifyOperations />
+          <ClassificationStatistics />
           <OperationsList operations={operations} />
           <OperationAdd />
           <OperationDeleteAll operations={operations} />

@@ -1,12 +1,17 @@
 import React, { useCallback, useState } from 'react'
 import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
-import { latestModelUpdateQuery } from 'lib/queries'
+import { latestModelUpdateQuery, observationWebhookQuery } from 'lib/queries'
 import { JOBS_DOCTYPE } from 'doctypes'
 
 export const ClassifyOperations = () => {
   const client = useClient()
   const [isWorking, setIsWorking] = useState(false)
+  const observeWebhookQuery = observationWebhookQuery()
+  const { data: supervisorWebhooks } = useQuery(
+    observeWebhookQuery.definition,
+    observeWebhookQuery.options
+  )
   const modelQuery = latestModelUpdateQuery()
   const { data } = useQuery(modelQuery.definition, modelQuery.options)
   const [lastModel] = data || []
@@ -17,11 +22,12 @@ export const ClassifyOperations = () => {
     await client.collection(JOBS_DOCTYPE).create('service', {
       slug: 'dissecozy',
       name: 'categorize',
-      pretrained: true
+      pretrained: true,
+      supervisorWebhook: `${client.options.uri}/jobs/webhooks/${supervisorWebhooks[0].id}`
     })
 
     setIsWorking(false)
-  }, [client])
+  }, [client, supervisorWebhooks])
 
   return (
     <div>
