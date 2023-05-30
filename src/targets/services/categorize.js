@@ -66,11 +66,24 @@ export const categorize = async () => {
   )
 
   // Categorize each doc and update it
-  const categorized = operations.map(operation => {
+  const operationsCategoriesBefore = Array(operations.length)
+  const operationsCategoriesAfter = Array(operations.length)
+  const classificationChanges = {}
+  const categorized = operations.map((operation, i) => {
     const prediction = model.predict(operation.label)
+
+    operationsCategoriesBefore[i] = operation.cozyCategoryId || '0' // Default to uncategorized
+    operationsCategoriesAfter[i] = prediction
+    if (operationsCategoriesBefore[i] !== operationsCategoriesAfter[i]) {
+      classificationChanges[operationsCategoriesBefore[i]] =
+        (classificationChanges[operationsCategoriesBefore[i]] || 0) - 1
+      classificationChanges[operationsCategoriesAfter[i]] =
+        (classificationChanges[operationsCategoriesAfter[i]] || 0) + 1
+    }
+
     return {
       ...operation,
-      automaticCategoryId: prediction
+      cozyCategoryId: prediction
     }
   })
   await client.saveAll(categorized)
@@ -80,8 +93,9 @@ export const categorize = async () => {
     supervisorWebhook,
     observationPayload: {
       action: 'categorize',
-      operationsCategoriesBefore: operations.map(o => o.manualCategoryId),
-      operationsCategoriesAfter: operations.map(o => o.automaticCategoryId)
+      operationsCategoriesBefore,
+      operationsCategoriesAfter,
+      classificationChanges
     }
   })
 }
