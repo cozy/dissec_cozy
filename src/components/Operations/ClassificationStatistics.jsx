@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useQuery } from 'cozy-client'
 import { latestCategorizationQuery } from 'lib/queries'
 import {
@@ -29,6 +29,15 @@ export const ClassificationStatistics = () => {
     categorizationQuery.options
   )
   const [latestCategorization] = data || []
+  const changes = useMemo(() => {
+    return Object.keys(classes)
+      .map(c => {
+        const before = latestCategorization?.categoriesBefore[c] || 0
+        const after = latestCategorization?.categoriesAfter[c] || 0
+        return { id: c, before, after }
+      })
+      .filter(e => e.before !== e.after || e.before !== 0)
+  }, [latestCategorization])
 
   return (
     <Accordion className="classes-changes-accordion">
@@ -49,28 +58,30 @@ export const ClassificationStatistics = () => {
           <TableHead>
             <TableRow>
               <TableHeader style={cellStyles}>Class</TableHeader>
+              <TableHeader style={cellStyles}>Before</TableHeader>
+              <TableHeader style={cellStyles}>After</TableHeader>
               <TableHeader style={cellStyles}>Delta</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
-            {Object.entries(
-              latestCategorization?.classificationChanges || {}
-            ).map(([category, delta]) => (
+            {changes.map(e => (
               <TableRow
-                key={category}
+                key={e.id}
                 style={{
                   backgroundColor:
-                    category === '0' && delta > 0
+                    e.id === '0' && e.after - e.before > 0
                       ? '#FFCFCF'
-                      : category === '0' && delta < 0
+                      : e.id === '0' && e.after - e.before < 0
                       ? '#CFFFCF'
                       : '#FFFFFF'
                 }}
               >
                 <TableCell style={cellStyles}>
-                  {capitalizeFirstLetter(classes[category])}
+                  {capitalizeFirstLetter(classes[e.id])}
                 </TableCell>
-                <TableCell style={cellStyles}>{delta}</TableCell>
+                <TableCell style={cellStyles}>{e.before}</TableCell>
+                <TableCell style={cellStyles}>{e.after}</TableCell>
+                <TableCell style={cellStyles}>{e.after - e.before}</TableCell>
               </TableRow>
             ))}
           </TableBody>
