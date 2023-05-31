@@ -27,7 +27,7 @@ export const categorize = async () => {
   } = job.attributes.message
 
   // Fetch data
-  const { data: operations } = await client.query(Q(BANK_OPERATIONS_DOCTYPE))
+  const operations = await client.queryAll(Q(BANK_OPERATIONS_DOCTYPE))
 
   // Fetch model or initialize it
   let model
