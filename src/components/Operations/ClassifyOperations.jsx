@@ -3,6 +3,7 @@ import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import { latestModelUpdateQuery, observationWebhookQuery } from 'lib/queries'
 import { JOBS_DOCTYPE } from 'doctypes'
+import { FormControlLabel, Switch } from '@material-ui/core'
 
 export const ClassifyOperations = () => {
   const client = useClient()
@@ -18,16 +19,21 @@ export const ClassifyOperations = () => {
   )
   const [lastModel] = lastModelData || []
   const [currentJob, setCurrentJob] = useState()
+  const [pretrained, setPretrained] = useState(true)
 
   const handleClassify = useCallback(async () => {
     const res = await client.collection(JOBS_DOCTYPE).create('service', {
       slug: 'dissecozy',
       name: 'categorize',
-      pretrained: true,
+      pretrained: pretrained,
       supervisorWebhook: `${client.options.uri}/jobs/webhooks/${supervisorWebhooks[0].id}`
     })
     setCurrentJob(res.data.id)
-  }, [client, supervisorWebhooks])
+  }, [client, pretrained, supervisorWebhooks])
+
+  const handlePretrained = useCallback(() => {
+    setPretrained(!pretrained)
+  }, [pretrained])
 
   useEffect(() => {
     if (currentJob) {
@@ -51,6 +57,16 @@ export const ClassifyOperations = () => {
       <span>
         Latest model trained at {lastModel?.cozyMetadata?.updatedAt || '???'}
       </span>
+      <FormControlLabel
+        label="Use pretrained model?"
+        control={
+          <Switch
+            checked={pretrained}
+            onChange={handlePretrained}
+            name="Use pretrained model?"
+          />
+        }
+      />
       <Button
         onClick={handleClassify}
         busy={!!currentJob}
