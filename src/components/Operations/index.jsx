@@ -32,6 +32,7 @@ export const Operations = () => {
         <div>
           <ClassifyOperations />
           <ClassificationStatistics />
+          <OperationsList operations={operations} />
           <Button
             onClick={handleFetchMore}
             busy={isWorking}
@@ -41,7 +42,6 @@ export const Operations = () => {
           />
           <OperationAdd />
           <OperationDeleteAll operations={operations} />
-          <OperationsList operations={operations} />
         </div>
       )}
     </div>
