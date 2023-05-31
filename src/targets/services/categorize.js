@@ -3,6 +3,7 @@ import fs from 'fs'
 
 import dissecConfig from '../../../dissec.config.json'
 import { BANK_OPERATIONS_DOCTYPE, JOBS_DOCTYPE } from 'doctypes'
+import { sendObservation } from 'lib/sendObservation'
 import { createLogger } from './helpers'
 import { Model } from './model'
 
@@ -18,7 +19,12 @@ export const categorize = async () => {
     Q(JOBS_DOCTYPE).getById(process.env['COZY_JOB_ID'].split('/')[2])
   )
 
-  const { pretrained, useTiny, filters = {} } = job.attributes.message
+  const {
+    pretrained,
+    useTiny,
+    supervisorWebhook,
+    filters = {}
+  } = job.attributes.message
 
   // Fetch data
   const { data: operations } = await client.query(Q(BANK_OPERATIONS_DOCTYPE))
@@ -68,6 +74,16 @@ export const categorize = async () => {
     }
   })
   await client.saveAll(categorized)
+
+  await sendObservation({
+    client,
+    supervisorWebhook,
+    observationPayload: {
+      action: 'categorize',
+      operationsCategoriesBefore: operations.map(o => o.manualCategoryId),
+      operationsCategoriesAfter: operations.map(o => o.automaticCategoryId)
+    }
+  })
 }
 
 categorize().catch(e => {

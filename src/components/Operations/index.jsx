@@ -6,6 +6,8 @@ import { bankOperationsQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
+import ClassifyOperations from './ClassifyOperations'
+import ClassificationStatistics from './ClassificationStatistics'
 
 export const Operations = () => {
   const query = bankOperationsQuery()
@@ -20,6 +22,8 @@ export const Operations = () => {
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
+          <ClassifyOperations />
+          <ClassificationStatistics />
           <OperationsList operations={operations} />
           <OperationAdd />
           <OperationDeleteAll operations={operations} />

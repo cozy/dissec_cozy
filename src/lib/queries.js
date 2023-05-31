@@ -49,3 +49,50 @@ export const observationsByExecutionQuery = executionId => ({
     as: `${OBSERVATIONS_DOCTYPE}/${executionId}`
   }
 })
+
+export const observationWebhookQuery = () => ({
+  definition: () =>
+    Q(TRIGGERS_DOCTYPE)
+      .where({
+        type: '@webhook',
+        message: {
+          name: 'observe'
+        }
+      })
+      .limitBy(1),
+  options: {
+    as: `${TRIGGERS_DOCTYPE}/observe`,
+    fetchPolicy: defaultFetchPolicy
+  }
+})
+
+export const latestModelUpdateQuery = () => ({
+  definition: () =>
+    Q(OBSERVATIONS_DOCTYPE)
+      .partialIndex({
+        action: 'aggregation',
+        payload: {
+          finished: true
+        }
+      })
+      .indexFields(['action', 'cozyMetadata.updatedAt'])
+      .sortBy([{ action: 'desc' }, { 'cozyMetadata.updatedAt': 'desc' }])
+      .limitBy(1),
+  options: {
+    as: `${OBSERVATIONS_DOCTYPE}/model`
+  }
+})
+
+export const latestCategorizationQuery = () => ({
+  definition: () =>
+    Q(OBSERVATIONS_DOCTYPE)
+      .partialIndex({
+        action: 'categorize'
+      })
+      .indexFields(['action', 'cozyMetadata.updatedAt'])
+      .sortBy([{ action: 'desc' }, { 'cozyMetadata.updatedAt': 'desc' }])
+      .limitBy(1),
+  options: {
+    as: `${OBSERVATIONS_DOCTYPE}/categorize`
+  }
+})
