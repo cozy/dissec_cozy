@@ -10,7 +10,7 @@ import {
   TextField
 } from '@material-ui/core'
 import { useClient } from 'cozy-client'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import categories from 'assets/classes.json'
 import { capitalizeFirstLetter } from 'lib/utils'
@@ -18,8 +18,19 @@ import OperationRemoveButton from './OperationRemoveButton'
 
 export const Operation = ({ operation }) => {
   const client = useClient()
-
   const [category, setCategory] = useState(operation.manualCategoryId || '0')
+  const border = useMemo(() => {
+    const changed = operation.cozyCategoryId !== operation.previousCategoryId
+    const isUncategorized = operation.cozyCategoryId === '0'
+    const wasUncategorized = operation.previousCategoryId === '0'
+    if (changed && isUncategorized) {
+      return '0.2rem ridge orangered'
+    } else if (changed && wasUncategorized && !isUncategorized) {
+      return '0.2rem ridge lightgreen'
+    } else if (changed) {
+      return '0.2rem ridge lightgray'
+    } else return ''
+  }, [operation])
 
   const handleCategoryChange = useCallback(
     async e => {
@@ -34,7 +45,14 @@ export const Operation = ({ operation }) => {
   )
 
   return (
-    <Accordion key={operation._id} className="operation-item">
+    <Accordion
+      key={operation._id}
+      className="operation-item"
+      style={{
+        border,
+        borderRadius: '0.3rem'
+      }}
+    >
       <AccordionSummary>
         <div className="operation-summary">
           <div className="operation-text">
