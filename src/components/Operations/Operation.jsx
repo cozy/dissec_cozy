@@ -15,6 +15,8 @@ import React, { useCallback, useMemo, useState } from 'react'
 import categories from 'assets/classes.json'
 import { capitalizeFirstLetter } from 'lib/utils'
 import OperationRemoveButton from './OperationRemoveButton'
+import { CategoryIcon } from './CategoryIcon'
+import arrowLeft from 'assets/icons/icon-arrow-left.svg'
 
 export const Operation = ({ operation }) => {
   const client = useClient()
@@ -88,6 +90,24 @@ export const Operation = ({ operation }) => {
               )}
             />
           </FormControl>
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              padding: '0.5rem',
+              justifyContent: 'space-around'
+            }}
+          >
+            <CategoryIcon category={category} width={32} height={32} />
+            <svg width={24} height={24} style={{ transform: 'rotate(180deg)' }}>
+              <use xlinkHref={`#${arrowLeft.id}`} />
+            </svg>
+            <CategoryIcon
+              category={operation.cozyCategoryId || '0'}
+              width={32}
+              height={32}
+            />
+          </div>
         </div>
       </AccordionSummary>
       <AccordionDetails className="operation-details">
