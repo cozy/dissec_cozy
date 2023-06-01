@@ -128,7 +128,7 @@ const dissecLearning = async ({
       let correct = 0
       for (let i = 0; i < validationSet.length; i++) {
         const truth = getCategory(validationSet[i])
-        const prediction = dissecTrainedValidationSet[i].automaticCategoryId
+        const prediction = dissecTrainedValidationSet[i].cozyCategoryId
 
         if (truth === prediction) correct++
       }

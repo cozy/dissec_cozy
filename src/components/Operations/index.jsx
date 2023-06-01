@@ -1,20 +1,28 @@
-import React from 'react'
+import React, { useCallback, useState } from 'react'
 
 import Spinner from 'cozy-ui/react/Spinner'
-import { useQueryAll } from 'cozy-client'
+import { useQuery } from 'cozy-client'
 import { bankOperationsQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
 import ClassifyOperations from './ClassifyOperations'
 import ClassificationStatistics from './ClassificationStatistics'
+import { Button } from 'cozy-ui/react/Button'
 
 export const Operations = () => {
   const query = bankOperationsQuery()
-  const { isLoading, data: operations } = useQueryAll(
+  const { isLoading, data: operations, fetchMore } = useQuery(
     query.definition,
     query.options
   )
+  const [isWorking, setIsWorking] = useState(false)
+
+  const handleFetchMore = useCallback(async () => {
+    setIsWorking(true)
+    await fetchMore()
+    setIsWorking(false)
+  }, [fetchMore])
 
   return (
     <div className="todos">
@@ -25,6 +33,13 @@ export const Operations = () => {
           <ClassifyOperations />
           <ClassificationStatistics />
           <OperationsList operations={operations} />
+          <Button
+            onClick={handleFetchMore}
+            busy={isWorking}
+            label="fetch more"
+            size="large"
+            extension="full"
+          />
           <OperationAdd />
           <OperationDeleteAll operations={operations} />
         </div>
@@ -33,5 +48,4 @@ export const Operations = () => {
   )
 }
 
-// get data from the client state: data, fetchStatus
 export default Operations

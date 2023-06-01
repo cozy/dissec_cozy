@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useQuery } from 'cozy-client'
 import { latestCategorizationQuery } from 'lib/queries'
 import {
@@ -29,15 +29,15 @@ export const ClassificationStatistics = () => {
     categorizationQuery.options
   )
   const [latestCategorization] = data || []
-  const classChanges = Object.entries(classes).map(([k, v]) => ({
-    className: capitalizeFirstLetter(v),
-    before: (latestCategorization?.operationsCategoriesBefore || []).filter(
-      e => e === k
-    ).length,
-    after: (latestCategorization?.operationsCategoriesAfter || []).filter(
-      e => e === k
-    ).length
-  }))
+  const changes = useMemo(() => {
+    return Object.keys(classes)
+      .map(c => {
+        const before = latestCategorization?.categoriesBefore[c] || 0
+        const after = latestCategorization?.categoriesAfter[c] || 0
+        return { id: c, before, after }
+      })
+      .filter(e => e.before !== e.after || e.before !== 0)
+  }, [latestCategorization])
 
   return (
     <Accordion className="classes-changes-accordion">
@@ -60,28 +60,30 @@ export const ClassificationStatistics = () => {
               <TableHeader style={cellStyles}>Class</TableHeader>
               <TableHeader style={cellStyles}>Before</TableHeader>
               <TableHeader style={cellStyles}>After</TableHeader>
+              <TableHeader style={cellStyles}>Delta</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
-            {classChanges
-              .filter(e => e.before !== 0 || e.after !== 0)
-              .map(change => (
-                <TableRow
-                  key={change.className}
-                  style={{
-                    backgroundColor:
-                      change.before > change.after
-                        ? '#FFCFCF'
-                        : change.after > change.before
-                        ? '#CFFFCF'
-                        : '#FFFFFF'
-                  }}
-                >
-                  <TableCell style={cellStyles}>{change.className}</TableCell>
-                  <TableCell style={cellStyles}>{change.before}</TableCell>
-                  <TableCell style={cellStyles}>{change.after}</TableCell>
-                </TableRow>
-              ))}
+            {changes.map(e => (
+              <TableRow
+                key={e.id}
+                style={{
+                  backgroundColor:
+                    e.id === '0' && e.after - e.before > 0
+                      ? '#FFCFCF'
+                      : e.id === '0' && e.after - e.before < 0
+                      ? '#CFFFCF'
+                      : '#FFFFFF'
+                }}
+              >
+                <TableCell style={cellStyles}>
+                  {capitalizeFirstLetter(classes[e.id])}
+                </TableCell>
+                <TableCell style={cellStyles}>{e.before}</TableCell>
+                <TableCell style={cellStyles}>{e.after}</TableCell>
+                <TableCell style={cellStyles}>{e.after - e.before}</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </AccordionDetails>

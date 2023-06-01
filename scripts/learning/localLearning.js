@@ -67,7 +67,7 @@ const localLearning = async ({
   let correct = 0
   for (let i = 0; i < validationSet.length; i++) {
     const truth = getCategory(validationSet[i])
-    const prediction = locallyTrainedValidationSet[i].automaticCategoryId
+    const prediction = locallyTrainedValidationSet[i].cozyCategoryId
 
     if (truth === prediction) correct++
   }

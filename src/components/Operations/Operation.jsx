@@ -19,9 +19,7 @@ import OperationRemoveButton from './OperationRemoveButton'
 export const Operation = ({ operation }) => {
   const client = useClient()
 
-  const [category, setCategory] = useState(
-    operation.manualCategoryId || operation.cozyCategoryId || ''
-  )
+  const [category, setCategory] = useState(operation.manualCategoryId || '0')
 
   const handleCategoryChange = useCallback(
     async e => {
@@ -48,7 +46,7 @@ export const Operation = ({ operation }) => {
             )}
           </div>
           <FormControl className="category-info">
-            <InputLabel id="select-category-label">Category</InputLabel>
+            <InputLabel id="select-category-label">Manual category</InputLabel>
             <Select
               labelId="select-category-label"
               className="category-item"
@@ -66,9 +64,9 @@ export const Operation = ({ operation }) => {
             <TextField
               className="category-item"
               disabled
-              label="Automatic category"
+              label="Cozy category"
               value={capitalizeFirstLetter(
-                categories[operation.automaticCategoryId || '0']
+                categories[operation.cozyCategoryId || '0']
               )}
             />
           </FormControl>

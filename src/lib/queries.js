@@ -53,7 +53,7 @@ export const observationsByExecutionQuery = executionId => ({
 export const observationWebhookQuery = () => ({
   definition: () =>
     Q(TRIGGERS_DOCTYPE)
-      .where({
+      .partialIndex({
         type: '@webhook',
         message: {
           name: 'observe'

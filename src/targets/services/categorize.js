@@ -27,7 +27,7 @@ export const categorize = async () => {
   } = job.attributes.message
 
   // Fetch data
-  const { data: operations } = await client.query(Q(BANK_OPERATIONS_DOCTYPE))
+  const operations = await client.queryAll(Q(BANK_OPERATIONS_DOCTYPE))
 
   // Fetch model or initialize it
   let model
@@ -66,11 +66,19 @@ export const categorize = async () => {
   )
 
   // Categorize each doc and update it
+  const categoriesBefore = {}
+  const categoriesAfter = {}
   const categorized = operations.map(operation => {
     const prediction = model.predict(operation.label)
+
+    categoriesBefore[operation.cozyCategoryId || '0'] =
+      (categoriesBefore[operation.cozyCategoryId || '0'] || 0) + 1 // Default to uncategorized
+    categoriesAfter[prediction || '0'] =
+      (categoriesAfter[prediction || '0'] || 0) + 1 // Default to uncategorized
+
     return {
       ...operation,
-      automaticCategoryId: prediction
+      cozyCategoryId: prediction
     }
   })
   await client.saveAll(categorized)
@@ -80,8 +88,8 @@ export const categorize = async () => {
     supervisorWebhook,
     observationPayload: {
       action: 'categorize',
-      operationsCategoriesBefore: operations.map(o => o.manualCategoryId),
-      operationsCategoriesAfter: operations.map(o => o.automaticCategoryId)
+      categoriesBefore,
+      categoriesAfter
     }
   })
 }
