@@ -14,13 +14,14 @@ import Operations from './Operations'
 import Supervisor from './Supervisor'
 import Demonstration from './Demonstration'
 import Sidebar from './Sidebar'
-import { OBSERVATIONS_DOCTYPE } from 'doctypes'
+import { OBSERVATIONS_DOCTYPE, BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 
 const App = () => {
   return (
     <HashRouter>
       <Layout>
         <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
+        <RealTimeQueries doctype={BANK_OPERATIONS_DOCTYPE} />
         <Sidebar />
         <Main>
           <Content className="app-content">
