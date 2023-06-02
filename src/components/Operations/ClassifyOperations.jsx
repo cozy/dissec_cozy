@@ -53,17 +53,22 @@ export const ClassifyOperations = () => {
   }, [client.options.uri, client.sta, client.stackClient, currentJob])
 
   return (
-    <div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       <span>
         Latest model trained at {lastModel?.cozyMetadata?.updatedAt || '???'}
       </span>
       <FormControlLabel
-        label="Use pretrained model?"
+        label="Use model from distributed training?"
         control={
           <Switch
             checked={pretrained}
             onChange={handlePretrained}
-            name="Use pretrained model?"
+            name="Use model from distributed training?"
           />
         }
       />
