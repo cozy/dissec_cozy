@@ -10,16 +10,29 @@ import {
   TextField
 } from '@material-ui/core'
 import { useClient } from 'cozy-client'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import categories from 'assets/classes.json'
 import { capitalizeFirstLetter } from 'lib/utils'
 import OperationRemoveButton from './OperationRemoveButton'
+import { CategoryIcon } from './CategoryIcon'
+import arrowLeft from 'assets/icons/icon-arrow-left.svg'
 
 export const Operation = ({ operation }) => {
   const client = useClient()
-
   const [category, setCategory] = useState(operation.manualCategoryId || '0')
+  const border = useMemo(() => {
+    const changed = operation.cozyCategoryId !== operation.previousCategoryId
+    const isUncategorized = operation.cozyCategoryId === '0'
+    const wasUncategorized = operation.previousCategoryId === '0'
+    if (changed && isUncategorized) {
+      return '0.2rem ridge orangered'
+    } else if (changed && wasUncategorized && !isUncategorized) {
+      return '0.2rem ridge lightgreen'
+    } else if (changed) {
+      return '0.2rem ridge lightgray'
+    } else return ''
+  }, [operation])
 
   const handleCategoryChange = useCallback(
     async e => {
@@ -34,7 +47,14 @@ export const Operation = ({ operation }) => {
   )
 
   return (
-    <Accordion key={operation._id} className="operation-item">
+    <Accordion
+      key={operation._id}
+      className="operation-item"
+      style={{
+        border,
+        borderRadius: '0.3rem'
+      }}
+    >
       <AccordionSummary>
         <div className="operation-summary">
           <div className="operation-text">
@@ -70,6 +90,24 @@ export const Operation = ({ operation }) => {
               )}
             />
           </FormControl>
+          <div
+            style={{
+              display: 'flex',
+              width: '100%',
+              padding: '0.5rem',
+              justifyContent: 'space-around'
+            }}
+          >
+            <CategoryIcon category={category} width={32} height={32} />
+            <svg width={24} height={24} style={{ transform: 'rotate(180deg)' }}>
+              <use xlinkHref={`#${arrowLeft.id}`} />
+            </svg>
+            <CategoryIcon
+              category={operation.cozyCategoryId || '0'}
+              width={32}
+              height={32}
+            />
+          </div>
         </div>
       </AccordionSummary>
       <AccordionDetails className="operation-details">

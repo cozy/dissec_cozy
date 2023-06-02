@@ -78,6 +78,7 @@ export const categorize = async () => {
 
     return {
       ...operation,
+      previousCategoryId: operation.cozyCategoryId,
       cozyCategoryId: prediction
     }
   })
