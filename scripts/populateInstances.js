@@ -16,7 +16,8 @@ const populateInstances = async ({
   centralized = false,
   outputWebhooksPath = './generated/webhooks.json',
   supervisingInstanceDomain = 'cozy.localhost:8080',
-  instancePrefix = 'test'
+  instancePrefix = 'test',
+  forceClean = false
 }) => {
   const { log } = createLogger()
 
@@ -149,24 +150,26 @@ const populateInstances = async ({
   }
   fs.writeFileSync(outputWebhooksPath, JSON.stringify(webhooks, null, 2))
 
-  // Create the supervisor instance
-  log('Destroying instance', supervisingInstanceDomain)
-  try {
+  if (forceClean) {
+    // Create the supervisor instance
+    log('Destroying instance', supervisingInstanceDomain)
+    try {
+      await exec(
+        `cozy-stack instances destroy ${supervisingInstanceDomain} --force`
+      )
+    } catch (err) {
+      log('Instance does not exist')
+    }
     await exec(
-      `cozy-stack instances destroy ${supervisingInstanceDomain} --force`
+      `cozy-stack instances add --apps drive,photos ${supervisingInstanceDomain} --passphrase cozy`
     )
-  } catch (err) {
-    log('Instance does not exist')
+    await exec(
+      `cozy-stack instances modify ${supervisingInstanceDomain} --onboarding-finished`
+    )
+    await exec(
+      `cozy-stack apps install --domain ${supervisingInstanceDomain} dissecozy file://${process.cwd()}/build/`
+    )
   }
-  await exec(
-    `cozy-stack instances add --apps drive,photos ${supervisingInstanceDomain} --passphrase cozy`
-  )
-  await exec(
-    `cozy-stack instances modify ${supervisingInstanceDomain} --onboarding-finished`
-  )
-  await exec(
-    `cozy-stack apps install --domain ${supervisingInstanceDomain} dissecozy file://${process.cwd()}/build/`
-  )
 
   // Upload webhooks on the supervisor instance
   log('Updating the supervisor with fresh webhooks...')
