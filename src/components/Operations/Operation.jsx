@@ -20,7 +20,9 @@ import arrowLeft from 'assets/icons/icon-arrow-left.svg'
 
 export const Operation = ({ operation }) => {
   const client = useClient()
-  const [category, setCategory] = useState(operation.manualCategoryId || '0')
+  const [category, setCategory] = useState(
+    operation.previousCategoryId || operation.manualCategoryId || '0'
+  )
   const border = useMemo(() => {
     const changed = operation.cozyCategoryId !== operation.previousCategoryId
     const isUncategorized = operation.cozyCategoryId === '0'
@@ -58,54 +60,67 @@ export const Operation = ({ operation }) => {
       <AccordionSummary>
         <div className="operation-summary">
           <div className="operation-text">
-            <h3 style={{ fontWeight: 'bold' }}>{operation.label}</h3>
-            {operation.amount >= 0 ? (
-              <span className="operation-gain">{operation.amount}€</span>
-            ) : (
-              <span className="operation-spend">{operation.amount}€</span>
-            )}
-          </div>
-          <FormControl className="category-info">
-            <InputLabel id="select-category-label">Manual category</InputLabel>
-            <Select
-              labelId="select-category-label"
-              className="category-item"
-              label="Category"
-              value={category}
-              onChange={handleCategoryChange}
-              style={{ marginLeft: 0 }}
+            <h3
+              style={{
+                fontWeight: 'bold',
+                marginTop: '0',
+                marginBottom: '0.5rem'
+              }}
             >
-              {Object.keys(categories).map(key => (
-                <MenuItem key={key} value={key}>
-                  {capitalizeFirstLetter(categories[key])}
-                </MenuItem>
-              ))}
-            </Select>
+              {operation.label}
+            </h3>
+            <span
+              className={`${
+                operation.amount >= 0 ? 'operation-gain' : 'operation-spend'
+              }`}
+            >
+              {operation.amount}€
+            </span>
+          </div>
+          <div className="category-info">
             <TextField
               className="category-item"
               disabled
-              label="Cozy category"
+              label="Previous category"
+              value={capitalizeFirstLetter(
+                categories[
+                  operation.previousCategoryId ||
+                    operation.manualCategoryId ||
+                    '0'
+                ]
+              )}
+            />
+            <div
+              style={{
+                display: 'flex',
+                width: '100%',
+                maxWidth: '8rem',
+                padding: '0.5rem',
+                justifyContent: 'space-around',
+                alignItems: 'center'
+              }}
+            >
+              <CategoryIcon category={category} width={32} height={32} />
+              <svg
+                width={24}
+                height={24}
+                style={{ transform: 'rotate(180deg)' }}
+              >
+                <use xlinkHref={`#${arrowLeft.id}`} />
+              </svg>
+              <CategoryIcon
+                category={operation.cozyCategoryId || '0'}
+                width={32}
+                height={32}
+              />
+            </div>
+            <TextField
+              className="category-item"
+              disabled
+              label="Current category"
               value={capitalizeFirstLetter(
                 categories[operation.cozyCategoryId || '0']
               )}
-            />
-          </FormControl>
-          <div
-            style={{
-              display: 'flex',
-              width: '100%',
-              padding: '0.5rem',
-              justifyContent: 'space-around'
-            }}
-          >
-            <CategoryIcon category={category} width={32} height={32} />
-            <svg width={24} height={24} style={{ transform: 'rotate(180deg)' }}>
-              <use xlinkHref={`#${arrowLeft.id}`} />
-            </svg>
-            <CategoryIcon
-              category={operation.cozyCategoryId || '0'}
-              width={32}
-              height={32}
             />
           </div>
         </div>
@@ -123,6 +138,31 @@ export const Operation = ({ operation }) => {
             </li>
           ))}
         </ul>
+        <FormControl className="category-info">
+          <InputLabel id="select-category-label">Manual category</InputLabel>
+          <Select
+            labelId="select-category-label"
+            className="category-item"
+            label="Category"
+            value={category}
+            onChange={handleCategoryChange}
+            style={{ marginLeft: 0 }}
+          >
+            {Object.keys(categories).map(key => (
+              <MenuItem key={key} value={key}>
+                {capitalizeFirstLetter(categories[key])}
+              </MenuItem>
+            ))}
+          </Select>
+          <TextField
+            className="category-item"
+            disabled
+            label="Cozy category"
+            value={capitalizeFirstLetter(
+              categories[operation.cozyCategoryId || '0']
+            )}
+          />
+        </FormControl>
         <OperationRemoveButton operation={operation} />
       </AccordionDetails>
     </Accordion>
