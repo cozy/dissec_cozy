@@ -7,12 +7,40 @@
       "amount": 286,
       "manualCategoryId": "400200",
       "currency": "€",
-      "label": "ticket de bus",
+      "label": "bouteille de lait",
       "date": "2014-08-18T18:53:14.323Z",
       "cozyMetadata": {
         "createdByApp": "bnpparibas82",
         "updatedByApp": "bnpparibas82",
         "createdAt": "2004-05-17T17:48:45.322Z",
+        "updatedAt": "2001-11-11T06:43:51.084Z"
+      }
+    },
+    {
+      "account": "lou5",
+      "amount": 286,
+      "manualCategoryId": "400200",
+      "currency": "€",
+      "label": "carte de train",
+      "date": "2014-08-18T18:53:14.323Z",
+      "cozyMetadata": {
+        "createdByApp": "bnpparibas82",
+        "updatedByApp": "bnpparibas82",
+        "createdAt": "2004-06-17T17:48:45.322Z",
+        "updatedAt": "2001-11-11T06:43:51.084Z"
+      }
+    },
+    {
+      "account": "lou5",
+      "amount": 286,
+      "manualCategoryId": "400200",
+      "currency": "€",
+      "label": "ticket de bus",
+      "date": "2014-08-18T18:53:14.323Z",
+      "cozyMetadata": {
+        "createdByApp": "bnpparibas82",
+        "updatedByApp": "bnpparibas82",
+        "createdAt": "2004-07-17T17:48:45.322Z",
         "updatedAt": "2001-11-11T06:43:51.084Z"
       }
     },
