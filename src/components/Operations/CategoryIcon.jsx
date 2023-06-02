@@ -4,7 +4,7 @@ import iconTransportation from 'assets/icons/categories/icon-cat-transportation.
 import iconSupermarket from 'assets/icons/categories/icon-cat-supermarket.svg'
 import iconPotentialTransfer from 'assets/icons/categories/icon-cat-potentialTransfer.svg'
 import iconCheck from 'assets/icons/categories/icon-cat-check.svg'
-import iconIncomeTheme from 'assets/icons/categories/icon-cat-incomeTheme.svg'
+import iconIncomeCat from 'assets/icons/categories/icon-cat-incomeCat.svg'
 
 // TODO: Handle all icons, currently only those in tiny datasets
 export const CategoryIcon = ({ category, ...props }) => {
@@ -17,7 +17,7 @@ export const CategoryIcon = ({ category, ...props }) => {
       case '200':
         return iconCheck
       case '200000':
-        return iconIncomeTheme
+        return iconIncomeCat
       case '200100':
         return 'incomeCat'
       case '200110':
