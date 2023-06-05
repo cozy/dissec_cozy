@@ -29,7 +29,6 @@ export const ClassificationStatistics = () => {
     categorizationQuery.options
   )
   const [latestCategorization] = data || []
-  console.log(latestCategorization, data)
   const changes = useMemo(() => {
     return Object.keys(classes)
       .map(c => {

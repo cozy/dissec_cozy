@@ -25,7 +25,6 @@ export const ClassifyOperations = () => {
     return `${client.options.uri}/jobs/webhooks/${supervisorWebhooks[0].id}`
   }, [client, supervisorWebhooks])
 
-  console.log(supervisorWebhook)
   const handleClassify = useCallback(async () => {
     const res = await client.collection(JOBS_DOCTYPE).create('service', {
       slug: 'dissecozy',

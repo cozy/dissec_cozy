@@ -21,7 +21,7 @@ export const contribution = async () => {
     filters = {}
   } = JSON.parse(process.env['COZY_PAYLOAD'] || '{}')
 
-  if (parents.length !== treeStructure.groupSize) {
+  if (!parents || parents?.length !== treeStructure?.groupSize) {
     return
   }
 
