@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useClient, useQuery } from 'cozy-client'
 import Button from 'cozy-ui/react/Button'
 import { latestModelUpdateQuery, observationWebhookQuery } from 'lib/queries'
@@ -20,16 +20,20 @@ export const ClassifyOperations = () => {
   const [lastModel] = lastModelData || []
   const [currentJob, setCurrentJob] = useState()
   const [pretrained, setPretrained] = useState(true)
+  const supervisorWebhook = useMemo(() => {
+    if (!client || !supervisorWebhooks || !supervisorWebhooks[0]) return
+    return `${client.options.uri}/jobs/webhooks/${supervisorWebhooks[0].id}`
+  }, [client, supervisorWebhooks])
 
   const handleClassify = useCallback(async () => {
     const res = await client.collection(JOBS_DOCTYPE).create('service', {
       slug: 'dissecozy',
       name: 'categorize',
       pretrained: pretrained,
-      supervisorWebhook: `${client.options.uri}/jobs/webhooks/${supervisorWebhooks[0].id}`
+      supervisorWebhook
     })
     setCurrentJob(res.data.id)
-  }, [client, pretrained, supervisorWebhooks])
+  }, [client, pretrained, supervisorWebhook])
 
   const handlePretrained = useCallback(() => {
     setPretrained(!pretrained)
@@ -53,17 +57,22 @@ export const ClassifyOperations = () => {
   }, [client.options.uri, client.sta, client.stackClient, currentJob])
 
   return (
-    <div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       <span>
         Latest model trained at {lastModel?.cozyMetadata?.updatedAt || '???'}
       </span>
       <FormControlLabel
-        label="Use pretrained model?"
+        label="Use model from distributed training?"
         control={
           <Switch
             checked={pretrained}
             onChange={handlePretrained}
-            name="Use pretrained model?"
+            name="Use model from distributed training?"
           />
         }
       />

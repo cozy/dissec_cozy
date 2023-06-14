@@ -53,13 +53,19 @@ export const observationsByExecutionQuery = executionId => ({
 export const observationWebhookQuery = () => ({
   definition: () =>
     Q(TRIGGERS_DOCTYPE)
-      .partialIndex({
+      .where({
         type: '@webhook',
         message: {
           name: 'observe'
         }
       })
-      .limitBy(1),
+      .indexFields(['type', 'message.name', 'cozyMetadata.updatedAt'])
+      .sortBy([
+        { type: 'desc' },
+        { 'message.name': 'desc' },
+        { 'cozyMetadata.updatedAt': 'desc' }
+      ])
+      .limitBy(10),
   options: {
     as: `${TRIGGERS_DOCTYPE}/observe`,
     fetchPolicy: defaultFetchPolicy
@@ -90,8 +96,7 @@ export const latestCategorizationQuery = () => ({
         action: 'categorize'
       })
       .indexFields(['action', 'cozyMetadata.updatedAt'])
-      .sortBy([{ action: 'desc' }, { 'cozyMetadata.updatedAt': 'desc' }])
-      .limitBy(1),
+      .sortBy([{ action: 'desc' }, { 'cozyMetadata.updatedAt': 'desc' }]),
   options: {
     as: `${OBSERVATIONS_DOCTYPE}/categorize`
   }

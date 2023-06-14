@@ -31,6 +31,7 @@ program
     'Domain of the instance supervising the protocol',
     'cozy.localhost:8080'
   )
+  .option('--force-clean', 'Whether to clean the supervisor instance', false)
 
 program.parse()
 
@@ -41,5 +42,6 @@ populateInstances({
   nClasses: options.classes,
   operationsPerInstance: options.operations,
   fixtureFile: options.fixture,
-  centralized: options.centralized
+  centralized: options.centralized,
+  forceClean: options.forceClean
 })

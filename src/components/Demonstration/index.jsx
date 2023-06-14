@@ -37,7 +37,7 @@ const Demonstration = () => {
     fanout,
     groupSize
   ])
-  const [tree, setTree] = useState()
+  const [tree, setTree] = useState([])
   const observationsQuery = observationsByExecutionQuery(
     tree ? tree[0]?.executionId : undefined
   )
