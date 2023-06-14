@@ -71,11 +71,7 @@ const Demonstration = () => {
       }
 
       // Converting parent(s)
-      const index = node.group.indexOf(node.nodeId)
-      // Select the appropriate parents
-      const parents =
-        (node.role === 'Leaf' ? [node.parents[index]] : node.parents) || []
-      for (const parent of parents) {
+      for (const parent of node.parents || []) {
         nodesMap[node.nodeId].parents = [
           ...nodesMap[node.nodeId].parents,
           parent.nodeId

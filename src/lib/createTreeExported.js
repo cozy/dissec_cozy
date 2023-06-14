@@ -25,13 +25,12 @@ const createTree = (treeStructure, nodesWebhooks) => {
   let remainingWebhooks = [...nodesWebhooks]
 
   const createLevel = (parentGroup, depth) => {
-    const childrenToCreate = parentGroup.length === 0 ? 1 : treeStructure.fanout
-    const groupSize =
-      parentGroup.length === 0
-        ? 1
-        : depth === treeStructure.depth - 1
-        ? treeStructure.fanout
-        : treeStructure.groupSize
+    const childrenToCreate = !parentGroup ? 1 : treeStructure.fanout
+    const groupSize = !parentGroup
+      ? 1
+      : depth === treeStructure.depth - 1
+      ? treeStructure.fanout
+      : treeStructure.groupSize
     const currentGroup = []
     const groupId = uuid()
 
@@ -62,12 +61,12 @@ const createTree = (treeStructure, nodesWebhooks) => {
         groupId,
         finalize: depth === 0
       }
-      if (parentGroup.length > 0 && depth < treeStructure.depth - 2) {
-        // Intermediate group
-        node.parents = [parentGroup[i]]
-      } else if (parentGroup.length > 0) {
+      if (depth === treeStructure.depth - 1) {
         // Contributors
         node.parents = parentGroup
+      } else {
+        // Aggregators
+        node.parents = parentGroup ? [parentGroup[i]] : parentGroup
       }
 
       currentGroup.push(node)
@@ -76,7 +75,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
     currentGroup.forEach(node => (node.group = currentGroup.map(e => e.nodeId)))
 
     // The querier contains the same node multiple times
-    if (parentGroup.length === 0) {
+    if (!parentGroup) {
       currentGroup.push(
         ...Array(treeStructure.groupSize - 1).fill(currentGroup[0])
       )
@@ -96,7 +95,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
     }
   }
 
-  return createLevel([], 0)
+  return createLevel(undefined, 0)
 }
 
 export default createTree
