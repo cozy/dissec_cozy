@@ -34,6 +34,10 @@ function TreeNetworkGraph({
   onNodeClick = () => {}
 }) {
   const nodeRadius = 12
+  const legend = {
+    radius: 8,
+    stroke: 2
+  }
   const ref = useRef()
   const executionId = useMemo(() => nodes[0]?.executionId, [nodes])
   const [hoveredNode, setHoveredNode] = useState()
@@ -130,13 +134,13 @@ function TreeNetworkGraph({
         setHoveredNode()
       })
       .attr('r', nodeRadius)
-      .attr('stroke', 'black')
+      .attr('stroke', n => (n.role === 'Contributor' ? '#297ef2' : 'black'))
       .attr('stroke-width', nodeRadius / 3)
       .attr('fill', n => {
         return n.startedWorking
           ? n.finishedWorking
-            ? 'green'
-            : 'red'
+            ? '#08b442'
+            : '#f52d2d'
           : 'white'
       })
       .attr('mask', n =>
@@ -257,7 +261,7 @@ function TreeNetworkGraph({
           x={width / 2 - 100}
           y={-height / 2 + 10}
           width="100"
-          height="120"
+          height="105"
           fill="none"
           stroke="black"
           strokeWidth="2"
@@ -275,16 +279,16 @@ function TreeNetworkGraph({
         </text>
 
         <circle
-          cx={width / 2 - 80}
-          cy={-height / 2 + 45}
-          r={nodeRadius}
+          cx={width / 2 - 85}
+          cy={-height / 2 + 40}
+          r={legend.radius}
           stroke="black"
-          strokeWidth={nodeRadius / 3}
+          strokeWidth={legend.stroke}
           fill="white"
         />
         <text
-          x={width / 2 - 80 + nodeRadius + 5}
-          y={-height / 2 + 45 + nodeRadius / 2}
+          x={width / 2 - 85 + legend.radius + 5}
+          y={-height / 2 + 40 + legend.radius / 2}
           fontFamily="Arial"
           fontSize="14"
         >
@@ -292,17 +296,34 @@ function TreeNetworkGraph({
         </text>
 
         <circle
-          cx={width / 2 - 80}
-          cy={-height / 2 + 75}
-          r={nodeRadius}
+          cx={width / 2 - 85}
+          cy={-height / 2 + 60}
+          r={legend.radius}
+          stroke="blue"
+          fill="white"
+          strokeWidth={legend.stroke}
+        />
+        <text
+          x={width / 2 - 85 + legend.radius + 5}
+          y={-height / 2 + 60 + legend.radius / 2}
+          fontFamily="Arial"
+          fontSize="14"
+        >
+          Contributor
+        </text>
+
+        <circle
+          cx={width / 2 - 85}
+          cy={-height / 2 + 80}
+          r={legend.radius}
           stroke="black"
-          strokeWidth={nodeRadius / 3}
-          fill="red"
+          strokeWidth={legend.stroke}
+          fill="#f52d2d"
           mask="url(#workMask)"
         />
         <text
-          x={width / 2 - 80 + nodeRadius + 5}
-          y={-height / 2 + 75 + nodeRadius / 2}
+          x={width / 2 - 85 + legend.radius + 5}
+          y={-height / 2 + 80 + legend.radius / 2}
           fontFamily="Arial"
           fontSize="14"
         >
@@ -310,16 +331,16 @@ function TreeNetworkGraph({
         </text>
 
         <circle
-          cx={width / 2 - 80}
-          cy={-height / 2 + 105}
-          r={nodeRadius}
+          cx={width / 2 - 85}
+          cy={-height / 2 + 100}
+          r={legend.radius}
           stroke="black"
-          strokeWidth={nodeRadius / 3}
-          fill="green"
+          strokeWidth={legend.stroke}
+          fill="#08b442"
         />
         <text
-          x={width / 2 - 80 + nodeRadius + 5}
-          y={-height / 2 + 105 + nodeRadius / 2}
+          x={width / 2 - 85 + legend.radius + 5}
+          y={-height / 2 + 100 + legend.radius / 2}
           fontFamily="Arial"
           fontSize="14"
         >
