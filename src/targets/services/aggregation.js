@@ -25,7 +25,6 @@ export const aggregation = async () => {
     aggregationDirectoryId,
     executionId,
     nodeId,
-    group,
     parents,
     finalize,
     useTiny,
@@ -94,10 +93,7 @@ export const aggregation = async () => {
       }
     })
   } else {
-    // Only using the corresponding parent
-    const index = group.indexOf(nodeId)
-    // Use the first parent when it is the final aggregator
-    const parent = parents[0]?.finalize ? parents[0] : parents[index]
+    const parent = parents[0]
 
     // Store the aggregate as a file to be shared
     const { data: aggregate } = await client.create('io.cozy.files', {
