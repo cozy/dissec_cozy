@@ -19,17 +19,17 @@ const createTree = (treeStructure, nodesWebhooks) => {
   let remainingWebhooks = [...nodesWebhooks]
 
   const createLevel = (parentGroup, depth) => {
-    const childrenToCreate = parentGroup.length === 0 ? 1 : treeStructure.fanout
+    const childrenToCreate = parentGroup?.length > 0 ? treeStructure.fanout : 1
     let groupSize
-    if (parent.length === 0) {
+    if (!parentGroup || parentGroup.length === 0) {
       // Querier node
       groupSize = 1
     } else if (depth === treeStructure.depth - 1) {
       // Leaf aggregators
-      treeStructure.fanout
+      groupSize = treeStructure.fanout
     } else {
       // Aggregator
-      treeStructure.groupSize
+      groupSize = treeStructure.groupSize
     }
     const currentGroup = []
     const groupId = uuid()
