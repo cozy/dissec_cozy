@@ -1,9 +1,6 @@
-import 'cozy-ui/dist/cozy-ui.utils.min.css'
-import 'cozy-ui/transpiled/react/stylesheet.css'
-
 import { RealTimeQueries } from 'cozy-client'
-import { Sprite as IconSprite } from 'cozy-ui/react/Icon'
 import { Content, Layout, Main } from 'cozy-ui/react/Layout'
+
 import React from 'react'
 import { hot } from 'react-hot-loader'
 import { HashRouter, Redirect, Route, Switch } from 'react-router-dom'
@@ -13,8 +10,8 @@ import Nodes from './Nodes'
 import Operations from './Operations'
 import Supervisor from './Supervisor'
 import Demonstration from './Demonstration'
-import Sidebar from './Sidebar'
 import { OBSERVATIONS_DOCTYPE, BANK_OPERATIONS_DOCTYPE } from 'doctypes'
+import { AppSidebar } from './Sidebar'
 
 const App = () => {
   return (
@@ -22,7 +19,7 @@ const App = () => {
       <Layout>
         <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
         <RealTimeQueries doctype={BANK_OPERATIONS_DOCTYPE} />
-        <Sidebar />
+        <AppSidebar />
         <Main>
           <Content className="app-content">
             <Switch>
@@ -36,7 +33,7 @@ const App = () => {
             </Switch>
           </Content>
         </Main>
-        <IconSprite />
+        {/* <IconSprite /> */}
       </Layout>
     </HashRouter>
   )
