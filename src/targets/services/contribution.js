@@ -1,7 +1,4 @@
 import CozyClient, { Q } from 'cozy-client'
-import fs from 'fs'
-
-import dissecConfig from '../../../dissec.config.json'
 import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
@@ -47,12 +44,15 @@ export const contribution = async () => {
   let model
   if (pretrained) {
     try {
-      let backup = fs.readFileSync(dissecConfig.localModelPath)
+      let backup = await client.stackClient.fetchJSON(
+        'GET',
+        '/remote/assets/dissec_model'
+      )
       model = Model.fromCompressedAggregate(backup, { useTiny: true })
 
       model.train(operations)
     } catch (e) {
-      throw `Model does not exist at path ${dissecConfig.localModelPath}`
+      throw `Remote asset not found (dissec_model)`
     }
   } else {
     model = await Model.fromDocs(operations, { useTiny: true })

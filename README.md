@@ -40,6 +40,20 @@ In order to allow continuous enhancement of performances, nodes in the protocol 
 
 Currently, this model is stored on the local file system and the path needs to be defined for the execution to work. In the file `dissec.config.json`, set the `localModelPath` value to a path where you want this shared model to be stored.
 
+Also, you need to add a line in the `cozy.yml` configuration of the Cozy Stack to serve the model as a remote asset. The remote asset of the model currently NEEDS to be called `dissec_model`.
+
+Before: 
+```yaml
+remote_assets:
+  bank: https://myassetserver.com/remote_asset.json
+```
+
+After: 
+```yaml
+remote_assets:
+  dissec_model: file:///home/dode/cozy/models/model.data
+```
+
 ### Tests
 
 Tests are run by [jest] under the hood. You can easily run the unit tests suite with:

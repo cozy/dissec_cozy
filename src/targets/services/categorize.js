@@ -1,7 +1,5 @@
 import CozyClient, { Q } from 'cozy-client'
-import fs from 'fs'
 
-import dissecConfig from '../../../dissec.config.json'
 import { BANK_OPERATIONS_DOCTYPE, JOBS_DOCTYPE } from 'doctypes'
 import { sendObservation } from 'lib/sendObservation'
 import { createLogger } from './helpers'
@@ -33,15 +31,17 @@ export const categorize = async () => {
   let model
   if (pretrained) {
     // Use the shared model
+    // Load the remote asset
     try {
-      const compressedAggregate = fs
-        .readFileSync(dissecConfig.localModelPath)
-        .toString()
+      const compressedAggregate = await client.stackClient.fetchJSON(
+        'GET',
+        '/remote/assets/dissec_model'
+      )
       model = await Model.fromCompressedAggregate(compressedAggregate, {
         useTiny
       })
     } catch (err) {
-      throw `Model does not exist at path ${dissecConfig.localModelPath} ? ${err}`
+      throw `Remote asset (dissec_model) not found ? ${err}`
     }
   } else {
     // Apply filters first
