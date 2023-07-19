@@ -1,9 +1,9 @@
 import { FormControlLabel, Switch } from '@material-ui/core'
 import { useClient, useQueryAll } from 'cozy-client'
-import Button from 'cozy-ui/react/Button'
-import Input from 'cozy-ui/react/Input'
-import Label from 'cozy-ui/react/Label'
-import Spinner from 'cozy-ui/react/Spinner'
+import Button from 'cozy-ui/transpiled/react/Buttons'
+import Input from 'cozy-ui/transpiled/react/Input'
+import Label from 'cozy-ui/transpiled/react/Label'
+import Spinner from 'cozy-ui/transpiled/react/Spinner'
 import SelectBox from 'cozy-ui/transpiled/react/SelectBox/SelectBox'
 import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
@@ -91,24 +91,19 @@ const SingleNodeAggregation = () => {
           label="Use pretrained model?"
           control={
             <Switch
+              color="primary"
               checked={pretrained}
               onChange={() => setPretrained(old => !old)}
-              name="Use pretrained model?"
             />
           }
         />
         <Button
-          className="todo-remove-button"
-          //theme="danger"
-          iconOnly
+          variant="primary"
           label="Launch execution"
           busy={isWorking}
           disabled={!node || isWorking}
           onClick={handleLaunchExecution}
-          extension="narrow"
-        >
-          Launch execution
-        </Button>
+        />
       </div>
     </div>
   )

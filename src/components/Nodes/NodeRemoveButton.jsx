@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react'
 
-import Button from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 import { useClient } from 'cozy-client'
 
 export const NodeRemoveButton = ({ node }) => {
@@ -18,14 +18,12 @@ export const NodeRemoveButton = ({ node }) => {
 
   return (
     <Button
-      className="todo-remove-button"
-      theme="danger"
+      variant="primary"
+      color="error"
       label="Delete"
-      size="large"
       busy={isWorking}
       disabled={isWorking}
       onClick={removeNode}
-      extension="narrow"
     />
   )
 }

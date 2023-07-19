@@ -1,10 +1,10 @@
 import { useClient, useQueryAll } from 'cozy-client'
-import Button from 'cozy-ui/react/Button'
-import Spinner from 'cozy-ui/react/Spinner'
 import React, { useCallback, useState } from 'react'
 import { v4 as uuid } from 'uuid'
-import Label from 'cozy-ui/react/Label/index.jsx'
-import Input from 'cozy-ui/react/Input/index.jsx'
+import Button from 'cozy-ui/transpiled/react/Buttons'
+import Spinner from 'cozy-ui/transpiled/react/Spinner'
+import Label from 'cozy-ui/transpiled/react/Label'
+import Input from 'cozy-ui/transpiled/react/Input'
 import createTree from 'lib/createTreeExported.js'
 import { nodesQuery } from 'lib/queries.js'
 
@@ -81,19 +81,14 @@ const FullAggregation = ({ supervisorWebhook }) => {
           />
         </div>
         <Button
-          className="button-basic"
-          //theme="danger"
-          iconOnly
+          variant="primary"
           label="Launch execution"
           busy={isWorking}
           disabled={
             isWorking || (nodes?.length || 0) < nbShares + nbContributors + 1
           }
           onClick={handleLaunchExecution}
-          extension="narrow"
-        >
-          Launch execution
-        </Button>
+        />
         {(nodes?.length || 0) < nbShares + nbContributors + 1 ? (
           <div className="full-agg-error">
             There are not enough nodes registered...

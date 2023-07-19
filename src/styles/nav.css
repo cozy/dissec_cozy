@@ -1,3 +1,8 @@
+[role="application"] {
+	display: initial !important;
+	overflow-y: hidden !important;
+}
+
 .c-nav-link {
 	display: flex;
 	height: 100%;

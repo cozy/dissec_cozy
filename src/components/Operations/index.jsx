@@ -8,7 +8,7 @@ import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
 import ClassifyOperations from './ClassifyOperations'
 import ClassificationStatistics from './ClassificationStatistics'
-import { Button } from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 
 export const Operations = () => {
   const query = bankOperationsQuery()
@@ -34,11 +34,10 @@ export const Operations = () => {
           <ClassificationStatistics />
           <OperationsList operations={operations} />
           <Button
+            variant="primary"
+            label="fetch more"
             onClick={handleFetchMore}
             busy={isWorking}
-            label="fetch more"
-            size="large"
-            extension="full"
           />
           <OperationAdd />
           <OperationDeleteAll operations={operations} />

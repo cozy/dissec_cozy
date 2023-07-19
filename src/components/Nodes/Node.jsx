@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { useClient } from 'cozy-client'
 
-import Button from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 import NodeRemoveButton from './NodeRemoveButton'
 
 export const Node = ({ node }) => {
@@ -30,20 +30,18 @@ export const Node = ({ node }) => {
       </div>
       <div className="node-body">
         <Button
-          className="node-contribution-button"
+          variant="primary"
+          label="Launch Contribution"
           onClick={handleContributionClick}
           busy={isWorking}
           disabled={isWorking}
-          label="Launch Contribution"
-          size="large"
         />
         <Button
-          className="node-aggregation-button"
+          variant="primary"
+          label="Launch Aggregation"
           onClick={handleAggregationClick}
           busy={isWorking}
           disabled={isWorking}
-          label="Launch Aggregation"
-          size="large"
         />
       </div>
       <NodeRemoveButton node={node} />

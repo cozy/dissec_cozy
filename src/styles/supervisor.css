@@ -1,7 +1,6 @@
 .execution-group-container {
   display: flex;
   flex-direction: column;
-  background: #F5F6F7;
   margin: auto;
   padding: 10px;
   max-width: 80%;
@@ -15,7 +14,6 @@
 .execution-group {
   display: flex;
   flex-direction: column;
-  background: #F5F6F7;
   width: -webkit-fill-available;
   align-items: center;
   align-items: center;
@@ -49,5 +47,4 @@
 .observation {
   width: inherit;
   padding: 0.2rem;
-  background: #F5F6F7;
 }

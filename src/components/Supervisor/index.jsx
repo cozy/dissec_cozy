@@ -1,10 +1,9 @@
 import { useClient, useQueryAll } from 'cozy-client'
 import Spinner from 'cozy-ui/react/Spinner'
 import React, { useCallback, useMemo, useState } from 'react'
-
 import { observationsQuery } from 'lib/queries'
 import { ExecutionGroup } from './ExecutionGroup'
-import { Button } from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 import { OBSERVATIONS_DOCTYPE } from 'doctypes'
 
 export const Supervisor = () => {
@@ -62,11 +61,11 @@ export const Supervisor = () => {
             </div>
             <h2>Delete all Operation:</h2>
             <Button
+              variant="primary"
+              color="error"
               onClick={handleDelete}
               busy={!observations || isWorking}
-              theme="danger"
               label={`Delete ${observations.length || '??'} observations`}
-              size="large"
             />
           </>
         ) : (
