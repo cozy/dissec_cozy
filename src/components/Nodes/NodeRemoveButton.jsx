@@ -17,14 +17,16 @@ export const NodeRemoveButton = ({ node }) => {
   }, [node, client, setIsWorking])
 
   return (
-    <Button
-      variant="primary"
-      color="error"
-      label="Delete"
-      busy={isWorking}
-      disabled={isWorking}
-      onClick={removeNode}
-    />
+    <div style={{ margin: 'auto', padding: '5px', width: '100%' }}>
+      <Button
+        variant="primary"
+        color="error"
+        label="Delete"
+        busy={isWorking}
+        disabled={isWorking}
+        onClick={removeNode}
+      />
+    </div>
   )
 }
 

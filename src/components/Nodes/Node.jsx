@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useClient } from 'cozy-client'
-
+import Paper from 'cozy-ui/transpiled/react/Paper'
 import Button from 'cozy-ui/transpiled/react/Buttons'
 import NodeRemoveButton from './NodeRemoveButton'
 
@@ -24,7 +24,7 @@ export const Node = ({ node }) => {
   }, [client, aggregationWebhook, setIsWorking])
 
   return (
-    <div className="node">
+    <Paper style={{ margin: 'auto', padding: '0.5rem', width: 'fit-content' }}>
       <div className="node-label">
         <b>{label ? label : 'Unnamed node'}</b>
       </div>
@@ -47,7 +47,7 @@ export const Node = ({ node }) => {
         />
       </div>
       <NodeRemoveButton node={node} />
-    </div>
+    </Paper>
   )
 }
 
