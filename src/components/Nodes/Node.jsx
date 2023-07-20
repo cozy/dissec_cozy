@@ -28,7 +28,9 @@ export const Node = ({ node }) => {
       <div className="node-label">
         <b>{label ? label : 'Unnamed node'}</b>
       </div>
-      <div className="node-body">
+      <div
+        style={{ display: 'flex', gap: '1rem', margin: 'auto', padding: '5px' }}
+      >
         <Button
           variant="primary"
           label="Launch Contribution"
