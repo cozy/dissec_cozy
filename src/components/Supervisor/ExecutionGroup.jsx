@@ -1,9 +1,7 @@
 import React from 'react'
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary
-} from '@material-ui/core'
+import Accordion from 'cozy-ui/transpiled/react/Accordion'
+import AccordionDetails from 'cozy-ui/transpiled/react/AccordionDetails'
+import AccordionSummary from 'cozy-ui/transpiled/react/AccordionSummary'
 import Observation from './Observation'
 
 export const ExecutionGroup = ({ group, title }) => {

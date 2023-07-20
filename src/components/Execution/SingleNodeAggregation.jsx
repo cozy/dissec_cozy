@@ -1,5 +1,6 @@
-import { FormControlLabel, Switch } from '@material-ui/core'
 import { useClient, useQueryAll } from 'cozy-client'
+import Switch from 'cozy-ui/transpiled/react/Switch'
+import FormControlLabel from 'cozy-ui/transpiled/react/FormControlLabel'
 import Button from 'cozy-ui/transpiled/react/Buttons'
 import Input from 'cozy-ui/transpiled/react/Input'
 import Label from 'cozy-ui/transpiled/react/Label'
