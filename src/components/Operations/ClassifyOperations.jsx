@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useClient, useQuery } from 'cozy-client'
-import Button from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
+import FormControlLabel from 'cozy-ui/transpiled/react/FormControlLabel'
+import Switch from 'cozy-ui/transpiled/react/Switch'
 import { latestModelUpdateQuery, observationWebhookQuery } from 'lib/queries'
 import { JOBS_DOCTYPE } from 'doctypes'
-import { FormControlLabel, Switch } from '@material-ui/core'
 
 export const ClassifyOperations = () => {
   const client = useClient()
@@ -70,18 +71,17 @@ export const ClassifyOperations = () => {
         label="Use model from distributed training?"
         control={
           <Switch
+            color="primary"
             checked={pretrained}
             onChange={handlePretrained}
-            name="Use model from distributed training?"
           />
         }
       />
       <Button
+        variant="primary"
+        label="Launch classification"
         onClick={handleClassify}
         busy={!!currentJob}
-        label="Launch classification"
-        size="large"
-        extension="full"
       />
     </div>
   )

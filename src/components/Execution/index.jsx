@@ -1,6 +1,6 @@
 import { useClient, useQueryAll } from 'cozy-client'
-import Button from 'cozy-ui/react/Button'
-import Spinner from 'cozy-ui/react/Spinner'
+import Button from 'cozy-ui/transpiled/react/Buttons'
+import Spinner from 'cozy-ui/transpiled/react/Spinner'
 import React, { useCallback, useState } from 'react'
 
 import {
@@ -53,7 +53,7 @@ export const Execution = () => {
   }, [client, webhooks])
 
   return (
-    <div className="todos">
+    <div>
       <FullAggregation
         supervisorWebhook={
           webhooks?.find(e => e.message.name === 'observe')?.links.webhook
@@ -69,17 +69,13 @@ export const Execution = () => {
       ) : (
         <div className="action-group">
           <Button
-            className="todo-remove-button"
-            theme="danger"
-            iconOnly
-            label="Create webhooks"
+            variant="primary"
+            color="error"
+            label="Reset webhooks"
             busy={isWorking}
             disabled={isWorking}
             onClick={resetWebhooks}
-            extension="narrow"
-          >
-            Reset webhooks
-          </Button>
+          />
         </div>
       )}
     </div>

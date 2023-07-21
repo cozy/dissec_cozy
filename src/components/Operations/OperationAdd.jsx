@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from 'react'
-import { InputLabel, MenuItem, Select } from '@material-ui/core'
 import { useClient } from 'cozy-client'
-import Button from 'cozy-ui/react/Button'
-import Input from 'cozy-ui/react/Input'
-import Label from 'cozy-ui/react/Label'
+import Button from 'cozy-ui/transpiled/react/Buttons'
+import Select from 'cozy-ui/transpiled/react/Select'
+import Input from 'cozy-ui/transpiled/react/Input'
+import Label from 'cozy-ui/transpiled/react/Label'
+import MenuItem from 'cozy-ui/transpiled/react/MenuItem'
 import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 
 import categories from 'assets/classes.json'
@@ -86,7 +87,7 @@ export const OperationAdd = () => {
           />
         </div>
         <div>
-          <InputLabel id="select-category-label">Category</InputLabel>
+          <div id="select-category-label">Category</div>
           <Select
             labelId="select-category-label"
             className="category-item"
@@ -104,11 +105,10 @@ export const OperationAdd = () => {
         </div>
         <div>
           <Button
+            variant="primary"
+            label="add"
             onClick={handleSubmit}
             busy={isWorking}
-            label="add"
-            size="large"
-            extension="full"
           />
         </div>
       </form>

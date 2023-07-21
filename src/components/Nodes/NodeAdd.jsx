@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react'
 
 import { useClient } from 'cozy-client'
-import Input from 'cozy-ui/react/Input'
-import Label from 'cozy-ui/react/Label'
-import Button from 'cozy-ui/react/Button'
+import Input from 'cozy-ui/transpiled/react/Input'
+import Label from 'cozy-ui/transpiled/react/Label'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 
 import { NODES_DOCTYPE } from 'doctypes'
 
@@ -87,11 +87,10 @@ export const NodeAdd = () => {
           type="url"
         />
         <Button
-          className="add-node-button"
+          variant="primary"
+          label="add"
           onClick={handleSubmit}
           busy={isWorking}
-          label="add"
-          size="large"
         />
       </form>
     </div>

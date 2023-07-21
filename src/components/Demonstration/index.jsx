@@ -11,7 +11,7 @@ import createTree from 'lib/createTreeExported'
 import TreeNetworkGraph from './TreeNetworkGraph'
 import Spinner from 'cozy-ui/react/Spinner'
 import { omit } from 'lodash'
-import { Button } from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 import NodesTable from './NodesTable'
 
 const Demonstration = () => {
@@ -209,26 +209,18 @@ const Demonstration = () => {
           />
         </div>
         <Button
-          className="button-basic"
-          iconOnly
+          variant="primary"
           label="Regenerate tree"
           onClick={handleRegenerateTree}
-          extension="narrow"
           disabled={lastExecutionId !== tree[0]?.executionId || isRunning}
-        >
-          Regenerate tree
-        </Button>
+        />
         <Button
-          className="button-basic"
-          iconOnly
+          variant="primary"
           label="Launch execution"
           onClick={handleLaunchExecution}
-          extension="narrow"
           busy={isRunning}
           disabled={lastExecutionId === tree[0]?.executionId}
-        >
-          Launch execution
-        </Button>
+        />
       </div>
       {treeNodes && treeEdges ? (
         <TreeNetworkGraph

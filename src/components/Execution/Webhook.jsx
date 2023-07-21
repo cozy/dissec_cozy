@@ -1,6 +1,7 @@
-import { FormControlLabel, Switch } from '@material-ui/core'
 import { useClient } from 'cozy-client'
-import Button from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
+import Switch from 'cozy-ui/transpiled/react/Switch'
+import FormControlLabel from 'cozy-ui/transpiled/react/FormControlLabel'
 import React, { useCallback, useState } from 'react'
 
 import { JOBS_DOCTYPE } from 'doctypes'
@@ -74,9 +75,9 @@ export const Webhook = ({ hook, onUpdate }) => {
             label="Use pretrained model?"
             control={
               <Switch
+                color="primary"
                 checked={pretrained}
                 onChange={handlePretrained}
-                name="Use pretrained model?"
               />
             }
           />
@@ -87,34 +88,23 @@ export const Webhook = ({ hook, onUpdate }) => {
           debugging purpose.
         </b>
       )}
-      <form>
-        <div className="action-group">
-          <Button
-            className="todo-remove-button"
-            theme="danger"
-            iconOnly
-            label="Remove webhook"
-            busy={isWorking}
-            disabled={isWorking}
-            onClick={handleRemoveWebhook}
-            extension="narrow"
-          >
-            Remove this webhook
-          </Button>
-          <Button
-            className="todo-remove-button"
-            onClick={handleCallWebhook}
-            //theme="danger"
-            iconOnly
-            label="Call webhook"
-            busy={isWorking}
-            disabled={isWorking}
-            extension="narrow"
-          >
-            Call this webhook
-          </Button>
-        </div>
-      </form>
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <Button
+          variant="primary"
+          color="error"
+          label="Remove webhook"
+          busy={isWorking}
+          disabled={isWorking}
+          onClick={handleRemoveWebhook}
+        />
+        <Button
+          variant="primary"
+          label="Call webhook"
+          onClick={handleCallWebhook}
+          busy={isWorking}
+          disabled={isWorking}
+        />
+      </div>
     </div>
   )
 }

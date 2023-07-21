@@ -1,43 +1,42 @@
-import 'cozy-ui/dist/cozy-ui.utils.min.css'
-import 'cozy-ui/transpiled/react/stylesheet.css'
-
 import { RealTimeQueries } from 'cozy-client'
-import { Sprite as IconSprite } from 'cozy-ui/react/Icon'
 import { Content, Layout, Main } from 'cozy-ui/react/Layout'
+
 import React from 'react'
 import { hot } from 'react-hot-loader'
 import { HashRouter, Redirect, Route, Switch } from 'react-router-dom'
+import CozyTheme from 'cozy-ui/transpiled/react/CozyTheme'
 
 import Execution from './Execution'
 import Nodes from './Nodes'
 import Operations from './Operations'
 import Supervisor from './Supervisor'
 import Demonstration from './Demonstration'
-import Sidebar from './Sidebar'
 import { OBSERVATIONS_DOCTYPE, BANK_OPERATIONS_DOCTYPE } from 'doctypes'
+import { AppSidebar } from './Sidebar'
 
 const App = () => {
   return (
     <HashRouter>
-      <Layout>
-        <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
-        <RealTimeQueries doctype={BANK_OPERATIONS_DOCTYPE} />
-        <Sidebar />
-        <Main>
-          <Content className="app-content">
-            <Switch>
-              <Route path="/operations" component={Operations} />
-              <Route path="/execution" component={Execution} />
-              <Route path="/nodes" component={Nodes} />
-              <Route path="/supervisor" component={Supervisor} />
-              <Route path="/demonstration" component={Demonstration} />
-              <Redirect from="/" to="/operations" />
-              <Redirect from="*" to="/operations" />
-            </Switch>
-          </Content>
-        </Main>
-        <IconSprite />
-      </Layout>
+      <CozyTheme>
+        <Layout style={{ width: '100vw' }}>
+          <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
+          <RealTimeQueries doctype={BANK_OPERATIONS_DOCTYPE} />
+          <AppSidebar />
+          <Main className="app-content">
+            <Content>
+              <Switch>
+                <Route path="/operations" component={Operations} />
+                <Route path="/execution" component={Execution} />
+                <Route path="/nodes" component={Nodes} />
+                <Route path="/supervisor" component={Supervisor} />
+                <Route path="/demonstration" component={Demonstration} />
+                <Redirect from="/" to="/operations" />
+                <Redirect from="*" to="/operations" />
+              </Switch>
+            </Content>
+          </Main>
+        </Layout>
+      </CozyTheme>
     </HashRouter>
   )
 }

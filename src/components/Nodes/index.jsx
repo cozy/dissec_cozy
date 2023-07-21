@@ -15,17 +15,13 @@ export const Nodes = () => {
     query.options
   )
 
-  return (
-    <div className="todos">
-      {!nodes || isLoading ? (
-        <Spinner size="xxlarge" middle />
-      ) : (
-        <div>
-          <NodesList nodes={nodes} />
-          <NodeUpload />
-          <NodeAdd />
-        </div>
-      )}
+  return !nodes || isLoading ? (
+    <Spinner size="xxlarge" middle />
+  ) : (
+    <div>
+      <NodesList nodes={nodes} />
+      <NodeUpload />
+      <NodeAdd />
     </div>
   )
 }

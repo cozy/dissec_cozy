@@ -1,14 +1,11 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Divider,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField
-} from '@material-ui/core'
+import Accordion from 'cozy-ui/transpiled/react/Accordion'
+import AccordionSummary from 'cozy-ui/transpiled/react/AccordionSummary'
+import AccordionDetails from 'cozy-ui/transpiled/react/AccordionDetails'
+import TextField from 'cozy-ui/transpiled/react/TextField'
+import Divider from 'cozy-ui/transpiled/react/Divider'
+import FormControl from 'cozy-ui/transpiled/react/FormControl'
+import Select from 'cozy-ui/transpiled/react/Select'
+import MenuItem from 'cozy-ui/transpiled/react/MenuItem'
 import { useClient } from 'cozy-client'
 import React, { useCallback, useMemo, useState } from 'react'
 
@@ -79,7 +76,6 @@ export const Operation = ({ operation }) => {
           </div>
           <div className="category-info">
             <TextField
-              className="category-item"
               disabled
               label="Previous category"
               value={capitalizeFirstLetter(
@@ -139,7 +135,7 @@ export const Operation = ({ operation }) => {
           ))}
         </ul>
         <FormControl className="category-info">
-          <InputLabel id="select-category-label">Manual category</InputLabel>
+          <div id="select-category-label">Manual category</div>
           <Select
             labelId="select-category-label"
             className="category-item"

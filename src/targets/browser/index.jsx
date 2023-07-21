@@ -1,6 +1,6 @@
 /* global cozy */
-import 'cozy-ui/dist/cozy-ui.utils.min.css'
 import 'cozy-ui/transpiled/react/stylesheet.css'
+import 'cozy-ui/dist/cozy-ui.utils.min.css'
 import 'styles'
 
 import CozyClient, { CozyProvider } from 'cozy-client'

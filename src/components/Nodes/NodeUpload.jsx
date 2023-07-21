@@ -2,8 +2,8 @@ import React, { useCallback, useState } from 'react'
 
 import { useClient } from 'cozy-client'
 import FileInput from 'cozy-ui/transpiled/react/FileInput'
-import Label from 'cozy-ui/react/Label'
-import Button from 'cozy-ui/react/Button'
+import Label from 'cozy-ui/transpiled/react/Label'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 
 import { NODES_DOCTYPE } from 'doctypes'
 
@@ -48,11 +48,10 @@ export const NodeUpload = () => {
         <FileInput hidden={false} onChange={handleFileChange} />
         {entries && `Found ${entries.length} entries`}
         <Button
-          className="upload-node-button"
+          variant="primary"
+          label="Upload"
           onClick={handleUpload}
           busy={isWorking}
-          label="Upload"
-          size="large"
         />
       </form>
     </div>

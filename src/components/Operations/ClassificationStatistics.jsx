@@ -1,12 +1,10 @@
 import React, { useMemo } from 'react'
 import { useQuery } from 'cozy-client'
 import { latestCategorizationQuery } from 'lib/queries'
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Divider
-} from '@material-ui/core'
+import Accordion from 'cozy-ui/transpiled/react/Accordion'
+import AccordionDetails from 'cozy-ui/transpiled/react/AccordionDetails'
+import AccordionSummary from 'cozy-ui/transpiled/react/AccordionSummary'
+import Divider from 'cozy-ui/transpiled/react/Divider'
 import { capitalizeFirstLetter } from 'lib/utils'
 import classes from 'assets/classesTiny.json'
 import {
