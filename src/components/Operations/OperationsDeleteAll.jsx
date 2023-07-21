@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 import { useClient } from 'cozy-client'
 
-import Button from 'cozy-ui/react/Button'
+import Button from 'cozy-ui/transpiled/react/Buttons'
 import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 
 export const OperationsDeleteAll = props => {
@@ -23,11 +23,11 @@ export const OperationsDeleteAll = props => {
     <div>
       <h2>Delete all Operation:</h2>
       <Button
+        variant="primary"
+        color="error"
+        label="delete all"
         onClick={handleDelete}
         busy={isWorking}
-        theme="danger"
-        label="delete all"
-        size="large"
       />
     </div>
   )

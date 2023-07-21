@@ -6,11 +6,11 @@ import Observation from './Observation'
 
 export const ExecutionGroup = ({ group, title }) => {
   return (
-    <Accordion className="execution-group">
-      <AccordionSummary className="execution-summary">
+    <Accordion style={{ width: '100%' }}>
+      <AccordionSummary>
         {title} ({group.length} Observations)
       </AccordionSummary>
-      <AccordionDetails className="execution-details">
+      <AccordionDetails style={{ flexWrap: 'wrap', width: '100%' }}>
         {group.map(item => (
           <Observation key={item._id} observation={item} />
         ))}
