@@ -11,13 +11,13 @@ try {
   checkpoint = {
     checkpoint: 0,
     name: './outputs/' + new Date().toISOString().replaceAll(':', ''),
-    path: defaultPath,
+    path: defaultPath
   }
 }
 
 let configs: RunConfig[] = []
-const debug = false
-const fullExport = false
+const debug = true
+const fullExport = true
 const useCheckpoint = false
 if (debug) {
   configs = [
@@ -38,12 +38,12 @@ if (debug) {
       adaptedFailures: false,
       backupsToAggregatorsRatio: 0.2,
       depth: 4,
-      fanout: 8,
-      groupSize: 5,
+      fanout: 4,
+      groupSize: 4,
       concentration: 0,
       random: false,
-      seed: '5-16',
-    },
+      seed: '5-15'
+    }
   ]
 } else {
   const seedPrefix = ''
@@ -51,11 +51,29 @@ if (debug) {
 
   configs = [
     ...createRunConfigs({
-      strategies: [STRATEGIES.STRAWMAN, STRATEGIES.EAGER, STRATEGIES.ONESHOT, STRATEGIES.HYBRID_BLOCK],
+      strategies: [
+        STRATEGIES.STRAWMAN,
+        STRATEGIES.EAGER,
+        STRATEGIES.ONESHOT,
+        STRATEGIES.HYBRID_BLOCK
+      ],
       depths: [3, 4, 5],
       failures: [
-        0, 10000.0, 400.0, 333.333, 285.714, 250.0, 222.222, 200.0, 166.666, 142.857, 125.0, 111.111, 100.0, 90.909,
-        83.333,
+        0,
+        10000.0,
+        400.0,
+        333.333,
+        285.714,
+        250.0,
+        222.222,
+        200.0,
+        166.666,
+        142.857,
+        125.0,
+        111.111,
+        100.0,
+        90.909,
+        83.333
       ],
       groupSizes: [4, 5, 6],
       modelSizes: [1, 2 ** 8, 2 ** 10, 2 ** 12, 2 ** 14],
@@ -66,9 +84,9 @@ if (debug) {
         depth: 4,
         failure: 400,
         groupSize: 5,
-        modelSize: 2 ** 10,
-      },
-    }),
+        modelSize: 2 ** 10
+      }
+    })
   ]
 }
 
@@ -76,6 +94,6 @@ const runner = new ExperimentRunner(configs, {
   debug,
   fullExport,
   intermediateExport: 100,
-  checkpoint: useCheckpoint ? checkpoint : undefined,
+  checkpoint: useCheckpoint ? checkpoint : undefined
 })
 runner.run()
