@@ -17,7 +17,7 @@ _:pushpin: Note:_ we recommend to use [Yarn] instead of NPM for package manageme
 
 ### Install
 
-Setting up the Cozy DISSEC-COZY app requires you to [setup a dev environment][setup].
+Setting up the Cozy DISSEC-COZY app requires you to [setup a dev environment][setup]. However, you will need a spcific version of `cozy-stack`, so we recommend that you install it from sources and run `git checkout 3bca7d384076a21367c24bf69f5381ad9e54223b` before running `make`.
 
 You can then clone the app repository and install dependencies:
 

@@ -123,6 +123,8 @@ const Demonstration = () => {
         .map(e => {
           return {
             ...e,
+            treeIndex:
+              nodesMap[e.target].treeIndex || nodesMap[e.source].treeIndex,
             activeEdge: !!observations
               ?.filter(o => o.action !== 'receiveShare')
               ?.find(
