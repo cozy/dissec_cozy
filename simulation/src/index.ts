@@ -41,7 +41,7 @@ if (debug) {
       fanout: 4,
       groupSize: 4,
       concentration: 0,
-      random: false,
+      random: true,
       seed: '5-15'
     }
   ]

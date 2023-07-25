@@ -14,6 +14,7 @@
     "dashboard:mini": "PORT='8051' python3 dashboard/dashboard_mini.py",
     "dashboard:full": "PORT='8052' python3 dashboard/dashboard_full.py",
     "dashboard:paper": "PORT='8053' python3 dashboard/dashboard_paper.py",
+    "dashboard:demo": "PORT='8054' python3 dashboard/dashboard_demo.py",
     "graphs": "python3 scripts/generate_graphs.py"
   },
   "devDependencies": {
