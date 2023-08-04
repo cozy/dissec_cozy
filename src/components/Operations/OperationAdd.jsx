@@ -9,6 +9,7 @@ import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 
 import categories from 'assets/classes.json'
 import { capitalizeFirstLetter } from 'lib/utils'
+import Typography from 'cozy-ui/transpiled/react/Typography'
 
 export const OperationAdd = () => {
   const client = useClient()
@@ -63,7 +64,7 @@ export const OperationAdd = () => {
 
   return (
     <div>
-      <h2>Add a new Operation:</h2>
+      <Typography variant="h2">Add a new Operation</Typography>
       <span>
         Fill this form to create a new banking operation. The label is the data
         used to classify, the category is the target.

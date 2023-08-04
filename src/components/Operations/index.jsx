@@ -6,8 +6,6 @@ import { bankOperationsQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
-import ClassifyOperations from './ClassifyOperations'
-import ClassificationStatistics from './ClassificationStatistics'
 import Button from 'cozy-ui/transpiled/react/Buttons'
 import PlusSmallIcon from 'cozy-ui/transpiled/react/Icons/PlusSmall'
 import Icon from 'cozy-ui/transpiled/react/Icon'
@@ -32,8 +30,6 @@ export const Operations = () => {
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
-          <ClassifyOperations />
-          <ClassificationStatistics />
           <OperationsList operations={operations} />
           <Button
             className="u-m-auto"

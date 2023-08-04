@@ -1,12 +1,13 @@
 import React from 'react'
 
 import Operation from './Operation'
+import Typography from 'cozy-ui/transpiled/react/Typography'
 
 export const OperationsList = ({ operations }) => {
   if (!operations || !operations.length) return null
   return (
     <div>
-      <h2>Operations list:</h2>
+      <Typography variant="h2">Operations list</Typography>
       <span>
         This section details all the banking operations the instance has. You
         can click on individual operation to see more details and use the

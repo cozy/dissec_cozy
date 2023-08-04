@@ -5,6 +5,7 @@ import FormControlLabel from 'cozy-ui/transpiled/react/FormControlLabel'
 import Switch from 'cozy-ui/transpiled/react/Switch'
 import { latestModelUpdateQuery, observationWebhookQuery } from 'lib/queries'
 import { JOBS_DOCTYPE } from 'doctypes'
+import Typography from 'cozy-ui/transpiled/react/Typography'
 
 export const ClassifyOperations = () => {
   const client = useClient()
@@ -58,15 +59,10 @@ export const ClassifyOperations = () => {
   }, [client.options.uri, client.sta, client.stackClient, currentJob])
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <span>
+    <div className="u-card u-flex u-flex-column u-mv-half">
+      <Typography variant="h4">
         Latest model trained at {lastModel?.cozyMetadata?.updatedAt || '???'}
-      </span>
+      </Typography>
       <FormControlLabel
         label="Use model from distributed training?"
         control={

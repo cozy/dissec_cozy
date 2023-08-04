@@ -10,13 +10,13 @@ import {
   SERVICE_OBSERVE
 } from 'targets/services/helpers'
 import { webhooksQuery } from 'lib/queries'
-import FullAggregation from './FullAggregation.jsx'
-import SingleNodeAggregation from './SingleNodeAggregation'
 import Webhook from './Webhook'
 import Accordion from 'cozy-ui/transpiled/react/Accordion'
 import AccordionSummary from 'cozy-ui/transpiled/react/AccordionSummary'
 import AccordionDetails from 'cozy-ui/transpiled/react/AccordionDetails'
 import Typography from 'cozy-ui/transpiled/react/Typography'
+import ClassificationStatistics from './ClassificationStatistics'
+import ClassifyOperations from './ClassifyOperations'
 
 export const Execution = () => {
   const client = useClient()
@@ -57,18 +57,14 @@ export const Execution = () => {
   }, [client, webhooks])
 
   return (
-    <div>
-      <FullAggregation
-        supervisorWebhook={
-          webhooks?.find(e => e.message.name === 'observe')?.links.webhook
-        }
-      />
-      <SingleNodeAggregation />
-      <Accordion className="u-m-half">
+    <div className="u-p-half">
+      <ClassifyOperations />
+      <ClassificationStatistics />
+      <Accordion>
         <AccordionSummary>
           <Typography variant="h3">Webhooks</Typography>
         </AccordionSummary>
-        <AccordionDetails className="u-flex-column">
+        <AccordionDetails className="u-flex-column u-flex-items-center">
           {webhooks &&
             webhooks.map(hook => (
               <Webhook key={hook.id} hook={hook} onUpdate={fetch} />
