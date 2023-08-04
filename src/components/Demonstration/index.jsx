@@ -95,14 +95,17 @@ const Demonstration = () => {
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
   ) : (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div className="u-p-half">
       <TreeCreator
         busy={false}
         setTreeNodes={setTreeNodes}
         setTreeEdges={setTreeEdges}
       />
       <Button
-        variant="primary"
+        className="u-m-auto"
+        style={{ display: 'flex' }}
+        variant="ghost"
+        color="success"
         label="Launch execution"
         onClick={handleLaunchExecution}
         busy={isRunning}

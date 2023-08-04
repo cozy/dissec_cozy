@@ -4,6 +4,7 @@
     "execution": "Execution",
     "nodes": "Nodes",
     "supervisor": "Supervisor",
-    "demonstration": "Demonstration"
+    "demonstration": "Demonstration",
+    "debug": "Debug"
   }
 }

@@ -18,7 +18,7 @@ const App = () => {
   return (
     <HashRouter>
       <CozyTheme>
-        <Layout style={{ width: '100vw' }}>
+        <Layout style={{ width: '100vw', overflow: 'hidden' }}>
           <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
           <RealTimeQueries doctype={BANK_OPERATIONS_DOCTYPE} />
           <AppSidebar />

@@ -22,12 +22,15 @@ const TreeCreator = ({ busy, setTreeNodes, setTreeEdges }) => {
   const handleCreate = useCallback(() => {
     setTreeNodes(treeNodes)
     setTreeEdges(treeEdges)
-  }, [setTreeEdges, setTreeNodes, treeEdges, treeNodes])
+    // Immediatly regenerate the tree so that the next creation is the regenerated tree
+    regenerateTree()
+  }, [regenerateTree, setTreeEdges, setTreeNodes, treeEdges, treeNodes])
 
   return !tree || isLoading ? (
     <Spinner size="xxlarge" middle />
   ) : (
     <Paper
+      className="u-bg-silver"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -75,12 +78,6 @@ const TreeCreator = ({ busy, setTreeNodes, setTreeEdges }) => {
           variant="primary"
           label="Create tree"
           onClick={handleCreate}
-          disabled={busy}
-        />
-        <Button
-          variant="primary"
-          label="Regenerate tree"
-          onClick={regenerateTree}
           disabled={busy}
         />
       </div>

@@ -48,7 +48,6 @@ export const Operation = ({ operation }) => {
   return (
     <Accordion
       key={operation._id}
-      className="operation-item"
       style={{
         border,
         borderRadius: '0.3rem'
@@ -76,6 +75,7 @@ export const Operation = ({ operation }) => {
           </div>
           <div className="category-info">
             <TextField
+              className="u-caption"
               disabled
               label="Previous category"
               value={capitalizeFirstLetter(

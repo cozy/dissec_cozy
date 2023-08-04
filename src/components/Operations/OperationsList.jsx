@@ -2,8 +2,7 @@ import React from 'react'
 
 import Operation from './Operation'
 
-export const OperationsList = props => {
-  const { operations } = props
+export const OperationsList = ({ operations }) => {
   if (!operations || !operations.length) return null
   return (
     <div>
@@ -16,7 +15,7 @@ export const OperationsList = props => {
         Categories displayed in the dropdown are used a ground truth to train
         the model.
       </span>
-      <div className="operation-list">
+      <div className="u-p-half">
         {operations.map(operation => (
           <Operation key={operation._id} operation={operation} />
         ))}
