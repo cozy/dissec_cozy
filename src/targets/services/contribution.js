@@ -1,8 +1,10 @@
 import CozyClient, { Q } from 'cozy-client'
+import fs from 'fs'
 import { BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 import { createLogger, getOrCreateAppDirectory } from './helpers'
 import { Model } from './model'
 import { sendObservation } from '../../lib/sendObservation'
+import dissecConfig from '../../../dissec.config.json'
 
 global.fetch = require('node-fetch').default
 
@@ -52,7 +54,14 @@ export const contribution = async () => {
 
       model.train(operations)
     } catch (e) {
-      throw `Remote asset not found (dissec_model)`
+      // TODO: Do not rely on the file system
+      // throw `Remote asset (dissec_model) not found ? ${err}`
+      const compressedAggregate = fs
+        .readFileSync(dissecConfig.localModelPath)
+        .toString()
+      model = await Model.fromCompressedAggregate(compressedAggregate, {
+        useTiny
+      })
     }
   } else {
     model = await Model.fromDocs(operations, { useTiny: true })
