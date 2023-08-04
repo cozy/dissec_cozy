@@ -7,14 +7,12 @@ import BillIcon from 'cozy-ui/transpiled/react/Icons/Bill'
 import FitnessIcon from 'cozy-ui/transpiled/react/Icons/Fitness'
 import RepareIcon from 'cozy-ui/transpiled/react/Icons/Repare'
 import DashboardIcon from 'cozy-ui/transpiled/react/Icons/Dashboard'
-import ShareCircleIcon from 'cozy-ui/transpiled/react/Icons/ShareCircle'
 
 const navItems = [
   { to: '/operations', translation: 'Nav.operations', icon: BillIcon },
   { to: '/demonstration', translation: 'Nav.demonstration', icon: FitnessIcon },
   { to: '/execution', translation: 'Nav.execution', icon: RepareIcon },
-  { to: '/nodes', translation: 'Nav.nodes', icon: ShareCircleIcon },
-  { to: '/supervisor', translation: 'Nav.supervisor', icon: DashboardIcon }
+  { to: '/debug', translation: 'Nav.debug', icon: DashboardIcon }
 ]
 
 export const AppSidebar = () => {
