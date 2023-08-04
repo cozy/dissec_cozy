@@ -13,6 +13,10 @@ import { webhooksQuery } from 'lib/queries'
 import FullAggregation from './FullAggregation.jsx'
 import SingleNodeAggregation from './SingleNodeAggregation'
 import Webhook from './Webhook'
+import Accordion from 'cozy-ui/transpiled/react/Accordion'
+import AccordionSummary from 'cozy-ui/transpiled/react/AccordionSummary'
+import AccordionDetails from 'cozy-ui/transpiled/react/AccordionDetails'
+import Typography from 'cozy-ui/transpiled/react/Typography'
 
 export const Execution = () => {
   const client = useClient()
@@ -60,24 +64,31 @@ export const Execution = () => {
         }
       />
       <SingleNodeAggregation />
-      {webhooks &&
-        webhooks.map(hook => (
-          <Webhook key={hook.id} hook={hook} onUpdate={fetch} />
-        ))}
-      {isWorking ? (
-        <Spinner size="xxlarge" middle />
-      ) : (
-        <div className="action-group">
-          <Button
-            variant="primary"
-            color="error"
-            label="Reset webhooks"
-            busy={isWorking}
-            disabled={isWorking}
-            onClick={resetWebhooks}
-          />
-        </div>
-      )}
+      <Accordion className="u-m-half">
+        <AccordionSummary>
+          <Typography variant="h3">Webhooks</Typography>
+        </AccordionSummary>
+        <AccordionDetails className="u-flex-column">
+          {webhooks &&
+            webhooks.map(hook => (
+              <Webhook key={hook.id} hook={hook} onUpdate={fetch} />
+            ))}
+          {isWorking ? (
+            <Spinner size="xxlarge" middle />
+          ) : (
+            <div className="u-m-half">
+              <Button
+                variant="primary"
+                color="error"
+                label="Reset webhooks"
+                busy={isWorking}
+                disabled={isWorking}
+                onClick={resetWebhooks}
+              />
+            </div>
+          )}
+        </AccordionDetails>
+      </Accordion>
     </div>
   )
 }

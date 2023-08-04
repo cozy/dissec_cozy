@@ -64,7 +64,7 @@ export const Webhook = ({ hook, onUpdate }) => {
   }, [pretrained, setPretrained])
 
   return (
-    <div className="webhook">
+    <div className="u-flex u-flex-column u-card u-flex-items-center u-stack-xs u-m-half">
       <div className="info-category">
         <b>{name.toUpperCase() || '?'}</b>
       </div>
