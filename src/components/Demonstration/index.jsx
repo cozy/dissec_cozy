@@ -5,12 +5,12 @@ import {
   webhooksQuery,
   observationsByExecutionQuery
 } from 'lib/queries'
-import createTree from 'lib/createTreeExported'
 import TreeNetworkGraph from './TreeNetworkGraph'
 import Spinner from 'cozy-ui/react/Spinner'
 import Button from 'cozy-ui/transpiled/react/Buttons'
 import NodesTable from './NodesTable'
 import TreeCreator from './TreeCreator'
+import useTree from '../hooks/useTree'
 
 const Demonstration = () => {
   const client = useClient()
@@ -27,7 +27,6 @@ const Demonstration = () => {
     ?.links.webhook
   const [lastExecutionId, setLastExecutionId] = useState()
   const [isRunning, setIsRunning] = useState(false)
-  const [tree, setTree] = useState([])
   const observationsQuery = observationsByExecutionQuery(
     tree ? tree[0]?.executionId : undefined
   )
@@ -39,18 +38,10 @@ const Demonstration = () => {
     () => (rawObservations || []).filter(o => o.action !== 'receiveShare'),
     [rawObservations]
   )
-  const [treeNodes, setTreeNodesState] = useState()
-  const [treeEdges, setTreeEdgesState] = useState()
-  const treeStructure = useMemo(() => {
-    return treeNodes && treeNodes[0] ? treeNodes[0].treeStructure : undefined
-  }, [treeNodes])
-
-  const setTreeNodes = useCallback(n => {
-    setTreeNodesState(n)
-  }, [])
-  const setTreeEdges = useCallback(n => {
-    setTreeEdgesState(n)
-  }, [])
+  const [treeStructure, setTreeStructure] = useState()
+  const { treeNodes, treeEdges, tree, regenerateTree } = useTree({
+    treeStructure
+  })
 
   const handleLaunchExecution = useCallback(async () => {
     setIsRunning(true)
@@ -74,6 +65,20 @@ const Demonstration = () => {
     }
   }, [tree, treeStructure, supervisorWebhook, client.stackClient])
 
+  const handleStructureChange = useCallback(
+    newStructure => {
+      if (
+        treeStructure?.depth !== newStructure?.depth ||
+        treeStructure?.fanout !== newStructure?.fanout ||
+        treeStructure?.groupSize !== newStructure?.groupSize
+      ) {
+        setTreeStructure(newStructure)
+        regenerateTree()
+      }
+    },
+    [regenerateTree, treeStructure]
+  )
+
   // Waiting for the execution to finish
   useEffect(() => {
     if (
@@ -88,29 +93,31 @@ const Demonstration = () => {
 
   // Recompute tree
   useEffect(() => {
-    if (!tree || tree[0]?.treeStructure !== treeStructure)
-      setTree(nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : [])
-  }, [nodes, tree, treeStructure])
+    if (!tree || tree[0]?.treeStructure !== treeStructure) regenerateTree()
+  }, [nodes, regenerateTree, tree, treeStructure])
 
   return !nodes || isLoading ? (
     <Spinner size="xxlarge" middle />
   ) : (
     <div className="u-p-half">
-      <TreeCreator
-        busy={false}
-        setTreeNodes={setTreeNodes}
-        setTreeEdges={setTreeEdges}
-      />
-      <Button
-        className="u-m-auto"
-        style={{ display: 'flex' }}
-        variant="ghost"
-        color="success"
-        label="Launch execution"
-        onClick={handleLaunchExecution}
-        busy={isRunning}
-        disabled={lastExecutionId === tree[0]?.executionId}
-      />
+      <TreeCreator busy={isLoading} setTreeStructure={handleStructureChange} />
+      <div className="u-flex u-flex-justify-around u-m-auto">
+        <Button
+          variant="ghost"
+          label="Recreate tree"
+          onClick={regenerateTree}
+          disabled={isRunning}
+        />
+        <Button
+          style={{ display: 'flex' }}
+          variant="ghost"
+          color="success"
+          label="Launch execution"
+          onClick={handleLaunchExecution}
+          busy={isRunning}
+          disabled={lastExecutionId === tree[0]?.executionId}
+        />
+      </div>
       {treeNodes && treeEdges ? (
         <TreeNetworkGraph
           nodes={treeNodes}

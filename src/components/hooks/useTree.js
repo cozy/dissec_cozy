@@ -25,10 +25,13 @@ const useTree = ({ treeStructure }) => {
 
   // Recompute tree
   useEffect(() => {
-    if (!tree || tree[0]?.treeStructure !== treeStructure)
+    if (!tree || tree[0]?.treeStructure !== treeStructure) {
       setLocalTree(
-        nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : []
+        treeStructure && nodes && nodes.length > 0
+          ? createTree(treeStructure, nodes)
+          : []
       )
+    }
   }, [nodes, setLocalTree, tree, treeStructure])
 
   const [treeNodes, treeEdges] = useMemo(() => {
@@ -121,7 +124,9 @@ const useTree = ({ treeStructure }) => {
 
   const regenerateTree = useCallback(() => {
     setLocalTree(
-      nodes && nodes.length > 0 ? createTree(treeStructure, nodes) : []
+      treeStructure && nodes && nodes.length > 0
+        ? createTree(treeStructure, nodes)
+        : []
     )
   }, [nodes, treeStructure])
 

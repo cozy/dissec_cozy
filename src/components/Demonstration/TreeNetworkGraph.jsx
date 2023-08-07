@@ -151,7 +151,6 @@ function TreeNetworkGraph({
       .attr('mask', n =>
         n.startedWorking && !n.finishedWorking ? 'url(#workMask)' : undefined
       )
-      .style('filter', 'drop-shadow(3px 3px 2px rgb(0 0 0 / 0.4))')
 
     svg
       .selectAll('.labels')
@@ -354,7 +353,8 @@ function TreeNetworkGraph({
         </text>
       </g>
       <mask id="workMask" maskContentUnits="objectBoundingBox">
-        <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" />
+        {/* <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" /> */}
+        <circle fill="white" cx="50%" cy="50%" r="75%" />
         <polygon
           fill="black"
           width="100%"

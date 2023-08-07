@@ -1,34 +1,18 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Input from 'cozy-ui/react/Input'
 import Label from 'cozy-ui/react/Label'
-import Spinner from 'cozy-ui/react/Spinner'
-import Button from 'cozy-ui/transpiled/react/Buttons'
 import Paper from 'cozy-ui/transpiled/react/Paper'
-import useTree from '../hooks/useTree'
 
-const TreeCreator = ({ busy, setTreeNodes, setTreeEdges }) => {
+const TreeCreator = ({ setTreeStructure }) => {
   const [depth, setDepth] = useState(3)
   const [fanout, setFanout] = useState(3)
   const [groupSize, setGroupSize] = useState(2)
-  const treeStructure = useMemo(() => ({ depth, fanout, groupSize }), [
-    depth,
-    fanout,
-    groupSize
-  ])
-  const { tree, treeEdges, treeNodes, isLoading, regenerateTree } = useTree({
-    treeStructure
-  })
 
-  const handleCreate = useCallback(() => {
-    setTreeNodes(treeNodes)
-    setTreeEdges(treeEdges)
-    // Immediatly regenerate the tree so that the next creation is the regenerated tree
-    regenerateTree()
-  }, [regenerateTree, setTreeEdges, setTreeNodes, treeEdges, treeNodes])
+  useEffect(() => {
+    setTreeStructure({ depth, fanout, groupSize })
+  }, [depth, fanout, groupSize, setTreeStructure])
 
-  return !tree || isLoading ? (
-    <Spinner size="xxlarge" middle />
-  ) : (
+  return (
     <Paper
       className="u-bg-silver"
       style={{
@@ -72,14 +56,6 @@ const TreeCreator = ({ busy, setTreeNodes, setTreeEdges }) => {
             id="full-agg-contributors"
           />
         </div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <Button
-          variant="primary"
-          label="Create tree"
-          onClick={handleCreate}
-          disabled={busy}
-        />
       </div>
     </Paper>
   )
