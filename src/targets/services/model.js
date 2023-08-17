@@ -4,7 +4,14 @@ import { tokenizer } from 'cozy-konnector-libs/dist/libs/categorization/helpers'
 import { getClassifierOptions } from 'cozy-konnector-libs/dist/libs/categorization/localModel/classifier'
 import LZUTF8 from 'lzutf8'
 
-import { classes, tinyClasses, tinyVocabulary, vocabulary } from './helpers'
+import {
+  demoVocabulary,
+  demoClasses,
+  classes,
+  tinyClasses,
+  tinyVocabulary,
+  vocabulary
+} from './helpers'
 
 // FIXME: Importing cozy-konnector-libs requires the COZY_CREDENTIALS env var to be in a specific format
 // .. To make this work, libs must include this PR: https://github.com/konnectors/libs/pull/851
@@ -13,9 +20,24 @@ import { classes, tinyClasses, tinyVocabulary, vocabulary } from './helpers'
 const NOISE_CEILING = 300000
 
 export class Model {
-  constructor({ useTiny = true } = {}) {
-    this.vocabulary = useTiny ? tinyVocabulary : vocabulary
-    this.uniqueY = Object.keys(useTiny ? tinyClasses : classes)
+  /**
+   * @typedef ModelSize
+   * @type {'normal' | 'tiny' | 'demo'}
+   */
+  /**
+   * @param {{ modelSize: ModelSize }} options
+   */
+  constructor({ modelSize = 'demo' } = {}) {
+    if (modelSize === 'normal') {
+      this.vocabulary = vocabulary
+      this.uniqueY = Object.keys(classes)
+    } else if (modelSize === 'tiny') {
+      this.vocabulary = tinyVocabulary
+      this.uniqueY = Object.keys(tinyClasses)
+    } else {
+      this.vocabulary = demoVocabulary
+      this.uniqueY = Object.keys(demoClasses)
+    }
     this.classifiers = []
 
     // Using map to allocate a new array for each line
@@ -91,7 +113,7 @@ export class Model {
    * @typedef CreateModelFromAggregateOptions
    * @type {object}
    * @property {boolean} useGlobalModel
-   * @property {boolean} useTiny
+   * @property {ModelSize} modelSize
    */
 
   /**
@@ -103,9 +125,9 @@ export class Model {
    */
   static async fromAggregate(
     doc,
-    { useGlobalModel = false, useTiny = true } = {}
+    { useGlobalModel = false, modelSize = 'demo' } = {}
   ) {
-    let model = new Model({ useTiny })
+    let model = new Model({ modelSize })
     model.occurences = doc.occurences
     model.contributions = doc.contributions
     model.initializeClassifier()
@@ -126,17 +148,17 @@ export class Model {
    */
   static async fromCompressedAggregate(
     compressedAggregate,
-    { useGlobalModel = false, useTiny = true } = {}
+    { useGlobalModel = false, modelSize = 'demo' } = {}
   ) {
     const doc = Model.compressedBinaryToShare(compressedAggregate)
-    return await Model.fromAggregate(doc, { useTiny, useGlobalModel })
+    return await Model.fromAggregate(doc, { modelSize, useGlobalModel })
   }
 
   /**
    * @typedef ModelCreationOptions
    * @type {object}
    * @property {boolean} shouldFinalize - Whether to finalize the model
-   * @property {boolean} useTiny - Whether to use the tiny version of the model
+   * @property {ModelSize} modelSize - The size of the model
    */
 
   /**
@@ -146,9 +168,12 @@ export class Model {
    * @param {ModelCreationOptions} options Reconstruction options
    * @return {Model} The new model
    */
-  static fromShares(shares, { shouldFinalize = false, useTiny = true } = {}) {
+  static fromShares(
+    shares,
+    { shouldFinalize = false, modelSize = 'demo' } = {}
+  ) {
     // TODO: Do not write an occurences matrix, only the wordFrequencyCount
-    let model = new Model({ useTiny })
+    let model = new Model({ modelSize })
     model.contributions = 0
     shares.forEach(share => (model.contributions += share.contributions))
 
@@ -184,19 +209,19 @@ export class Model {
    */
   static fromCompressedShares(
     compressedShares,
-    { shouldFinalize = false, useTiny = true } = {}
+    { shouldFinalize = false, modelSize = 'demo' } = {}
   ) {
     const shares = compressedShares.map(cshare => {
       return Model.compressedBinaryToShare(String(cshare))
     })
-    return Model.fromShares(shares, { shouldFinalize, useTiny })
+    return Model.fromShares(shares, { shouldFinalize, modelSize })
   }
 
   /**
    * @typedef CreateModelFromDocsOptions
    * @type {object}
    * @property {boolean} useGlobalModel
-   * @property {boolean} useTiny
+   * @property {ModelSize} modelSize
    */
 
   /**
@@ -206,8 +231,11 @@ export class Model {
    * @param {CreateModelFromDocsOptions} options Use the global model as well
    * @return {Promise<Model>} The new model
    */
-  static async fromDocs(docs, { useGlobalModel = false, useTiny = true } = {}) {
-    const model = new Model({ useTiny })
+  static async fromDocs(
+    docs,
+    { useGlobalModel = false, modelSize = 'demo' } = {}
+  ) {
+    const model = new Model({ modelSize })
     const { categorize, classifiers } = await createCategorizer({
       useGlobalModel,
       customTransactionFetcher: () => docs.filter(tx => tx.manualCategoryId)
@@ -328,11 +356,22 @@ export class Model {
    * Transforms a share into a compressed string representation
    *
    * @param {Object} share A share object to compress
+   * @param {{ modelSize: ModelSize }} options
    * @return {string} the string representing the compressed share
    */
-  static shareToCompressedBinary(share, { useTiny = true } = {}) {
-    const vocab = useTiny ? tinyVocabulary : vocabulary
-    const uniqueY = Object.keys(useTiny ? tinyClasses : classes)
+  static shareToCompressedBinary(share, { modelSize = 'demo' } = {}) {
+    let vocab
+    let uniqueY
+    if (modelSize === 'normal') {
+      vocab = vocabulary
+      uniqueY = Object.keys(classes)
+    } else if (modelSize === 'tiny') {
+      vocab = tinyVocabulary
+      uniqueY = Object.keys(tinyClasses)
+    } else {
+      vocab = demoVocabulary
+      uniqueY = Object.keys(demoClasses)
+    }
     const rows = uniqueY.length
     const cols = vocab.length
     const numberSize = 4
@@ -357,11 +396,22 @@ export class Model {
    * Decompresses a share's string representation
    *
    * @param {string} compressed The compressed share
+   * @param {{ modelSize: ModelSize }} options
    * @return {Object} The share object
    */
-  static compressedBinaryToShare(compressed, { useTiny = true } = {}) {
-    const vocab = useTiny ? tinyVocabulary : vocabulary
-    const uniqueY = Object.keys(useTiny ? tinyClasses : classes)
+  static compressedBinaryToShare(compressed, { modelSize = 'demo' } = {}) {
+    let vocab
+    let uniqueY
+    if (modelSize === 'normal') {
+      vocab = vocabulary
+      uniqueY = Object.keys(classes)
+    } else if (modelSize === 'tiny') {
+      vocab = tinyVocabulary
+      uniqueY = Object.keys(tinyClasses)
+    } else {
+      vocab = demoVocabulary
+      uniqueY = Object.keys(demoClasses)
+    }
     const decompressed = LZUTF8.decompress(compressed, {
       inputEncoding: 'StorageBinaryString'
     })

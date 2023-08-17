@@ -1,0 +1,76 @@
+{
+  "io.cozy.bills": [],
+  "io.cozy.bank.accounts": [],
+  "io.cozy.bank.operations": [
+    {
+      "account": "lou5",
+      "amount": 13.5,
+      "manualCategoryId": "400110",
+      "currency": "€",
+      "label": "CARTE 09/08/23 AUX SAVEURS CB*2755",
+      "date": "2014-08-18T18:53:14.323Z",
+      "cozyMetadata": {
+        "createdByApp": "bnpparibas82",
+        "updatedByApp": "bnpparibas82",
+        "createdAt": "2004-05-17T17:48:45.322Z",
+        "updatedAt": "2001-05-11T06:43:51.084Z"
+      }
+    },
+    {
+      "account": "lou5",
+      "amount": 13.99,
+      "manualCategoryId": "400150",
+      "currency": "€",
+      "label": "PRLV SEPA Orange SA-ORANGE",
+      "date": "2014-08-18T18:53:14.323Z",
+      "cozyMetadata": {
+        "createdByApp": "bnpparibas82",
+        "updatedByApp": "bnpparibas82",
+        "createdAt": "2004-06-17T17:48:45.322Z",
+        "updatedAt": "2001-06-11T06:43:51.084Z"
+      }
+    },
+    {
+      "account": "lou5",
+      "amount": 286,
+      "manualCategoryId": "400810",
+      "currency": "€",
+      "label": "CARTE 26/07/23 GOURMET D'ASIE CB*2755",
+      "date": "2014-08-18T18:53:14.323Z",
+      "cozyMetadata": {
+        "createdByApp": "bnpparibas82",
+        "updatedByApp": "bnpparibas82",
+        "createdAt": "2004-07-17T17:48:45.322Z",
+        "updatedAt": "2001-07-11T06:43:51.084Z"
+      }
+    },
+    {
+      "account": "gen7",
+      "amount": 26,
+      "manualCategoryId": "400740",
+      "currency": "€",
+      "label": "CARTE 26/07/23 Nintendo CA102602 CB*2755",
+      "date": "2019-01-26T18:34:03.993Z",
+      "cozyMetadata": {
+        "createdByApp": "caissedepargne1",
+        "updatedByApp": "caissedepargne1",
+        "createdAt": "2004-08-07T10:54:18.179Z",
+        "updatedAt": "2012-08-25T17:49:11.680Z"
+      }
+    },
+    {
+      "account": "gen7",
+      "amount": 283,
+      "manualCategoryId": "400250",
+      "currency": "€",
+      "label": "CARTE 15/07/23 SHELL OIL 1000795 CB*2755",
+      "date": "2019-01-26T18:34:03.993Z",
+      "cozyMetadata": {
+        "createdByApp": "caissedepargne1",
+        "updatedByApp": "caissedepargne1",
+        "createdAt": "2004-09-07T10:54:18.179Z",
+        "updatedAt": "2012-09-25T17:49:11.680Z"
+      }
+    }
+  ]
+}
