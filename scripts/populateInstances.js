@@ -182,6 +182,25 @@ const populateInstances = async ({
     await exec(
       `yarn run ACH -u http://${supervisingInstanceDomain} -y script banking/importFilteredOperations ${fixtureFile} ${allClasses} 5 ${supervisingInstanceDomain} -x -t ${ACHToken}`
     )
+
+    // Remove the category of each operation
+    const { stdout } = await exec(
+      `cozy-stack instances token-app ${supervisingInstanceDomain} dissecozy`
+    )
+    const token = stdout.toString().replace('\n', '')
+    const client = new CozyClient({
+      uri: `http://${supervisingInstanceDomain}`,
+      schema: {
+        triggers: {
+          doctype: 'io.cozy.bank.operations',
+          attributes: {},
+          relationships: {}
+        }
+      },
+      token
+    })
+    const operations = await client.queryAll(Q('io.cozy.bank.operations'))
+    await client.saveAll(operations.map(o => ({ ...o, manualCategoryId: '0' })))
   }
 
   // Upload webhooks on the supervisor instance
