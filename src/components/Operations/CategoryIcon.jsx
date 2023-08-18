@@ -5,6 +5,9 @@ import iconSupermarket from 'assets/icons/categories/icon-cat-supermarket.svg'
 import iconPotentialTransfer from 'assets/icons/categories/icon-cat-potentialTransfer.svg'
 import iconCheck from 'assets/icons/categories/icon-cat-check.svg'
 import iconIncomeCat from 'assets/icons/categories/icon-cat-incomeCat.svg'
+import iconKids from 'assets/icons/categories/icon-cat-kids.svg'
+import iconTelecom from 'assets/icons/categories/icon-cat-telecom.svg'
+import iconRestaurantsAndBars from 'assets/icons/categories/icon-cat-restaurantsAndBars.svg'
 
 // TODO: Handle all icons, currently only those in tiny datasets
 export const CategoryIcon = ({ category, ...props }) => {
@@ -57,7 +60,7 @@ export const CategoryIcon = ({ category, ...props }) => {
       case '400140':
         return 'pets'
       case '400150':
-        return 'telecom'
+        return iconTelecom
       case '400160':
         return 'snaksAndworkMeals'
       case '400170':
@@ -101,7 +104,7 @@ export const CategoryIcon = ({ category, ...props }) => {
       case '400350':
         return 'financialAdvisor'
       case '400400':
-        return 'kids'
+        return iconKids
       case '400410':
         return 'kidsAllowance'
       case '400420':
@@ -115,7 +118,7 @@ export const CategoryIcon = ({ category, ...props }) => {
       case '400460':
         return 'pensionPaid'
       case '400470':
-        return 'kidsActivities'
+        return iconKids
       case '400500':
         return 'tax'
       case '400510':
@@ -149,7 +152,7 @@ export const CategoryIcon = ({ category, ...props }) => {
       case '400800':
         return 'goingOutAndTravel'
       case '400810':
-        return 'restaurantsAndBars'
+        return iconRestaurantsAndBars
       case '400820':
         return 'goingOutEntertainment'
       case '400830':

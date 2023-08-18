@@ -47,7 +47,7 @@
     {
       "account": "gen7",
       "amount": 26,
-      "manualCategoryId": "400740",
+      "manualCategoryId": "400400",
       "currency": "€",
       "label": "CARTE 26/07/23 Nintendo CA102602 CB*2755",
       "date": "2019-01-26T18:34:03.993Z",
@@ -61,7 +61,7 @@
     {
       "account": "gen7",
       "amount": 283,
-      "manualCategoryId": "400250",
+      "manualCategoryId": "400200",
       "currency": "€",
       "label": "CARTE 15/07/23 SHELL OIL 1000795 CB*2755",
       "date": "2019-01-26T18:34:03.993Z",
