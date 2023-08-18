@@ -17,7 +17,8 @@ const populateInstances = async ({
   outputWebhooksPath = './generated/webhooks.json',
   supervisingInstanceDomain = 'cozy.localhost:8080',
   instancePrefix = 'test',
-  forceClean = false
+  forceClean = false,
+  loadDemoData = false
 }) => {
   const { log } = createLogger()
 
@@ -168,6 +169,18 @@ const populateInstances = async ({
     )
     await exec(
       `cozy-stack apps install --domain ${supervisingInstanceDomain} dissecozy file://${process.cwd()}/build/`
+    )
+  }
+
+  if (loadDemoData) {
+    log(
+      `Importing operations of the following classes for instance ${supervisingInstanceDomain}: ${allClasses}`
+    )
+    const { stdout: ACHToken } = await exec(
+      `cozy-stack instances token-cli ${supervisingInstanceDomain} io.cozy.bank.operations`
+    )
+    await exec(
+      `yarn run ACH -u http://${supervisingInstanceDomain} -y script banking/importFilteredOperations ${fixtureFile} ${allClasses} 5 ${supervisingInstanceDomain} -x -t ${ACHToken}`
     )
   }
 

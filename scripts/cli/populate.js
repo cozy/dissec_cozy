@@ -32,6 +32,11 @@ program
     'cozy.localhost:8080'
   )
   .option('--force-clean', 'Whether to clean the supervisor instance', false)
+  .option(
+    '--load-demo-data',
+    'Whether to load demo data on the supervisor instance',
+    false
+  )
 
 program.parse()
 
@@ -43,5 +48,6 @@ populateInstances({
   operationsPerInstance: options.operations,
   fixtureFile: options.fixture,
   centralized: options.centralized,
-  forceClean: options.forceClean
+  forceClean: options.forceClean,
+  loadDemoData: options.loadDemoData
 })
