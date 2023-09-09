@@ -13,12 +13,13 @@ import Supervisor from './Supervisor'
 import Demonstration from './Demonstration'
 import { OBSERVATIONS_DOCTYPE, BANK_OPERATIONS_DOCTYPE } from 'doctypes'
 import { AppSidebar } from './Sidebar'
+import Debug from './Debug'
 
 const App = () => {
   return (
     <HashRouter>
       <CozyTheme>
-        <Layout style={{ width: '100vw' }}>
+        <Layout style={{ width: '100vw', overflow: 'hidden' }}>
           <RealTimeQueries doctype={OBSERVATIONS_DOCTYPE} />
           <RealTimeQueries doctype={BANK_OPERATIONS_DOCTYPE} />
           <AppSidebar />
@@ -26,10 +27,11 @@ const App = () => {
             <Content>
               <Switch>
                 <Route path="/operations" component={Operations} />
+                <Route path="/demonstration" component={Demonstration} />
                 <Route path="/execution" component={Execution} />
+                <Route path="/debug" component={Debug} />
                 <Route path="/nodes" component={Nodes} />
                 <Route path="/supervisor" component={Supervisor} />
-                <Route path="/demonstration" component={Demonstration} />
                 <Redirect from="/" to="/operations" />
                 <Redirect from="*" to="/operations" />
               </Switch>

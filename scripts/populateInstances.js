@@ -17,7 +17,8 @@ const populateInstances = async ({
   outputWebhooksPath = './generated/webhooks.json',
   supervisingInstanceDomain = 'cozy.localhost:8080',
   instancePrefix = 'test',
-  forceClean = false
+  forceClean = false,
+  loadDemoData = false
 }) => {
   const { log } = createLogger()
 
@@ -169,6 +170,42 @@ const populateInstances = async ({
     await exec(
       `cozy-stack apps install --domain ${supervisingInstanceDomain} dissecozy file://${process.cwd()}/build/`
     )
+  }
+
+  if (loadDemoData) {
+    log(
+      `Importing operations of the following classes for instance ${supervisingInstanceDomain}: ${allClasses}`
+    )
+    const { stdout: ACHToken } = await exec(
+      `cozy-stack instances token-cli ${supervisingInstanceDomain} io.cozy.bank.operations`
+    )
+    await exec(
+      `yarn run ACH -u http://${supervisingInstanceDomain} -y script banking/importFilteredOperations ${fixtureFile} ${allClasses} 5 ${supervisingInstanceDomain} -x -t ${ACHToken}`
+    )
+
+    // Remove the category of each operation
+    const { stdout } = await exec(
+      `cozy-stack instances token-app ${supervisingInstanceDomain} dissecozy`
+    )
+    const token = stdout.toString().replace('\n', '')
+    const client = new CozyClient({
+      uri: `http://${supervisingInstanceDomain}`,
+      schema: {
+        triggers: {
+          doctype: 'io.cozy.bank.operations',
+          attributes: {},
+          relationships: {}
+        }
+      },
+      token
+    })
+    const operations = await client.queryAll(Q('io.cozy.bank.operations'))
+    await client.saveAll(operations.map((o, index) => ({ 
+      ...o,
+      manualCategoryId: index === 0 ? o.manualCategoryId : '0',
+      cozyCategoryId: index === 0 ? o.manualCategoryId : '0', 
+      previousCategoryId: index === 0 ? o.manualCategoryId : '0',
+    })))
   }
 
   // Upload webhooks on the supervisor instance

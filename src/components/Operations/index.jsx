@@ -6,9 +6,9 @@ import { bankOperationsQuery } from 'lib/queries'
 import OperationAdd from './OperationAdd'
 import OperationsList from './OperationsList'
 import OperationDeleteAll from './OperationsDeleteAll'
-import ClassifyOperations from './ClassifyOperations'
-import ClassificationStatistics from './ClassificationStatistics'
 import Button from 'cozy-ui/transpiled/react/Buttons'
+import PlusSmallIcon from 'cozy-ui/transpiled/react/Icons/PlusSmall'
+import Icon from 'cozy-ui/transpiled/react/Icon'
 
 export const Operations = () => {
   const query = bankOperationsQuery()
@@ -25,17 +25,22 @@ export const Operations = () => {
   }, [fetchMore])
 
   return (
-    <div className="todos">
+    <div className="u-p-half u-mb-3">
       {isLoading ? (
         <Spinner size="xxlarge" middle />
       ) : (
         <div>
-          <ClassifyOperations />
-          <ClassificationStatistics />
           <OperationsList operations={operations} />
           <Button
-            variant="primary"
-            label="fetch more"
+            className="u-m-auto"
+            style={{ display: 'flex' }}
+            variant="ghost"
+            label={
+              <>
+                <Icon icon={PlusSmallIcon} className="u-ph-half" />
+                <span>fetch more</span>
+              </>
+            }
             onClick={handleFetchMore}
             busy={isWorking}
           />

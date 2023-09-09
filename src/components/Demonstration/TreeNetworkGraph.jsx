@@ -69,6 +69,11 @@ function TreeNetworkGraph({
   const depth = useMemo(() => Math.max(...nodes.map(e => e.level)), [nodes])
 
   useEffect(() => {
+    var treeColors = d3
+      .scaleOrdinal()
+      .domain([1, nodes[0]?.treeStructure?.groupSize || 1])
+      .range(d3.schemeSet3)
+
     const svg = d3
       .select(ref.current)
       .attr('viewBox', [-width / 2, -height / 2, width, height])
@@ -106,9 +111,9 @@ function TreeNetworkGraph({
         setHoveredEdge()
       })
       .call(d3.zoom().transform, d3.zoomIdentity)
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', e => (e.activeEdge ? 1 : 0.6))
-      .attr('stroke-width', e => (e.activeEdge ? 3 : 1))
+      .attr('stroke', e => treeColors(e.treeIndex ?? 0))
+      .attr('stroke-width', e => (e.activeEdge ? 5 : 3))
+      .style('filter', 'drop-shadow(3px 3px 2px rgb(0 0 0 / 0.4))')
 
     svg
       .selectAll('.nodes')
@@ -348,7 +353,8 @@ function TreeNetworkGraph({
         </text>
       </g>
       <mask id="workMask" maskContentUnits="objectBoundingBox">
-        <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" />
+        {/* <rect fill="white" x="-50%" y="-50%" width="150%" height="150%" /> */}
+        <circle fill="white" cx="50%" cy="50%" r="75%" />
         <polygon
           fill="black"
           width="100%"

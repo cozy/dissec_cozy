@@ -25,6 +25,7 @@
     "test:centralized-vs-dissec": "bash ./scripts/testCentralizedVsDissec.sh",
     "populate": "node ./scripts/cli/populate.js",
     "populate:centralized": "node ./scripts/cli/populate.js --centralized",
+    "populate:demo": "node ./scripts/cli/populate.js -f assets/fixtures-demo.json -o 10 -n 10 --load-demo-data --force-clean",
     "measure": "node ./scripts/localVsDissecLearning.js",
     "categorize": "node ./scripts/cli/categorize.js"
   },
@@ -74,6 +75,7 @@
     "cozy-ui": "89.0.0",
     "d3": "^7.8.4",
     "d3-drag": "^3.0.0",
+    "d3-scale-chromatic": "^3.0.0",
     "lzutf8": "^0.6.0",
     "node-fetch": "^2.6.1",
     "react": "16.13.1",

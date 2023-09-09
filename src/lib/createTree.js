@@ -20,11 +20,13 @@ const createTree = (treeStructure, nodesWebhooks) => {
 
   const createLevel = (parentGroup, depth) => {
     const childrenToCreate = parentGroup?.length > 0 ? treeStructure.fanout : 1
+    const isQuerier = !parentGroup || parentGroup.length === 0
+    const isLeaf = depth === treeStructure.depth - 1
     let groupSize
-    if (!parentGroup || parentGroup.length === 0) {
+    if (isQuerier) {
       // Querier node
       groupSize = 1
-    } else if (depth === treeStructure.depth - 1) {
+    } else if (isLeaf) {
       // Leaf aggregators
       groupSize = treeStructure.fanout
     } else {
@@ -67,6 +69,7 @@ const createTree = (treeStructure, nodesWebhooks) => {
       } else {
         // Aggregators
         node.parents = parentGroup ? [parentGroup[i]] : parentGroup
+        node.treeIndex = i + 1
       }
 
       currentGroup.push(node)

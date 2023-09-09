@@ -17,7 +17,7 @@ _:pushpin: Note:_ we recommend to use [Yarn] instead of NPM for package manageme
 
 ### Install
 
-Setting up the Cozy DISSEC-COZY app requires you to [setup a dev environment][setup].
+Setting up the Cozy DISSEC-COZY app requires you to [setup a dev environment][setup]. However, you will need a spcific version of `cozy-stack`, so we recommend that you install it from sources and run `git checkout 3bca7d384076a21367c24bf69f5381ad9e54223b` before running `make`.
 
 You can then clone the app repository and install dependencies:
 
@@ -32,7 +32,7 @@ $ yarn install
 Cozy's apps use a standard set of _npm scripts_ to run common tasks, like watch, lint, test, build…
 
 If you want to check that everything is working smoothly, you can check [integration test](#tests).
-If you want to see how the protocol works in details, run the [demonstrattion](#demonstration).
+If you want to see how the protocol works in details, run the [demonstration](#demonstration).
 
 ### Configuration
 
@@ -80,11 +80,11 @@ It currently tests the following properties:
 ## Demonstration
 
 A test scenario has been developed to test the protocol with multiple instances.
-It is currently static and will involves 11 nodes: 7 nodes will contribute a single data to the protocol, 3 nodes will serve as intermediate aggregators and the querier (the default instance of the stack) will act as the querier, creating the tree and triggerring contributors.
+It is currently static and will involves 11 nodes: 7 nodes will contribute a single data to the protocol, 3 nodes will serve as intermediate aggregators and the last will act as the querier, creating the tree and triggerring contributors.
 
 The steps to to execute the demonstration are as follows:
 
-1. Have a `build` folder in the in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
+1. Have a `build` folder in the `dissecozy` repo. For development purposes, you can run a `yarn watch` command, which will look for updates in the repo and automatically build the latest version. Else, run `yarn build`.
 2. Launch `cozy-stack serve --disable-csp` to start the stack with the dissecozy app loaded.
 3. Create test instances by running `yarn run populate`. This will create the 10 test instances (`test1.cozy.localhost:8080` to `test10.cozy.localhost:8080`) and automatically provides 10 banking operations of 10 different categories by default. It will also output a JSON file containing all these instances' webhooks, and uploads these webhooks to the querier to use them to construct the aggregation tree. The file is located in `generated/webhooks.json`.
 4. Open a browser and go to the dissecozy URL of your default instance (e.g. `http://dissecozy.cozy.localhost:8080/`)
