@@ -25,7 +25,7 @@
     "test:centralized-vs-dissec": "bash ./scripts/testCentralizedVsDissec.sh",
     "populate": "node ./scripts/cli/populate.js",
     "populate:centralized": "node ./scripts/cli/populate.js --centralized",
-    "populate:demo": "node ./scripts/cli/populate.js -f assets/fixtures-demo.json -o 10 -n 10 --load-demo-data",
+    "populate:demo": "node ./scripts/cli/populate.js -f assets/fixtures-demo.json -o 10 -n 10 --load-demo-data --force-clean",
     "measure": "node ./scripts/localVsDissecLearning.js",
     "categorize": "node ./scripts/cli/categorize.js"
   },

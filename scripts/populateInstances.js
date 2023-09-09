@@ -200,7 +200,12 @@ const populateInstances = async ({
       token
     })
     const operations = await client.queryAll(Q('io.cozy.bank.operations'))
-    await client.saveAll(operations.map(o => ({ ...o, manualCategoryId: '0' })))
+    await client.saveAll(operations.map((o, index) => ({ 
+      ...o,
+      manualCategoryId: index === 0 ? o.manualCategoryId : '0',
+      cozyCategoryId: index === 0 ? o.manualCategoryId : '0', 
+      previousCategoryId: index === 0 ? o.manualCategoryId : '0',
+    })))
   }
 
   // Upload webhooks on the supervisor instance
