@@ -8,6 +8,10 @@ The demonstrator is composed of two parts:
 - The [Cozy Stack](https://github.com/cozy/cozy-stack) is the piece of software that hosts all user's Cozy instances. Each instance is an isolated PDMS. The Cozy Stack is in charge of running jobs and sending queries to instances.
 - Apps for the Cozy Stack like [DISSEC-COZY](./README.md) are web apps built in [React](https://react.dev/). Apps are then installed by the Stack to be served to users when they connect to their instance. Apps come with a manifest that declares their data dependencies and all the workload they require.
 
+## Resources
+
+- A [video explanation](https://julienmirval-drive.mycozy.cloud/public?sharecode=FqInzVlrglWK) is available to accompany the demonstrator. It outlines the context in which this was built as well as some illustrated instructions on how to use the demonstrator.
+
 ## Setup
 
 ### Cozy Stack
