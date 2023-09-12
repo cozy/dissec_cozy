@@ -10,7 +10,7 @@ The demonstrator is composed of two parts:
 
 ## Resources
 
-- A [video explanation](https://clipchamp.com/watch/7vsaYZyPEDa) is available to accompany the demonstrator. It outlines the context in which this was built as well as some illustrated instructions on how to use the demonstrator.
+- A [video explanation](https://julienmirval-drive.mycozy.cloud/public?sharecode=FqInzVlrglWK) is available to accompany the demonstrator. It outlines the context in which this was built as well as some illustrated instructions on how to use the demonstrator.
 
 ## Setup
 
