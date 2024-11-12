@@ -48,8 +48,6 @@
     "cozy-ach": "^1.48.0",
     "cozy-jobs-cli": "1.10.4",
     "cozy-scripts": "8.1.1",
-    "enzyme": "3.8.0",
-    "enzyme-adapter-react-16": "1.9.1",
     "git-directory-deploy": "1.5.1",
     "react-hot-loader": "4.6.5",
     "react-test-renderer": "16.13.1",
